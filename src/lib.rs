@@ -8,7 +8,7 @@ use core::{hint, mem};
 pub enum Locality {
     PureNonLocal,
     PureLocal,
-    SomeLocal,
+    Both,
 }
 impl Locality {
     const fn has_local(&self) -> bool {
@@ -17,11 +17,40 @@ impl Locality {
             _ => true,
         }
     }
+    const fn no_local(&self) -> bool {
+        !self.has_local()
+    }
+
     const fn has_non_local(&self) -> bool {
         match self {
             Locality::PureLocal => false,
             _ => true,
         }
+    }
+    const fn no_non_local(&self) -> bool {
+        !self.has_non_local()
+    }
+}
+#[cfg(test)]
+mod locality_tests {
+    use crate::Locality;
+
+    #[test]
+    fn methods() {
+        assert_eq!(Locality::PureNonLocal.has_local(), false);
+        assert_eq!(Locality::PureNonLocal.no_local(), true);
+        assert_eq!(Locality::PureNonLocal.has_non_local(), true);
+        assert_eq!(Locality::PureNonLocal.no_non_local(), false);
+
+        assert_eq!(Locality::PureLocal.has_local(), true);
+        assert_eq!(Locality::PureLocal.no_local(), false);
+        assert_eq!(Locality::PureLocal.has_non_local(), false);
+        assert_eq!(Locality::PureLocal.no_non_local(), true);
+
+        assert_eq!(Locality::Both.has_local(), true);
+        assert_eq!(Locality::Both.no_local(), false);
+        assert_eq!(Locality::Both.has_non_local(), true);
+        assert_eq!(Locality::Both.no_non_local(), false);
     }
 }
 
@@ -107,23 +136,21 @@ pub struct OrdWrap<T> {
     t: T,
 }
 
-impl<T: CfOrd> PartialEq for OrdWrap<T> {
+impl<T: CfPartialEq> PartialEq for OrdWrap<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        // @TODO Self::LOCALITY
-        self.t
-            .cmp_local(&other.t)
-            .then_with(|| self.t.cmp_non_local(&other.t))
-            == Equal
+        (T::LOCALITY.no_local() || self.t.eq_local(&other.t))
+            && (T::LOCALITY.no_non_local() || self.t.eq_non_local(&other.t))
     }
 
     #[inline]
     fn ne(&self, other: &Self) -> bool {
-        // @TODO Self::LOCALITY
-        self.t.cmp_local(&other.t) != Equal || self.t.cmp_non_local(&other.t) != Equal
+        T::LOCALITY.has_local() && !self.t.eq_local(&other.t)
+            || T::LOCALITY.has_non_local() && !self.t.eq_non_local(&other.t)
     }
 }
 impl<T: CfOrd> Eq for OrdWrap<T> {}
+
 impl<T: CfOrd> PartialOrd for OrdWrap<T> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -382,7 +409,9 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
     }
 }
 
-impl CfPartialEq for u8 {
+pub trait CfPartialEqProxyPureLocal {}
+
+impl<T: CfPartialEqProxyPureLocal + PartialEq> CfPartialEq for T {
     const LOCALITY: Locality = Locality::PureLocal;
 
     // If unsure, then it's `false`.
@@ -399,7 +428,10 @@ impl CfPartialEq for u8 {
         self == other
     }
 }
-impl CfOrd for u8 {
+
+pub trait CfOrdProxyPureLocal {}
+
+impl<T: CfOrdProxyPureLocal + CfPartialEq + Ord> CfOrd for T {
     const COMPATIBLE_WITH_ORD: bool = true;
 
     fn cmp_local(&self, other: &Self) -> Ordering {
@@ -407,13 +439,17 @@ impl CfOrd for u8 {
     }
 
     fn cmp_non_local(&self, other: &Self) -> Ordering {
-        unreachable!("NOT to be used")
+        debug_assert!(false, "unreachable");
+        self.cmp(other)
     }
 
     fn cmp_full(&self, other: &Self) -> Ordering {
         self.cmp(other)
     }
 }
+
+impl CfPartialEqProxyPureLocal for u8 {}
+impl CfOrdProxyPureLocal for u8 {}
 
 #[cfg(test)]
 mod tests {
