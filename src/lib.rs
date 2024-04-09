@@ -25,23 +25,35 @@ impl Locality {
     }
 }
 
-/*pub trait CfPartialEq {
+pub trait CfPartialEq {
     const LOCALITY: Locality;
+
     // If unsure, then it's `false`.
     const COMPATIBLE_WITH_PARTIAL_EQ: bool;
 
     fn eq_local(&self, other: &Self) -> bool;
+
     fn eq_non_local(&self, other: &Self) -> bool;
-    fn eq_full(&self, other: &Self) -> bool;
-}*/
+
+    fn eq_full(&self, other: &Self) -> bool {
+        if Self::LOCALITY.has_local() {
+            let local = self.eq_local(other);
+            if local {
+                Self::LOCALITY.has_non_local() || self.eq_non_local(other)
+            } else {
+                false
+            }
+        } else {
+            self.eq_non_local(other)
+        }
+    }
+}
 
 /** Cache-friendly ordering.
  *
  *  NOT extending [Ord], because they MAY be INCOMPATIBLE.
  */
-pub trait CfOrd /* : CfPartialEq*/ {
-    const LOCALITY: Locality;
-
+pub trait CfOrd: CfPartialEq {
     // If unsure, then it's `false`.
     const COMPATIBLE_WITH_ORD: bool;
 
@@ -59,19 +71,10 @@ pub trait CfOrd /* : CfPartialEq*/ {
 
     /// Full comparison.
     ///
-    /// Any implementation must be equalent to [CfordDefault::cmp_full_default].
-    fn cmp_full(&self, other: &Self) -> Ordering;
-}
-
-/// Reference trait only. NOT to be implemented outside of `cfo` crate.
-pub trait CfOrdDefault: CfOrd {
-    fn cmp_full_default(&self, other: &Self) -> Ordering;
-}
-
-impl<T: CfOrd> CfOrdDefault for T {
-    /// Default implementation of [Cford::cmp_full], based on [Cford::LOCALITY], [Cford::cmp_local]
-    /// and [Cford::cmp_non_local]
-    fn cmp_full_default(&self, other: &Self) -> Ordering {
+    /// Any implementation must be equivalent to the default one. The default implementation
+    /// respects [CfOrd::LOCALITY] and calls [CfOrd::cmp_local] and/or [CfOrd::cmp_non_local] only
+    /// when they're applicable and when they're needed.
+    fn cmp_full(&self, other: &Self) -> Ordering {
         // @TODO apply https://rust.godbolt.org/z/698eYffTx
         if Self::LOCALITY.has_local() {
             let local = self.cmp_local(other);
@@ -90,13 +93,13 @@ impl<T: CfOrd> CfOrdDefault for T {
     }
 }
 
-/// A (zero-cost) wrapper & bridge that implements [Ord] forwarding to [Cford::cmp_full] of `T`,
+/// A (zero-cost) wrapper & bridge that implements [Ord] forwarding to [CfOrd::cmp_full] of `T`,
 /// used FOR BENCHMARKING. That allows us to run slice's `binary_search`:
 /// `<[T]>::binary_search(self, given)` using the full comparison, and benchmark any benefits of
 /// this crate.
 ///
 /// [PartialEq] is implemented NOT by forwarding to [PartialEq::eq] and [PartialEq::ne] of `T`, but
-/// by forwarding to[Cford::cmp_local] and [Cford::cmp_non_local] of `T` instead. (Hence `T` doesn't
+/// by forwarding to[CfOrd::cmp_local] and [CfOrd::cmp_non_local] of `T` instead. (Hence `T` doesn't
 /// need to be [PartialEq].)
 #[derive(Clone, Debug)]
 #[repr(transparent)]
@@ -160,38 +163,45 @@ impl<T: CfOrd> Ord for OrdWrap<T> {
     */
 }
 
-/// A (zero-cost) wrapper & bridge that implements [Cford], [PartialOrd] and [Ord] forwarding to
+/// A (zero-cost) wrapper & bridge that implements [CfOrd], [PartialOrd] and [Ord] forwarding to
 /// [Ord] methods of `T`. NO cache benefit - use for compatibility only!
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct CfordWrap<T> {
+pub struct CfOrdWrap<T> {
     t: T,
 }
 
-impl<T: Ord> CfOrd for CfordWrap<T> {
+impl<T: Ord> CfPartialEq for CfOrdWrap<T> {
     const LOCALITY: Locality = Locality::PureNonLocal;
+    const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
+
+    fn eq_local(&self, other: &Self) -> bool {
+        debug_assert!(false, "unreachable");
+        self.t == other.t
+    }
+
+    fn eq_non_local(&self, other: &Self) -> bool {
+        self.t == other.t
+    }
+}
+
+impl<T: Ord> CfOrd for CfOrdWrap<T> {
     const COMPATIBLE_WITH_ORD: bool = true;
 
     fn cmp_local(&self, other: &Self) -> Ordering {
         unreachable!()
     }
 
-    /// Comparison based on non-local (referenced) field(s) only (if any).
-    ///
-    /// Any implementation must NOT call [cmp_full] (whether directly or indirectly).
     fn cmp_non_local(&self, other: &Self) -> Ordering {
         unreachable!()
     }
 
-    /// Full comparison.
-    ///
-    /// Any implementation must be equalent to [CfordDefault::cmp_full_default].
     fn cmp_full(&self, other: &Self) -> Ordering {
         unreachable!()
     }
 }
 
-impl<T: PartialOrd> PartialOrd for CfordWrap<T> {
+impl<T: PartialOrd> PartialOrd for CfOrdWrap<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.t.partial_cmp(&other.t)
     }
@@ -209,7 +219,7 @@ impl<T: PartialOrd> PartialOrd for CfordWrap<T> {
         self.t.ge(&other.t)
     }
 }
-impl<T: Ord> Ord for CfordWrap<T> {
+impl<T: Ord> Ord for CfOrdWrap<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.t.cmp(&other.t)
     }
@@ -256,7 +266,7 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
         }
         //let max_right_neighbors_per_cache_line = max_entries_per_cache_line - 1;
         //
-        // TODO: Make these "Bulgarian" constants part of Cford trait and/or feature
+        // TODO: Make these "Bulgarian" constants part of CfOrd trait and/or feature
         //
         // Used with a `<` operator.
         let subslice_size_threshold = 3 * max_entries_per_cache_line + 2;
@@ -372,8 +382,24 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
     }
 }
 
-impl CfOrd for u8 {
+impl CfPartialEq for u8 {
     const LOCALITY: Locality = Locality::PureLocal;
+
+    // If unsure, then it's `false`.
+    const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
+
+    fn eq_local(&self, other: &Self) -> bool {
+        self == other
+    }
+    fn eq_non_local(&self, other: &Self) -> bool {
+        debug_assert!(false, "unreachable");
+        self == other
+    }
+    fn eq_full(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+impl CfOrd for u8 {
     const COMPATIBLE_WITH_ORD: bool = true;
 
     fn cmp_local(&self, other: &Self) -> Ordering {
