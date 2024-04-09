@@ -122,21 +122,28 @@ pub trait CfOrd: CfPartialEq {
     }
 }
 
-/// A (zero-cost) wrapper & bridge that implements [Ord] forwarding to [CfOrd::cmp_full] of `T`,
-/// used FOR BENCHMARKING. That allows us to run slice's `binary_search`:
-/// `<[T]>::binary_search(self, given)` using the full comparison, and benchmark any benefits of
-/// this crate.
+/// A (zero cost/low cost) wrapper & bridge that implements [PartialEq] forwarding to [CfPartialEq]
+/// and [Ord] forwarding to [CfOrd] of `T`.
+///
+/// These implementations are useful, and for many data types it may speed up searches etc.
+///
+/// However, objects of (moved to/transmuted to) these wrappers can't benefit from [Slice]'s
+/// cache-aware `binary_search_cf` etc.
+///
+/// Usable for BENCHMARKING. It allows us to run slice's `binary_search`:
+/// `<[T]>::binary_search(self, given)` using the full comparison, and benchmark against cache-aware
+/// [Slice]'s `binary_search_cf` etc.
 ///
 /// [PartialEq] is implemented NOT by forwarding to [PartialEq::eq] and [PartialEq::ne] of `T`, but
-/// by forwarding to[CfOrd::cmp_local] and [CfOrd::cmp_non_local] of `T` instead. (Hence `T` doesn't
+/// by forwarding to[CfOrd::cmp_local] and [CfOrd::cmp_non_local] of `T` instead. (Hence `T` itself doesn't
 /// need to be [PartialEq].)
 #[derive(Clone, Debug)]
 #[repr(transparent)]
-pub struct OrdWrap<T> {
+pub struct StdWrap<T> {
     t: T,
 }
 
-impl<T: CfPartialEq> PartialEq for OrdWrap<T> {
+impl<T: CfPartialEq> PartialEq for StdWrap<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (T::LOCALITY.no_local() || self.t.eq_local(&other.t))
@@ -149,9 +156,9 @@ impl<T: CfPartialEq> PartialEq for OrdWrap<T> {
             || T::LOCALITY.has_non_local() && !self.t.eq_non_local(&other.t)
     }
 }
-impl<T: CfOrd> Eq for OrdWrap<T> {}
+impl<T: CfOrd> Eq for StdWrap<T> {}
 
-impl<T: CfOrd> PartialOrd for OrdWrap<T> {
+impl<T: CfOrd> PartialOrd for StdWrap<T> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.t.cmp_full(&other.t))
@@ -174,7 +181,7 @@ impl<T: CfOrd> PartialOrd for OrdWrap<T> {
         self.t.cmp_full(&other.t) != Less
     }
 }
-impl<T: CfOrd> Ord for OrdWrap<T> {
+impl<T: CfOrd> Ord for StdWrap<T> {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         self.t.cmp_full(&other.t)
@@ -190,15 +197,15 @@ impl<T: CfOrd> Ord for OrdWrap<T> {
     */
 }
 
-/// A (zero-cost) wrapper & bridge that implements [CfOrd], [PartialOrd] and [Ord] forwarding to
+/// A (zero cost) wrapper & bridge that implements [CfOrd], [PartialOrd] and [Ord] forwarding to
 /// [Ord] methods of `T`. NO cache benefit - use for compatibility only!
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct CfOrdWrap<T> {
+pub struct CfWrap<T> {
     t: T,
 }
 
-impl<T: Ord> CfPartialEq for CfOrdWrap<T> {
+impl<T: PartialEq> CfPartialEq for CfWrap<T> {
     const LOCALITY: Locality = Locality::PureNonLocal;
     const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
 
@@ -212,7 +219,7 @@ impl<T: Ord> CfPartialEq for CfOrdWrap<T> {
     }
 }
 
-impl<T: Ord> CfOrd for CfOrdWrap<T> {
+impl<T: Ord> CfOrd for CfWrap<T> {
     const COMPATIBLE_WITH_ORD: bool = true;
 
     fn cmp_local(&self, other: &Self) -> Ordering {
@@ -228,7 +235,7 @@ impl<T: Ord> CfOrd for CfOrdWrap<T> {
     }
 }
 
-impl<T: PartialOrd> PartialOrd for CfOrdWrap<T> {
+impl<T: PartialOrd> PartialOrd for CfWrap<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.t.partial_cmp(&other.t)
     }
@@ -246,7 +253,7 @@ impl<T: PartialOrd> PartialOrd for CfOrdWrap<T> {
         self.t.ge(&other.t)
     }
 }
-impl<T: Ord> Ord for CfOrdWrap<T> {
+impl<T: Ord> Ord for CfWrap<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.t.cmp(&other.t)
     }
