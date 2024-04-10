@@ -1,7 +1,9 @@
-macro_rules! wrapper {
-    ([$derived:tt] $wrapper_name:ident <$generics:tt> $item_type:ty) => {};
+macro_rules! std_wrap {
+    ([$derived:tt] $wrapper_name:ident <$generics:tt> $item_type:ty) => {
+        TODO
+    };
 
-    ($wrapper_name:ident <$generics:tt> $item_type:ty) => {
+    ($wrapper_name:ident <$generics:tt> $T:ty) => {
         /// @TODO t (item name) as a parameter/optional
         ///
         /// @TODO replace $item_type and $crate in this doc:
@@ -26,58 +28,79 @@ macro_rules! wrapper {
         #[derive(::core::clone::Clone, ::core::fmt::Debug)]
         #[repr(transparent)]
         pub struct $wrapper_name<$generics> {
-            t: $item_type,
+            t: $T,
         }
     };
 }
 
-#[derive(::core::clone::Clone, ::core::fmt::Debug)]
-#[repr(transparent)]
-pub struct StdWrap<T> {
-    t: T,
+macro_rules! std_partial_eq {
+    ($wrapper_name:ident <$generics:tt> $T:ty) => {
+        impl<$generics> ::core::cmp::PartialEq for $wrapper_name<$T>
+        where
+            $T: $crate::CfPartialEq,
+        {
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                (T::LOCALITY.no_local() || self.t.eq_local(&other.t))
+                    && (T::LOCALITY.no_non_local() || self.t.eq_non_local(&other.t))
+            }
+
+            #[inline]
+            fn ne(&self, other: &Self) -> bool {
+                T::LOCALITY.has_local() && !self.t.eq_local(&other.t)
+                    || T::LOCALITY.has_non_local() && !self.t.eq_non_local(&other.t)
+            }
+        }
+    };
 }
 
-impl<T: crate::CfPartialEq> ::core::cmp::PartialEq for StdWrap<T> {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        (T::LOCALITY.no_local() || self.t.eq_local(&other.t))
-            && (T::LOCALITY.no_non_local() || self.t.eq_non_local(&other.t))
-    }
-
-    #[inline]
-    fn ne(&self, other: &Self) -> bool {
-        T::LOCALITY.has_local() && !self.t.eq_local(&other.t)
-            || T::LOCALITY.has_non_local() && !self.t.eq_non_local(&other.t)
-    }
+macro_rules! std_eq {
+    ($wrapper_name:ident <$generics:tt> $T:ty) => {
+        impl<$generics> ::core::cmp::Eq for $wrapper_name<$T> where $T: $crate::CfPartialEq {}
+    };
 }
-impl<T: crate::CfOrd> ::core::cmp::Eq for StdWrap<T> {}
 
-impl<T: crate::CfOrd> ::core::cmp::PartialOrd for StdWrap<T> {
-    #[inline]
-    fn partial_cmp(&self, other: &Self) -> ::core::option::Option<::core::cmp::Ordering> {
-        Some(self.t.cmp_full(&other.t))
-    }
+macro_rules! std_partial_ord {
+    ($wrapper_name:ident <$generics:tt> $T:ty) => {
+        impl<$generics> ::core::cmp::PartialOrd for $wrapper_name<$T>
+        where
+            $T: $crate::CfOrd,
+        {
+            #[inline]
+            fn partial_cmp(&self, other: &Self) -> ::core::option::Option<::core::cmp::Ordering> {
+                Some(self.t.cmp_full(&other.t))
+            }
 
-    #[inline]
-    fn lt(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) == ::core::cmp::Ordering::Less
-    }
-    #[inline]
-    fn le(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) != ::core::cmp::Ordering::Greater
-    }
-    #[inline]
-    fn gt(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) == ::core::cmp::Ordering::Greater
-    }
-    #[inline]
-    fn ge(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) != ::core::cmp::Ordering::Less
-    }
+            #[inline]
+            fn lt(&self, other: &Self) -> bool {
+                self.t.cmp_full(&other.t) == ::core::cmp::Ordering::Less
+            }
+            #[inline]
+            fn le(&self, other: &Self) -> bool {
+                self.t.cmp_full(&other.t) != ::core::cmp::Ordering::Greater
+            }
+            #[inline]
+            fn gt(&self, other: &Self) -> bool {
+                self.t.cmp_full(&other.t) == ::core::cmp::Ordering::Greater
+            }
+            #[inline]
+            fn ge(&self, other: &Self) -> bool {
+                self.t.cmp_full(&other.t) != ::core::cmp::Ordering::Less
+            }
+        }
+    };
 }
-impl<T: crate::CfOrd> ::core::cmp::Ord for StdWrap<T> {
-    #[inline]
-    fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
-        self.t.cmp_full(&other.t)
-    }
+
+macro_rules! std_ord {
+    ($wrapper_name:ident <$generics:tt> $T:ty) => {
+        impl<$generics> ::core::cmp::Ord for $wrapper_name<$T>
+        where
+            $T: $crate::CfOrd,
+        {
+            #[inline]
+            fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+                self.t.cmp_full(&other.t)
+            }
+        }
+    };
 }

@@ -4,7 +4,6 @@
 pub use cf_wrap::*;
 use core::cmp::Ordering;
 use core::{hint, mem};
-pub use pure_core_impls::*;
 pub use std_wrap::*;
 
 mod cf_wrap;
@@ -14,6 +13,7 @@ mod pure_core_impls;
 #[macro_use]
 mod std_macros;
 mod std_wrap;
+mod string;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Locality {
@@ -294,11 +294,46 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::Slice;
 
     #[test]
     fn u8_bin_search() {
-        let v = vec![0u8, 2, 6, 40, 41, 80, 81];
-        assert_eq!(v.binary_search_cf(&2), Ok(1));
+        let nums = vec![0u8, 2, 6, 40, 41, 80, 81];
+        assert_eq!(nums.binary_search_cf(&2), Ok(1));
+    }
+
+    const STRS: [&str; 8] = ["a", "f", "g", "z", "dd", "ccc", "bbbb", "aaaaa"];
+
+    #[test]
+    fn str_bin_search_0() {
+        assert_eq!(STRS.binary_search_cf(&"a"), Ok(0));
+    }
+    #[test]
+    fn str_bin_search_1() {
+        assert_eq!(STRS.binary_search_cf(&"f"), Ok(1));
+    }
+    #[test]
+    fn str_bin_search_2() {
+        assert_eq!(STRS.binary_search_cf(&"g"), Ok(2));
+    }
+    #[test]
+    fn str_bin_search_3() {
+        assert_eq!(STRS.binary_search_cf(&"z"), Ok(3));
+    }
+    #[test]
+    fn str_bin_search_4() {
+        assert_eq!(STRS.binary_search_cf(&"dd"), Ok(4));
+    }
+    #[test]
+    fn str_bin_search_5() {
+        assert_eq!(STRS.binary_search_cf(&"ccc"), Ok(5));
+    }
+    #[test]
+    fn str_bin_search_6() {
+        assert_eq!(STRS.binary_search_cf(&"bbbb"), Ok(6));
+    }
+    #[test]
+    fn str_bin_search_7() {
+        assert_eq!(STRS.binary_search_cf(&"aaaaa"), Ok(7));
     }
 }
