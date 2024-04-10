@@ -1,8 +1,8 @@
-use crate::{CfOrd, CfPartialEq, Locality};
+use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
-/// We need this, even though we have a generic impl for slices in [crate::slices].
-impl CfPartialEq for &str {
+/// We need this, even though we have a generic impl for slices in [crate::slices_impls].
+impl CPartialEq for &str {
     const LOCALITY: Locality = Locality::Both;
 
     fn eq_local(&self, other: &Self) -> bool {
@@ -14,8 +14,8 @@ impl CfPartialEq for &str {
     }
 }
 
-/// We need this, even though we have a generic impl for slices in [crate::slices].
-impl CfOrd for &str {
+/// We need this, even though we have a generic impl for slices in [crate::slices_impls].
+impl COrd for &str {
     fn cmp_local(&self, other: &Self) -> Ordering {
         self.len().cmp(&other.len())
     }
@@ -28,3 +28,4 @@ impl CfOrd for &str {
         self.len().cmp(&other.len()).then(self.cmp(&other))
     }
 }
+// @TODO special wrapper for &[char]?

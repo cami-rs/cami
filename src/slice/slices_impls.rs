@@ -1,8 +1,9 @@
-use crate::{CfOrd, CfPartialEq, Locality};
+use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
-/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar implementation for `&str` in [crate::string].
-impl<T> CfPartialEq for &[T]
+/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
+/// implementation for `&str` in [crate::string].
+impl<T> CPartialEq for &[T]
 where
     T: PartialEq,
 {
@@ -17,10 +18,12 @@ where
     }
 }
 
-// @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd, but we do NOT need (full) Ord
+// @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd,
+// but we do NOT need (full) Ord
 
-/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar implementation for `&str` in [crate::string].
-impl<T> CfOrd for &[T]
+/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
+/// implementation for `&str` in [crate::string].
+impl<T> COrd for &[T]
 where
     T: Ord,
 {

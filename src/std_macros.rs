@@ -9,7 +9,7 @@ macro_rules! std_wrap {
         /// @TODO replace $item_type and $crate in this doc:
         ///
         /// A (zero cost/low cost) wrapper & bridge that implements [::core::cmp::PartialEq]
-        /// forwarding to [$crate::CfPartialEq] and [::core::cmp::Ord] forwarding to [$crate::CfOrd]
+        /// forwarding to [$crate::CPartialEq] and [::core::cmp::Ord] forwarding to [$crate::COrd]
         /// of `$item_type`.
         ///
         /// These implementations are useful, and for many data types it may speed up searches etc.
@@ -23,7 +23,7 @@ macro_rules! std_wrap {
         /// against cache-aware [$crate::Slice]'s `binary_search_cf` etc.
         ///
         /// [::core::cmp::PartialEq] is implemented NOT by forwarding to [::core::cmp::PartialEq]'s
-        /// `eq` and `ne` of `$item_type`, but by forwarding to[$crate::CfOrd]'s `cmp_local`] and
+        /// `eq` and `ne` of `$item_type`, but by forwarding to[$crate::COrd]'s `cmp_local`] and
         /// `cmp_non_local`` of `$item_type` instead. (Hence `$item_type` itself doesn't need to be
         /// [::core::cmp::PartialEq] or [::core::cmp::Ord].)
         #[derive(::core::clone::Clone, ::core::fmt::Debug)]
@@ -38,7 +38,7 @@ macro_rules! std_partial_eq {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::PartialEq for $wrapper_name<$T>
         where
-            $T: $crate::CfPartialEq,
+            $T: $crate::CPartialEq,
         {
             #[inline]
             fn eq(&self, other: &Self) -> bool {
@@ -57,7 +57,7 @@ macro_rules! std_partial_eq {
 
 macro_rules! std_eq {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
-        impl<$generics> ::core::cmp::Eq for $wrapper_name<$T> where $T: $crate::CfPartialEq {}
+        impl<$generics> ::core::cmp::Eq for $wrapper_name<$T> where $T: $crate::CPartialEq {}
     };
 }
 
@@ -65,7 +65,7 @@ macro_rules! std_partial_ord {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::PartialOrd for $wrapper_name<$T>
         where
-            $T: $crate::CfOrd,
+            $T: $crate::COrd,
         {
             #[inline]
             fn partial_cmp(&self, other: &Self) -> ::core::option::Option<::core::cmp::Ordering> {
@@ -96,7 +96,7 @@ macro_rules! std_ord {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::Ord for $wrapper_name<$T>
         where
-            $T: $crate::CfOrd,
+            $T: $crate::COrd,
         {
             #[inline]
             fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {

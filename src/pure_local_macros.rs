@@ -1,6 +1,6 @@
-macro_rules! pure_local_cf_partial_eq {
+macro_rules! pure_local_cpartial_eq {
     ($T:ident) => {
-        impl $crate::CfPartialEq for $T {
+        impl $crate::CPartialEq for $T {
             const LOCALITY: $crate::Locality = $crate::Locality::PureLocal;
 
             fn eq_local(&self, other: &Self) -> bool {
@@ -17,9 +17,9 @@ macro_rules! pure_local_cf_partial_eq {
     };
 }
 
-macro_rules! pure_local_cf_ord {
+macro_rules! pure_local_cord {
     ($T:ident) => {
-        impl $crate::CfOrd for $T {
+        impl $crate::COrd for $T {
             fn cmp_local(&self, other: &Self) -> core::cmp::Ordering {
                 self.cmp(other)
             }

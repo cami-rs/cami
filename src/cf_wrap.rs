@@ -1,7 +1,7 @@
-use crate::{CfOrd, CfPartialEq, Locality};
+use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
-/// A (zero cost) wrapper & bridge that implements [CfPartialEq], [PartialEq], [PartialOrd], [CfOrd]
+/// A (zero cost) wrapper & bridge that implements [CPartialEq], [PartialEq], [PartialOrd], [COrd]
 /// and [Ord], forwarding to [PartialEq], [PartialOrd] and [Ord] methods of `T`.
 ///
 /// For compatibility only - no speed/cache benefit!
@@ -19,7 +19,7 @@ fn unreachable() {
     );
 }
 
-impl<T: PartialEq> CfPartialEq for CfWrap<T> {
+impl<T: PartialEq> CPartialEq for CfWrap<T> {
     const LOCALITY: Locality = Locality::PureNonLocal;
     //const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
 
@@ -33,7 +33,7 @@ impl<T: PartialEq> CfPartialEq for CfWrap<T> {
     }
 }
 
-impl<T: Ord> CfOrd for CfWrap<T> {
+impl<T: Ord> COrd for CfWrap<T> {
     //const COMPATIBLE_WITH_ORD: bool = true;
 
     fn cmp_local(&self, other: &Self) -> Ordering {
