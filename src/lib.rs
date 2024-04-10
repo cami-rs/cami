@@ -302,7 +302,7 @@ mod tests {
         assert_eq!(nums.binary_search_cf(&2), Ok(1));
     }
 
-    const STRS: [&str; 8] = ["a", "f", "g", "z", "dd", "ccc", "bbbb", "aaaaa"];
+    const STRS: &[&str] = &["a", "f", "g", "z", "dd", "ccc", "bbbb", "aaaaa"];
 
     #[test]
     fn str_bin_search_0() {

@@ -3,7 +3,6 @@ use core::cmp::Ordering;
 
 impl CfPartialEq for &str {
     const LOCALITY: Locality = Locality::Both;
-    //const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
 
     fn eq_local(&self, other: &Self) -> bool {
         self.len() == other.len()
