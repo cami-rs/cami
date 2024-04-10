@@ -2,9 +2,9 @@ use crate::{CfOrd, CfPartialEq, Locality};
 use core::cmp::Ordering;
 
 /// A (zero cost) wrapper & bridge that implements [CfPartialEq], [PartialEq], [PartialOrd], [CfOrd]
-/// and [Ord] forwarding to [PartialEq], [PartialOrd] and [Ord] methods of `T`.
+/// and [Ord], forwarding to [PartialEq], [PartialOrd] and [Ord] methods of `T`.
 ///
-/// For compatibility only - no speed benefit!
+/// For compatibility only - no speed/cache benefit!
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct CfWrap<T> {

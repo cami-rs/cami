@@ -1,6 +1,6 @@
 macro_rules! std_wrap {
     ([$derived:tt] $wrapper_name:ident <$generics:tt> $item_type:ty) => {
-        TODO
+        TODO - and do NOT add Clone/Debug
     };
 
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
@@ -13,9 +13,10 @@ macro_rules! std_wrap {
         /// of `$item_type`.
         ///
         /// These implementations are useful, and for many data types it may speed up searches etc.
+        /// (anything based on comparison).
         ///
-        /// NO cache benefit for [$crate::Slice]'s cache-aware methods (`binary_search_cf` etc.)
-        /// themselves!
+        /// NO cache-specific benefit for [$crate::Slice]'s cache-aware methods (`binary_search_cf`
+        /// etc.) themselves!
         ///
         /// Usable for BENCHMARKING. It allows us to run slice's `binary_search`:
         /// `<[$item_type]>::binary_search(self, given)` using the full comparison, and benchmark
