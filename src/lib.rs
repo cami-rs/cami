@@ -10,6 +10,7 @@ mod cf_wrap;
 #[macro_use]
 mod pure_local_macros;
 mod pure_local_impls;
+mod slices;
 #[macro_use]
 mod std_macros;
 mod std_wrap;
@@ -296,11 +297,37 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
 mod tests {
     use crate::Slice;
 
+    const U8S: &[u8] = &[0u8, 2, 6, 40, 41, 80, 81];
+
     #[test]
     fn u8_bin_search() {
-        let nums = &vec![0u8, 2, 6, 40, 41, 80, 81][..];
-        assert_eq!(nums.binary_search_cf(&2), Ok(1));
+        assert_eq!(U8S.binary_search_cf(&2), Ok(1));
     }
+    // ------
+
+    const U8S_2D_ITEM_0: &[u8] = &[3u8];
+    const U8S_2D_ITEM_1: &[u8] = &[2u8, 3];
+    const U8S_2D_ITEM_2: &[u8] = &[1u8, 2, 3];
+    const U8S_2D_ITEM_3: &[u8] = &[0u8, 1, 2, 3];
+    const U8S_2D: &[&[u8]] = &[U8S_2D_ITEM_0, U8S_2D_ITEM_1, U8S_2D_ITEM_2, U8S_2D_ITEM_3];
+
+    #[test]
+    fn u8_2d_bin_search_0() {
+        assert_eq!(U8S_2D.binary_search_cf(&U8S_2D_ITEM_0), Ok(0));
+    }
+    #[test]
+    fn u8_2d_bin_search_1() {
+        assert_eq!(U8S_2D.binary_search_cf(&U8S_2D_ITEM_1), Ok(1));
+    }
+    #[test]
+    fn u8_2d_bin_search_2() {
+        assert_eq!(U8S_2D.binary_search_cf(&U8S_2D_ITEM_2), Ok(2));
+    }
+    #[test]
+    fn u8_2d_bin_search_3() {
+        assert_eq!(U8S_2D.binary_search_cf(&U8S_2D_ITEM_3), Ok(3));
+    }
+    // ------
 
     const STRS: &[&str] = &["a", "f", "g", "z", "dd", "ccc", "bbbb", "aaaaa"];
 

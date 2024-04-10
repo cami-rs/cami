@@ -1,8 +1,11 @@
 use crate::{CfOrd, CfPartialEq, Locality};
 use core::cmp::Ordering;
 
-/// We need this, even though we have a generic impl for slices in [crate::slices].
-impl CfPartialEq for &str {
+/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar implementation for `&str` in [crate::string].
+impl<T> CfPartialEq for &[T]
+where
+    T: PartialEq,
+{
     const LOCALITY: Locality = Locality::Both;
 
     fn eq_local(&self, other: &Self) -> bool {
@@ -14,8 +17,13 @@ impl CfPartialEq for &str {
     }
 }
 
-/// We need this, even though we have a generic impl for slices in [crate::slices].
-impl CfOrd for &str {
+// @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd, but we do NOT need (full) Ord
+
+/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar implementation for `&str` in [crate::string].
+impl<T> CfOrd for &[T]
+where
+    T: Ord,
+{
     fn cmp_local(&self, other: &Self) -> Ordering {
         self.len().cmp(&other.len())
     }
