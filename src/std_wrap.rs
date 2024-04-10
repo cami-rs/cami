@@ -1,4 +1,4 @@
-use crate::{CfOrd, CfPartialEq};
+use crate::{CfOrd, CfPartialEq, Locality};
 use core::cmp::Ordering;
 
 /// A (zero cost/low cost) wrapper & bridge that implements [PartialEq] forwarding to [CfPartialEq]
@@ -21,7 +21,7 @@ pub struct StdWrapXX<T> {
     t: T,
 }
 
-wrapper!{ StdWrap <T> T}
+wrapper! { StdWrap <T> T}
 
 impl<T: CfPartialEq> PartialEq for StdWrap<T> {
     #[inline]

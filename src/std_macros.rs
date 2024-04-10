@@ -1,7 +1,11 @@
 macro_rules! wrapper {
+    ([$derived:tt] $wrapper_name:ident <$generics:tt> $item_type:ty) => {};
+
     ($wrapper_name:ident <$generics:tt> $item_type:ty) => {
+        /// @TODO t (item name) as a parameter/optional
+        ///
         /// @TODO replace $item_type and $crate in this doc:
-        /// 
+        ///
         /// A (zero cost/low cost) wrapper & bridge that implements [::core::cmp::PartialEq]
         /// forwarding to [$crate::CfPartialEq] and [::core::cmp::Ord] forwarding to [$crate::CfOrd]
         /// of `$item_type`.

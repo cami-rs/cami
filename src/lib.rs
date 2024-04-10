@@ -4,11 +4,13 @@
 pub use cf_wrap::*;
 use core::cmp::Ordering;
 use core::{hint, mem};
-pub use proxy_traits::*;
+pub use pure_core_impls::*;
 pub use std_wrap::*;
 
 mod cf_wrap;
-mod proxy_traits;
+#[macro_use]
+mod pure_macros;
+mod pure_core_impls;
 #[macro_use]
 mod std_macros;
 mod std_wrap;
