@@ -8,8 +8,8 @@ pub use std_wrap::*;
 
 mod cf_wrap;
 #[macro_use]
-mod pure_macros;
-mod pure_core_impls;
+mod pure_local_macros;
+mod pure_local_impls;
 #[macro_use]
 mod std_macros;
 mod std_wrap;
@@ -294,7 +294,7 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
 
 #[cfg(test)]
 mod tests {
-    use super::Slice;
+    use crate::Slice;
 
     #[test]
     fn u8_bin_search() {
