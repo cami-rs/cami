@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn u8_bin_search() {
-        let nums = vec![0u8, 2, 6, 40, 41, 80, 81];
+        let nums = &vec![0u8, 2, 6, 40, 41, 80, 81][..];
         assert_eq!(nums.binary_search_cf(&2), Ok(1));
     }
 
