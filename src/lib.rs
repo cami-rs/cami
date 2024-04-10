@@ -1,8 +1,17 @@
 //#![no_std]
 #![feature(hint_assert_unchecked)]
 
-use core::cmp::Ordering::{self, *};
+pub use cf_wrap::*;
+use core::cmp::Ordering;
 use core::{hint, mem};
+pub use proxy_traits::*;
+pub use std_wrap::*;
+
+mod cf_wrap;
+mod proxy_traits;
+#[macro_use]
+mod std_macros;
+mod std_wrap;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Locality {
@@ -58,7 +67,8 @@ pub trait CfPartialEq {
     const LOCALITY: Locality;
 
     // If unsure, then it's `false`.
-    const COMPATIBLE_WITH_PARTIAL_EQ: bool;
+    //
+    //const COMPATIBLE_WITH_PARTIAL_EQ: bool;
 
     fn eq_local(&self, other: &Self) -> bool;
 
@@ -84,7 +94,8 @@ pub trait CfPartialEq {
  */
 pub trait CfOrd: CfPartialEq {
     // If unsure, then it's `false`.
-    const COMPATIBLE_WITH_ORD: bool;
+    //
+    //const COMPATIBLE_WITH_ORD: bool;
 
     /// Comparison based on local (non-referenced) field(s) only (if any).
     ///
@@ -107,11 +118,11 @@ pub trait CfOrd: CfPartialEq {
         // @TODO apply https://rust.godbolt.org/z/698eYffTx
         if Self::LOCALITY.has_local() {
             let local = self.cmp_local(other);
-            if local == Equal {
+            if local == Ordering::Equal {
                 if Self::LOCALITY.has_non_local() {
                     self.cmp_non_local(other)
                 } else {
-                    Equal
+                    Ordering::Equal
                 }
             } else {
                 local
@@ -120,144 +131,6 @@ pub trait CfOrd: CfPartialEq {
             self.cmp_non_local(other)
         }
     }
-}
-
-/// A (zero cost/low cost) wrapper & bridge that implements [PartialEq] forwarding to [CfPartialEq]
-/// and [Ord] forwarding to [CfOrd] of `T`.
-///
-/// These implementations are useful, and for many data types it may speed up searches etc.
-///
-/// However, objects of (moved to/transmuted to) these wrappers can't benefit from [Slice]'s
-/// cache-aware `binary_search_cf` etc.
-///
-/// Usable for BENCHMARKING. It allows us to run slice's `binary_search`:
-/// `<[T]>::binary_search(self, given)` using the full comparison, and benchmark against cache-aware
-/// [Slice]'s `binary_search_cf` etc.
-///
-/// [PartialEq] is implemented NOT by forwarding to [PartialEq::eq] and [PartialEq::ne] of `T`, but
-/// by forwarding to[CfOrd::cmp_local] and [CfOrd::cmp_non_local] of `T` instead. (Hence `T` itself doesn't
-/// need to be [PartialEq].)
-#[derive(Clone, Debug)]
-#[repr(transparent)]
-pub struct StdWrap<T> {
-    t: T,
-}
-
-impl<T: CfPartialEq> PartialEq for StdWrap<T> {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        (T::LOCALITY.no_local() || self.t.eq_local(&other.t))
-            && (T::LOCALITY.no_non_local() || self.t.eq_non_local(&other.t))
-    }
-
-    #[inline]
-    fn ne(&self, other: &Self) -> bool {
-        T::LOCALITY.has_local() && !self.t.eq_local(&other.t)
-            || T::LOCALITY.has_non_local() && !self.t.eq_non_local(&other.t)
-    }
-}
-impl<T: CfOrd> Eq for StdWrap<T> {}
-
-impl<T: CfOrd> PartialOrd for StdWrap<T> {
-    #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.t.cmp_full(&other.t))
-    }
-
-    #[inline]
-    fn lt(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) == Less
-    }
-    #[inline]
-    fn le(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) != Greater
-    }
-    #[inline]
-    fn gt(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) == Greater
-    }
-    #[inline]
-    fn ge(&self, other: &Self) -> bool {
-        self.t.cmp_full(&other.t) != Less
-    }
-}
-impl<T: CfOrd> Ord for StdWrap<T> {
-    #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.t.cmp_full(&other.t)
-    }
-    /*
-    // Provided methods
-    fn max(self, other: Self) -> Self
-       where Self: Sized {}
-    fn min(self, other: Self) -> Self
-       where Self: Sized {}
-    fn clamp(self, min: Self, max: Self) -> Self
-       where Self: Sized + PartialOrd {}
-    */
-}
-
-/// A (zero cost) wrapper & bridge that implements [CfOrd], [PartialOrd] and [Ord] forwarding to
-/// [Ord] methods of `T`. NO cache benefit - use for compatibility only!
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct CfWrap<T> {
-    t: T,
-}
-
-impl<T: PartialEq> CfPartialEq for CfWrap<T> {
-    const LOCALITY: Locality = Locality::PureNonLocal;
-    const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
-
-    fn eq_local(&self, other: &Self) -> bool {
-        debug_assert!(false, "unreachable");
-        self.t == other.t
-    }
-
-    fn eq_non_local(&self, other: &Self) -> bool {
-        self.t == other.t
-    }
-}
-
-impl<T: Ord> CfOrd for CfWrap<T> {
-    const COMPATIBLE_WITH_ORD: bool = true;
-
-    fn cmp_local(&self, other: &Self) -> Ordering {
-        unreachable!()
-    }
-
-    fn cmp_non_local(&self, other: &Self) -> Ordering {
-        unreachable!()
-    }
-
-    fn cmp_full(&self, other: &Self) -> Ordering {
-        unreachable!()
-    }
-}
-
-impl<T: PartialOrd> PartialOrd for CfWrap<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.t.partial_cmp(&other.t)
-    }
-
-    fn lt(&self, other: &Self) -> bool {
-        self.t.lt(&other.t)
-    }
-    fn le(&self, other: &Self) -> bool {
-        self.t.le(&other.t)
-    }
-    fn gt(&self, other: &Self) -> bool {
-        self.t.gt(&other.t)
-    }
-    fn ge(&self, other: &Self) -> bool {
-        self.t.ge(&other.t)
-    }
-}
-impl<T: Ord> Ord for CfWrap<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.t.cmp(&other.t)
-    }
-    // Default implementations for the rest of methods.
 }
 
 pub trait Slice<T> {
@@ -311,8 +184,8 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
 
         // INVARIANTS:
         // - 0 <= left <= left + size = right <= self.len()
-        // - f returns Less for everything in self[..left]
-        // - f returns Greater for everything in self[right..]
+        // - f returns Ordering::Less for everything in self[..left]
+        // - f returns Ordering::Greater for everything in self[right..]
         let mut size = self.len();
         let mut left = 0;
         let mut right = size;
@@ -332,14 +205,15 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
             // instructions than if/else or matching on cmp::Ordering. This is x86 asm for u8:
             // https://rust.godbolt.org/z/698eYffTx.
             /*if false {
-                left = if cmp == Less { mid + 1 } else { left };
-                right = if cmp == Greater { mid } else { right };
+                left = if cmp == Ordering::Less { mid + 1 } else { left };
+
+                right = if cmp == Ordering::Greater { mid } else { right };
             }*/
             //let entry_addr = entry as *const _ as usize;
-            if cmp != Equal {
+            if cmp != Ordering::Equal {
                 #[cfg(debug)]
                 dbg_assert!(!local_has_been_equal);
-                left = if cmp == Less {
+                left = if cmp == Ordering::Less {
                     //let max_new_size = right - mid - 1;
                     if right - mid < subslice_size_threshold {
                         // Suppose `entry_addr` is the first (aligned) entry in the cache line.
@@ -356,7 +230,7 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
                             let entry =
                                 unsafe { self.get_unchecked(mid + 1 + right_neighbor_distance) };
 
-                            if entry.cmp_local(given) == Less {
+                            if entry.cmp_local(given) == Ordering::Less {
                                 right_neighbor_distance += 1;
                                 continue;
                             } else {
@@ -371,7 +245,7 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
                 } else {
                     left
                 };
-                right = if cmp == Greater {
+                right = if cmp == Ordering::Greater {
                     // NO skimming through the cache - because we're checking ONLY to the "LEFT" of
                     // here.
                     mid
@@ -392,9 +266,9 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
                     // This control flow produces conditional moves, which results in fewer branches
                     // and instructions than if/else or matching on cmp::Ordering. This is x86 asm
                     // for u8: https://rust.godbolt.org/z/698eYffTx.
-                    left = if cmp == Less { mid + 1 } else { left };
-                    right = if cmp == Greater { mid } else { right };
-                    if cmp == Equal {
+                    left = if cmp == Ordering::Less { mid + 1 } else { left };
+                    right = if cmp == Ordering::Greater { mid } else { right };
+                    if cmp == Ordering::Equal {
                         // SAFETY: same as the `get_unchecked` above
                         unsafe { hint::assert_unchecked(mid < self.len()) };
                         return Ok(mid);
@@ -415,48 +289,6 @@ impl<T: CfOrd + Ord> Slice<T> for [T] {
         Err(left)
     }
 }
-
-pub trait CfPartialEqProxyPureLocal {}
-
-impl<T: CfPartialEqProxyPureLocal + PartialEq> CfPartialEq for T {
-    const LOCALITY: Locality = Locality::PureLocal;
-
-    // If unsure, then it's `false`.
-    const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
-
-    fn eq_local(&self, other: &Self) -> bool {
-        self == other
-    }
-    fn eq_non_local(&self, other: &Self) -> bool {
-        debug_assert!(false, "unreachable");
-        self == other
-    }
-    fn eq_full(&self, other: &Self) -> bool {
-        self == other
-    }
-}
-
-pub trait CfOrdProxyPureLocal {}
-
-impl<T: CfOrdProxyPureLocal + CfPartialEq + Ord> CfOrd for T {
-    const COMPATIBLE_WITH_ORD: bool = true;
-
-    fn cmp_local(&self, other: &Self) -> Ordering {
-        self.cmp(other)
-    }
-
-    fn cmp_non_local(&self, other: &Self) -> Ordering {
-        debug_assert!(false, "unreachable");
-        self.cmp(other)
-    }
-
-    fn cmp_full(&self, other: &Self) -> Ordering {
-        self.cmp(other)
-    }
-}
-
-impl CfPartialEqProxyPureLocal for u8 {}
-impl CfOrdProxyPureLocal for u8 {}
 
 #[cfg(test)]
 mod tests {
