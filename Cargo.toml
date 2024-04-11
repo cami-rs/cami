@@ -10,6 +10,8 @@ authors = ["Peter Kehl <peter.kehl@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/peter-kehl/camigo"
 
-# [lib]
+[features]
+alloc = []
+std = ["alloc"]
 
 [dependencies]

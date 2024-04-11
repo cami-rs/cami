@@ -25,26 +25,39 @@ pub enum Locality {
     Both,
 }
 impl Locality {
+    #[inline]
     const fn has_local(&self) -> bool {
         match self {
             Locality::PureNonLocal => false,
             _ => true,
         }
     }
-    const fn no_local(&self) -> bool {
-        !self.has_local()
-    }
 
+    #[inline]
     const fn has_non_local(&self) -> bool {
         match self {
             Locality::PureLocal => false,
             _ => true,
         }
     }
-    const fn no_non_local(&self) -> bool {
-        !self.has_non_local()
+
+    #[inline]
+    pub const fn debug_reachable_for_local(&self) {
+        #[cfg(debug_assertions)]
+        if !self.has_local() {
+            panic!("Unreachable for 'local_*' functions because of its Locality.");
+        }
+    }
+
+    #[inline]
+    pub const fn debug_reachable_for_non_local(&self) {
+        #[cfg(debug_assertions)]
+        if !self.has_non_local() {
+            panic!("Unreachable for 'non_local_*' functions because of its Locality.");
+        }
     }
 }
+
 #[cfg(test)]
 mod locality_tests {
     use crate::Locality;
@@ -52,19 +65,13 @@ mod locality_tests {
     #[test]
     fn methods() {
         assert_eq!(Locality::PureNonLocal.has_local(), false);
-        assert_eq!(Locality::PureNonLocal.no_local(), true);
         assert_eq!(Locality::PureNonLocal.has_non_local(), true);
-        assert_eq!(Locality::PureNonLocal.no_non_local(), false);
 
         assert_eq!(Locality::PureLocal.has_local(), true);
-        assert_eq!(Locality::PureLocal.no_local(), false);
         assert_eq!(Locality::PureLocal.has_non_local(), false);
-        assert_eq!(Locality::PureLocal.no_non_local(), true);
 
         assert_eq!(Locality::Both.has_local(), true);
-        assert_eq!(Locality::Both.no_local(), false);
         assert_eq!(Locality::Both.has_non_local(), true);
-        assert_eq!(Locality::Both.no_non_local(), false);
     }
 }
 

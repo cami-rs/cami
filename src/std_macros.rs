@@ -45,8 +45,8 @@ macro_rules! std_partial_eq {
         {
             #[inline]
             fn eq(&self, other: &Self) -> bool {
-                (T::LOCALITY.no_local() || self.t.eq_local(&other.t))
-                    && (T::LOCALITY.no_non_local() || self.t.eq_non_local(&other.t))
+                (!T::LOCALITY.has_local() || self.t.eq_local(&other.t))
+                    && (!T::LOCALITY.has_non_local() || self.t.eq_non_local(&other.t))
             }
 
             #[inline]
