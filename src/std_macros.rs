@@ -1,11 +1,14 @@
+// @TODO consider removing completely
 macro_rules! std_wrap {
-    ([$derived:tt] $wrapper_name:ident <$generics:tt> $item_type:ty) => {
-        TODO - and do NOT add Clone/Debug
+    // NOT adding Clone/Debug
+    ($struct_name:ident) => {
+        std_wrap! { $struct_name <T> T}
     };
-
-    ($wrapper_name:ident <$generics:tt> $T:ty) => {
-        /// @TODO t (item name) as a parameter/optional
-        ///
+    ($struct_name:ident <$generics:tt> $T:ty) => {
+        std_wrap! { [::core::clone::Clone, ::core::fmt::Debug] $struct_name <$generics> t $T}
+    };
+    // NOT adding Clone/Debug
+    ([$($($derived:path),+)?] $struct_name:ident <$generics:tt> $t:ident $T:ty) => {
         /// @TODO replace $item_type and $crate in this doc:
         ///
         /// A (zero cost/low cost) wrapper & bridge that implements [::core::cmp::PartialEq]
@@ -26,10 +29,10 @@ macro_rules! std_wrap {
         /// `eq` and `ne` of `$item_type`, but by forwarding to[$crate::COrd]'s `cmp_local`] and
         /// `cmp_non_local`` of `$item_type` instead. (Hence `$item_type` itself doesn't need to be
         /// [::core::cmp::PartialEq] or [::core::cmp::Ord].)
-        #[derive(::core::clone::Clone, ::core::fmt::Debug)]
+        $(#[derive($($derived),+)])?
         #[repr(transparent)]
-        pub struct $wrapper_name<$generics> {
-            t: $T,
+        pub struct $struct_name<$generics> {
+            $t: $T,
         }
     };
 }

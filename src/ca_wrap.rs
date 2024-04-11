@@ -5,9 +5,11 @@ use core::cmp::Ordering;
 /// and [Ord], forwarding to [PartialEq], [PartialOrd] and [Ord] methods of `T`.
 ///
 /// For compatibility only - no speed/cache benefit!
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    Clone, Debug, ::core::cmp::PartialEq, ::core::cmp::Eq, ::core::cmp::PartialOrd, ::core::cmp::Ord,
+)]
 #[repr(transparent)]
-pub struct CfWrap<T> {
+pub struct CaWrap<T> {
     t: T,
 }
 
@@ -19,7 +21,10 @@ fn unreachable() {
     );
 }
 
-impl<T: PartialEq> CPartialEq for CfWrap<T> {
+// @TODO macro
+//
+// - with 't' being a :ident parameter
+impl<T: PartialEq> CPartialEq for CaWrap<T> {
     const LOCALITY: Locality = Locality::PureNonLocal;
     //const COMPATIBLE_WITH_PARTIAL_EQ: bool = true;
 
@@ -33,7 +38,7 @@ impl<T: PartialEq> CPartialEq for CfWrap<T> {
     }
 }
 
-impl<T: Ord> COrd for CfWrap<T> {
+impl<T: Ord> COrd for CaWrap<T> {
     //const COMPATIBLE_WITH_ORD: bool = true;
 
     fn cmp_local(&self, other: &Self) -> Ordering {

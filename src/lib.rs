@@ -1,12 +1,14 @@
 //#![no_std]
 #![feature(hint_assert_unchecked)]
 
-pub use cf_wrap::*;
+pub use ca_wrap::*;
 use core::cmp::Ordering;
 pub use slice::Slice;
 pub use std_wrap::*;
 
-mod cf_wrap;
+mod ca_macros;
+mod ca_wrap;
+
 #[macro_use]
 mod pure_local_macros;
 mod pure_local_impls;

@@ -5,7 +5,7 @@ use core::{hint, mem};
 mod slices_impls;
 
 pub trait Slice<T> {
-    fn binary_search_cf(&self, x: &T) -> Result<usize, usize>
+    fn binary_search_ca(&self, x: &T) -> Result<usize, usize>
     where
         T: COrd;
     // @TODO non-binary methods, like contains()
@@ -14,7 +14,7 @@ pub trait Slice<T> {
 impl<T: COrd + Ord> Slice<T> for [T] {
     // @TODO factor out part(s) to separate, non-generic functions, to decrease the cost of generic
     // copies
-    fn binary_search_cf(&self, given: &T) -> Result<usize, usize> {
+    fn binary_search_ca(&self, given: &T) -> Result<usize, usize> {
         if !T::LOCALITY.has_local() {
             // Any comparison is based on non-local fields only. Hence standard binary search.
             return <[T]>::binary_search(self, given);
@@ -177,31 +177,31 @@ mod tests {
 
         #[test]
         fn item_0() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_0), Ok(0));
+            assert_eq!(ALL.binary_search_ca(&ITEM_0), Ok(0));
         }
         #[test]
         fn item_1() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_1), Ok(1));
+            assert_eq!(ALL.binary_search_ca(&ITEM_1), Ok(1));
         }
         #[test]
         fn item_2() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_2), Ok(2));
+            assert_eq!(ALL.binary_search_ca(&ITEM_2), Ok(2));
         }
         #[test]
         fn item_3() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_3), Ok(3));
+            assert_eq!(ALL.binary_search_ca(&ITEM_3), Ok(3));
         }
         #[test]
         fn item_4() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_4), Ok(4));
+            assert_eq!(ALL.binary_search_ca(&ITEM_4), Ok(4));
         }
         #[test]
         fn item_5() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_5), Ok(5));
+            assert_eq!(ALL.binary_search_ca(&ITEM_5), Ok(5));
         }
         #[test]
         fn item_6() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_6), Ok(6));
+            assert_eq!(ALL.binary_search_ca(&ITEM_6), Ok(6));
         }
     }
 
@@ -223,39 +223,39 @@ mod tests {
 
         #[test]
         fn item_0() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_0), Ok(0));
+            assert_eq!(ALL.binary_search_ca(&ITEM_0), Ok(0));
         }
         #[test]
         fn item_1() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_1), Ok(1));
+            assert_eq!(ALL.binary_search_ca(&ITEM_1), Ok(1));
         }
         #[test]
         fn item_2() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_2), Ok(2));
+            assert_eq!(ALL.binary_search_ca(&ITEM_2), Ok(2));
         }
         #[test]
         fn item_3() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_3), Ok(3));
+            assert_eq!(ALL.binary_search_ca(&ITEM_3), Ok(3));
         }
         #[test]
         fn item_4() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_4), Ok(4));
+            assert_eq!(ALL.binary_search_ca(&ITEM_4), Ok(4));
         }
         #[test]
         fn item_5() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_5), Ok(5));
+            assert_eq!(ALL.binary_search_ca(&ITEM_5), Ok(5));
         }
         #[test]
         fn item_6() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_6), Ok(6));
+            assert_eq!(ALL.binary_search_ca(&ITEM_6), Ok(6));
         }
         #[test]
         fn item_7() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_7), Ok(7));
+            assert_eq!(ALL.binary_search_ca(&ITEM_7), Ok(7));
         }
         #[test]
         fn item_8() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_8), Ok(8));
+            assert_eq!(ALL.binary_search_ca(&ITEM_8), Ok(8));
         }
     }
 
@@ -289,19 +289,19 @@ mod tests {
 
         #[test]
         fn item_0() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_0), Ok(0));
+            assert_eq!(ALL.binary_search_ca(&ITEM_0), Ok(0));
         }
         #[test]
         fn item_1() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_1), Ok(1));
+            assert_eq!(ALL.binary_search_ca(&ITEM_1), Ok(1));
         }
         #[test]
         fn item_2() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_2), Ok(2));
+            assert_eq!(ALL.binary_search_ca(&ITEM_2), Ok(2));
         }
         #[test]
         fn item_3() {
-            assert_eq!(ALL.binary_search_cf(&ITEM_3), Ok(3));
+            assert_eq!(ALL.binary_search_ca(&ITEM_3), Ok(3));
         }
     }
 
@@ -312,35 +312,35 @@ mod tests {
 
         #[test]
         fn item_0() {
-            assert_eq!(ALL.binary_search_cf(&"a"), Ok(0));
+            assert_eq!(ALL.binary_search_ca(&"a"), Ok(0));
         }
         #[test]
         fn item_1() {
-            assert_eq!(ALL.binary_search_cf(&"f"), Ok(1));
+            assert_eq!(ALL.binary_search_ca(&"f"), Ok(1));
         }
         #[test]
         fn item_2() {
-            assert_eq!(ALL.binary_search_cf(&"g"), Ok(2));
+            assert_eq!(ALL.binary_search_ca(&"g"), Ok(2));
         }
         #[test]
         fn item_3() {
-            assert_eq!(ALL.binary_search_cf(&"z"), Ok(3));
+            assert_eq!(ALL.binary_search_ca(&"z"), Ok(3));
         }
         #[test]
         fn item_4() {
-            assert_eq!(ALL.binary_search_cf(&"dd"), Ok(4));
+            assert_eq!(ALL.binary_search_ca(&"dd"), Ok(4));
         }
         #[test]
         fn item_5() {
-            assert_eq!(ALL.binary_search_cf(&"ccc"), Ok(5));
+            assert_eq!(ALL.binary_search_ca(&"ccc"), Ok(5));
         }
         #[test]
         fn item_6() {
-            assert_eq!(ALL.binary_search_cf(&"bbbb"), Ok(6));
+            assert_eq!(ALL.binary_search_ca(&"bbbb"), Ok(6));
         }
         #[test]
         fn item_7() {
-            assert_eq!(ALL.binary_search_cf(&"aaaaa"), Ok(7));
+            assert_eq!(ALL.binary_search_ca(&"aaaaa"), Ok(7));
         }
     }
 }
