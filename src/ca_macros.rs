@@ -1,4 +1,4 @@
-macro_rules! ca_wrap_struct {
+macro_rules! ca_struct {
     // An INTERNAL rule
     (@[$($($derived:path),+)?]
      $struct_vis:vis
@@ -51,7 +51,7 @@ macro_rules! ca_wrap_struct {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        ca_wrap_struct! {
+        ca_struct! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -59,7 +59,7 @@ macro_rules! ca_wrap_struct {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        ca_wrap_struct! {
+        ca_struct! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -70,7 +70,7 @@ macro_rules! ca_wrap_struct {
     };
 }
 
-macro_rules! ca_wrap_tuple {
+macro_rules! ca_tuple {
     // An INTERNAL rule
     (@
      [$($($derived:path),+)?]
@@ -123,7 +123,7 @@ macro_rules! ca_wrap_tuple {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        ca_wrap_tuple! {
+        ca_tuple! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -131,7 +131,7 @@ macro_rules! ca_wrap_tuple {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        ca_wrap_tuple! {
+        ca_tuple! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -142,7 +142,7 @@ macro_rules! ca_wrap_tuple {
     };
 }
 
-macro_rules! ca_wrap_cpartial_eq {
+macro_rules! ca_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
@@ -183,7 +183,7 @@ macro_rules! ca_wrap_cpartial_eq {
     };
 }
 
-macro_rules! ca_wrap_cord {
+macro_rules! ca_ord {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
@@ -201,6 +201,7 @@ macro_rules! ca_wrap_cord {
         $crate::COrd for $struct_name $(<$($generic_right),+>)?
         $(where $($left : $right),+)? {
             fn cmp_local(&self, other: &Self) -> ::core::cmp::Ordering {
+                use crate::CPartialEq;
                 Self::LOCALITY.debug_reachable_for_local();
                 let result = ::core::cmp::Ordering::Equal;
                 // LLVM should be able to optimize away the first comparison of
@@ -209,18 +210,19 @@ macro_rules! ca_wrap_cord {
                     if result!=::core::cmp::Ordering::Equal {
                         return result;
                     }
-                    let result = self.$t.$local_ident.cmp(other.$t.$local_ident);
+                    let result = (&self.$t.$local_ident).cmp(&other.$t.$local_ident);
                 )*
                 $(
                     if result!=::core::cmp::Ordering::Equal {
                         return result;
                     }
-                    let result = self.$t.$local_idx.cmp(other.$t.$local_idx);
+                    let result = (&self.$t.$local_idx).cmp(&other.$t.$local_idx);
                 )*
-                $result
+                result
             }
 
             fn cmp_non_local(&self, other: &Self) -> ::core::cmp::Ordering {
+                use crate::CPartialEq;
                 Self::LOCALITY.debug_reachable_for_non_local();
                 let result = ::core::cmp::Ordering::Equal;
                 // LLVM should be able to optimize away the first comparison of
@@ -229,26 +231,25 @@ macro_rules! ca_wrap_cord {
                     if result!=::core::cmp::Ordering::Equal {
                         return result;
                     }
-                    let result = self.$t.$non_ident.cmp(other.$t.$non_local_ident);
+                    let result = (&self.$t.$non_local_ident).cmp(&other.$t.$non_local_ident);
                 )*
                 $(
                     if result!=::core::cmp::Ordering::Equal {
                         return result;
                     }
-                    let result = self.$t.$non_local_idx.cmp(other.$t.$non_local_idx);
+                    let result = (&self.$t.$non_local_idx).cmp(&other.$t.$non_local_idx);
                 )*
-                $result
+                result
             }
             // NOT re-implemeting cmp_full(...), but using its default impl.
         }
     };
 }
 
-ca_wrap_struct! { pub CaWrap {t : u8}}
-ca_wrap_struct! { CaWrap2 <A> {pub t : Vec<A> }}
-ca_wrap_struct! { [Clone, Debug] CaWrap3 <T> {t : T }}
-ca_wrap_struct! { [Clone, Debug] CaWrap4 <T:Sized> {t : T }}
-ca_wrap_struct! {
+ca_struct! { pub CaWrap {t : u8}}
+ca_struct! { [Clone, Debug] CaWrap3 <T> {t : T }}
+ca_struct! { [Clone, Debug] CaWrap4 <T:Sized> {t : T }}
+ca_struct! {
     [Clone, Debug]
     CaWrap5 <T>
     where T: 'static {
@@ -256,34 +257,50 @@ ca_wrap_struct! {
     }
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct A {
-    x: i32,
-    v: Vec<i32>,
-}
-
 mod test_macros {
-    use crate::ca_macros::A;
-    use crate::Locality::Both;
+    #[cfg(feature = "alloc")]
+    mod with_alloc {
+        use alloc::vec::Vec;
 
-    ca_wrap_struct! { CaWrapA1 {t : A }}
-    ca_wrap_cpartial_eq! {
-        CaWrapA1 t Both =>
-        [x]
-        [v]
-    }
+        ca_struct! { CaWrap2 <A> {pub t : Vec<A> }}
 
-    ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
+        #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+        struct A {
+            x: i32,
+            v: Vec<i32>,
+        }
 
-    ca_wrap_tuple! { CaTupleA2 (A) }
-    ca_wrap_cpartial_eq! {
-        CaTupleA2 0 Both =>
-        [x]
-        [v]
+        use crate::Locality::Both;
+
+        ca_struct! { CaWrapA1 {t : A }}
+        ca_partial_eq! {
+            CaWrapA1 t Both =>
+            [x]
+            [v]
+        }
+        ca_ord! {
+            CaWrapA1 t
+            [x]
+            [v]
+        }
+
+        ca_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
+
+        ca_tuple! { CaTupleA2 (A) }
+        ca_partial_eq! {
+            CaTupleA2 0 Both =>
+            [x]
+            [v]
+        }
+        ca_ord! {
+            CaTupleA2 0
+            [x]
+            [v]
+        }
     }
 }
 /*
-ca_wrap_struct! { CaWrapAwithExpressions : A }
+ca_struct! { CaWrapAwithExpressions : A }
 
 // This failed because of macro hygiene. We can't pass expressions and have them "evaluated" within
 // the context that a macro generates.

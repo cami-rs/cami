@@ -1,13 +1,15 @@
-//#![no_std]
-#![feature(hint_assert_unchecked)]
+#![no_std]
+#![cfg_attr(feature = "hint_assert_unchecked", feature(hint_assert_unchecked))]
+#![cfg_attr(not(feature = "unsafe"), deny(unsafe_code))]
 
-pub use ca_wrap::*;
 use core::cmp::Ordering;
 pub use slice::Slice;
 pub use std_wrap::*;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 mod ca_macros;
-mod ca_wrap;
 
 #[macro_use]
 mod pure_local_macros;

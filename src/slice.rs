@@ -69,7 +69,11 @@ impl<T: COrd + Ord> Slice<T> for [T] {
             // Thus `left + size/2 < left + size`, which coupled with the `left + size <=
             // self.len()` invariant means we have `left + size/2 < self.len()`, and this is
             // in-bounds.
+            #[cfg(feature = "unsafe")]
             let entry = unsafe { self.get_unchecked(mid) };
+            #[cfg(not(feature = "unsafe"))]
+            let entry = &self[mid];
+
             let cmp = entry.cmp_local(given);
 
             // This control flow produces conditional moves, which results in fewer branches and
@@ -98,8 +102,11 @@ impl<T: COrd + Ord> Slice<T> for [T] {
                                 break mid + 1 + right_neighbor_distance;
                             }
 
+                            #[cfg(feature = "unsafe")]
                             let entry =
                                 unsafe { self.get_unchecked(mid + 1 + right_neighbor_distance) };
+                            #[cfg(not(feature = "unsafe"))]
+                            let entry = &self[mid + 1 + right_neighbor_distance];
 
                             if entry.cmp_local(given) == Ordering::Less {
                                 right_neighbor_distance += 1;
@@ -141,12 +148,24 @@ impl<T: COrd + Ord> Slice<T> for [T] {
                     right = if cmp == Ordering::Greater { mid } else { right };
                     if cmp == Ordering::Equal {
                         // SAFETY: same as the `get_unchecked` above
-                        unsafe { hint::assert_unchecked(mid < self.len()) };
+                        #[cfg(feature = "hint_assert_unchecked")]
+                        unsafe {
+                            hint::assert_unchecked(mid < self.len())
+                        };
+                        #[cfg(not(feature = "hint_assert_unchecked"))]
+                        debug_assert!(mid < self.len());
+
                         return Ok(mid);
                     }
                 } else {
                     // SAFETY: same as the `get_unchecked` above
-                    unsafe { hint::assert_unchecked(mid < self.len()) };
+                    #[cfg(feature = "hint_assert_unchecked")]
+                    unsafe {
+                        hint::assert_unchecked(mid < self.len())
+                    };
+                    #[cfg(not(feature = "hint_assert_unchecked"))]
+                    debug_assert!(mid < self.len());
+
                     return Ok(mid);
                 }
             }
@@ -156,7 +175,13 @@ impl<T: COrd + Ord> Slice<T> for [T] {
 
         // SAFETY: directly true from the overall invariant. Note that this is `<=`, unlike the
         // assume in the `Ok` path.
-        unsafe { hint::assert_unchecked(left <= self.len()) };
+        #[cfg(feature = "hint_assert_unchecked")]
+        unsafe {
+            hint::assert_unchecked(left <= self.len())
+        };
+        #[cfg(not(feature = "hint_assert_unchecked"))]
+        debug_assert!(left <= self.len());
+
         Err(left)
     }
 }

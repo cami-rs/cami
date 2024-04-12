@@ -11,7 +11,15 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/peter-kehl/camigo"
 
 [features]
+# Keep features here sorted alphabetically
 alloc = []
 std = ["alloc"]
+unsafe = []
+hint_assert_unchecked = ["unsafe"]
+unsafe_from_rust_source = ["unsafe"]
+
+#default = ["hint_assert_unchecked"]
+#default = ["unsafe"]
+default = ["alloc"]
 
 [dependencies]
