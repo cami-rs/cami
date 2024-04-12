@@ -9,7 +9,7 @@ pub use std_wrap::*;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-mod ca_macros;
+mod macros;
 
 #[macro_use]
 mod pure_local_macros;
