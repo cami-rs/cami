@@ -142,7 +142,7 @@ macro_rules! ca_wrap_tuple {
     };
 }
 
-macro_rules! ca_wrap_struct_partial_eq {
+macro_rules! ca_wrap_cpartial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
@@ -150,7 +150,7 @@ macro_rules! ca_wrap_struct_partial_eq {
      $t:tt // The name of the only (wrapped) field, or 0 if tuple.
 
      $(where $($left:ty : $right:tt),+)?
-     // $locality is NOT an ident, so that we allow (const-time) expressions. 
+     // $locality is NOT an ident, so that we allow (const-time) expressions.
      //
      // Because it's an `expr`, we need `=>` afterwards.
      $locality: expr
@@ -158,9 +158,8 @@ macro_rules! ca_wrap_struct_partial_eq {
      // Within each of the following two square pairs [], use exactly one of the two repeated parts:
      // - the `..._ident` parts for non-tuple structs, and
      // - the `..._idx` parts for tuples.
-     $([$($local_ident:ident),* $($local_idx:literal),*]
-       [$($non_local_ident:ident),* $($non_local_idx:literal),*]
-     )?
+     [$($local_ident:ident),* $($local_idx:literal),*]
+     [$($non_local_ident:ident),* $($non_local_idx:literal),*]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
@@ -169,21 +168,78 @@ macro_rules! ca_wrap_struct_partial_eq {
 
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
-                $(
-                    true
-                    $(&& self.$t.$local_ident==other.$t.$local_ident)*
-                    $(&& self.$t.$local_idx==other.$t.$local_idx)*
-                )?
+                true
+                $(&& self.$t.$local_ident==other.$t.$local_ident)*
+                $(&& self.$t.$local_idx==other.$t.$local_idx)*
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
-                $(
-                    true
-                    $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
-                    $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
-                )?
+                true
+                $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
+                $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
             }
+        }
+    };
+}
+
+macro_rules! ca_wrap_cord {
+    ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
+     $struct_name:ident
+     $(<$($generic_right:tt),+>)?
+
+     $t:tt // The name of the only (wrapped) field, or 0 if tuple.
+
+     $(where $($left:ty : $right:tt),+)?
+     // Within each of the following two square pairs [], use exactly one of the two repeated parts:
+     // - the `..._ident` parts for non-tuple structs, and
+     // - the `..._idx` parts for tuples.
+     [$($local_ident:ident),* $($local_idx:literal),*]
+     [$($non_local_ident:ident),* $($non_local_idx:literal),*]
+    ) => {
+        impl $(<$($generic_left $(: $bound)?)+>)?
+        $crate::COrd for $struct_name $(<$($generic_right),+>)?
+        $(where $($left : $right),+)? {
+            fn cmp_local(&self, other: &Self) -> ::core::cmp::Ordering {
+                Self::LOCALITY.debug_reachable_for_local();
+                let result = ::core::cmp::Ordering::Equal;
+                // LLVM should be able to optimize away the first comparison of
+                // result==::core::cmp::Ordering::Equal
+                $(
+                    if result!=::core::cmp::Ordering::Equal {
+                        return result;
+                    }
+                    let result = self.$t.$local_ident.cmp(other.$t.$local_ident);
+                )*
+                $(
+                    if result!=::core::cmp::Ordering::Equal {
+                        return result;
+                    }
+                    let result = self.$t.$local_idx.cmp(other.$t.$local_idx);
+                )*
+                $result
+            }
+
+            fn cmp_non_local(&self, other: &Self) -> ::core::cmp::Ordering {
+                Self::LOCALITY.debug_reachable_for_non_local();
+                let result = ::core::cmp::Ordering::Equal;
+                // LLVM should be able to optimize away the first comparison of
+                // result==::core::cmp::Ordering::Equal
+                $(
+                    if result!=::core::cmp::Ordering::Equal {
+                        return result;
+                    }
+                    let result = self.$t.$non_ident.cmp(other.$t.$non_local_ident);
+                )*
+                $(
+                    if result!=::core::cmp::Ordering::Equal {
+                        return result;
+                    }
+                    let result = self.$t.$non_local_idx.cmp(other.$t.$non_local_idx);
+                )*
+                $result
+            }
+            // NOT re-implemeting cmp_full(...), but using its default impl.
         }
     };
 }
@@ -211,7 +267,7 @@ mod test_macros {
     use crate::Locality::Both;
 
     ca_wrap_struct! { CaWrapA1 {t : A }}
-    ca_wrap_struct_partial_eq! {
+    ca_wrap_cpartial_eq! {
         CaWrapA1 t Both =>
         [x]
         [v]
@@ -220,7 +276,7 @@ mod test_macros {
     ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
 
     ca_wrap_tuple! { CaTupleA2 (A) }
-    ca_wrap_struct_partial_eq! {
+    ca_wrap_cpartial_eq! {
         CaTupleA2 0 Both =>
         [x]
         [v]
