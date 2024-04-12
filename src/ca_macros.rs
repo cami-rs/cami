@@ -1,21 +1,37 @@
 macro_rules! ca_wrap {
     // Default the derived trait impls,, and the wrapped field name to `t`
-    ($struct_name:ident
+    ($struct_vis:vis
+     $struct_name:ident
      $(<$($generic:tt $(: $bound:tt)?),+>)?
+
+     // Use exactly one of the following two "optional". If using the literal part, it must be 0
+     // (that is, an index of the only item in the wrapper.)
+     $($t:ident)? $($t_literal:literal)?
+
      : $T:ty
      $(where $($left:ty : $right:tt),+)?
     ) => {
         ca_wrap! { [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
             ::core::cmp::PartialEq, ::core::cmp::PartialOrd
-            ] $struct_name $(<$($generic $(: $bound)?),+>)? t : $T $(where $($left : $right),+)?
+            ]
+            $struct_vis
+            $struct_name
+            $(<$($generic $(: $bound)?),+>)?
+
+            $($t)? $($t_literal)?
+            //$t
+            : $T
+             $(where $($left : $right),+)?
         }
     };
     // NOT adding Clone/Debug/Eq/Ord/PartialEq/PartialOrd to $derived
     ([$($($derived:path),+)?]
+     $struct_vis:vis
      $struct_name:ident
      $(<$($generic:tt $(: $bound:tt)?),+>)?
-     $t:ident
+
+     $($t:ident)? $($t_literal:literal)?
      : $T:ty
      $(where $($left:ty : $right:tt),+)?
     ) => {
@@ -41,64 +57,30 @@ macro_rules! ca_wrap {
         /// [::core::cmp::PartialEq] or [::core::cmp::Ord].)
         $(#[derive($($derived),+)])?
         #[repr(transparent)]
-        pub struct $struct_name$(<$($generic $(: $bound)?)+>)?
-        $(where $($left : $right),+)? {
-            $t: $T,
-        }
+        $struct_vis struct $struct_name $(<$($generic $(: $bound)?),+>)?
+        $(where $($left : $right),+)?
+        $({
+            $t: $T
+        })?
+        $((
+            $T ${ignore($t_literal)}
+        );)?
     };
 }
 
 macro_rules! ca_wrap_partial_eq {
-    // Default the wrapped field name to `t`
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
-     $(where $($left:ty : $right:tt),+)?
-     $locality: ident // if this were a (const) `expr`, then we need a separator afterwards
-     // Use exactly one of the following two "optional" parts
-     $([$($local_ident:ident),*]
-       [$($non_local_ident:ident),*]
-     )?
-     $(($local_expr:expr)
-       ($non_local_expr:expr)
-     )?
-    ) => {
-        ca_wrap_partial_eq! {
-            $(<$($generic_left $(: $bound)?),+>)?
-            $struct_name t
-            $(<$($generic_right),+>)?
-            $(where $($left : $right),+)?
-            $locality
-            $([$($local_ident),*]
-              [$($non_local_ident),*]
-            )?
-            $(($local_expr)
-              ($non_local_expr)
-            )?
-        }
-    };
-    ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
-     $struct_name:ident
-     $(<$($generic_right:tt),+>)?
-     
-     //@TODO vis modifier; private by default
-     $t:ident
+
+     $t:tt // Name of the only (wrapped) field, or 0 if tuple
 
      $(where $($left:ty : $right:tt),+)?
      $locality: ident // if this were a (const) `expr`, then we need a separator afterwards - TODO use separator =>
 
-     // Use exactly one of the following two "optional" parts
-     //
-     // @TODO allow number literals, as tuple item indices
-     $([$($local_ident:ident),*]
-       [$($non_local_ident:ident),*]
-     )?
-     $(//@TODO optional $other:ident
-       //
-       // Because of macro hygiene, the following two can't be :expr - then they couldn't access
-       // `self`. Hence :tt.
-       ($local_expr:tt)
-       ($non_local_expr:tt)
+     // Within each of the following two square pairs [], use exactly one of the two repeated parts.
+     $([$($local_ident:ident),* $($local_idx:literal),*]
+       [$($non_local_ident:ident),* $($non_local_idx:literal),*]
      )?
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
@@ -109,24 +91,26 @@ macro_rules! ca_wrap_partial_eq {
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
                 $(
-                    true $(&& self.$t.$local_ident==other.$t.$local_ident)*
+                    true
+                    $(&& self.$t.$local_ident==other.$t.$local_ident)*
+                    $(&& self.$t.$local_idx==other.$t.$local_idx)*
                 )?
-                $($local_expr)?
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
                 $(
-                    true $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
+                    true
+                    $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
+                    $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
                 )?
-                $($non_local_expr)?
             }
         }
     };
 }
 
-ca_wrap! { CaWrap : u8}
-ca_wrap! { CaWrap2 <A> : Vec<A> }
+ca_wrap! { pub CaWrap t : u8}
+ca_wrap! { CaWrap2 <A> t : Vec<A> }
 ca_wrap! { [Clone, Debug] CaWrap3 <T> t : T }
 ca_wrap! { [Clone, Debug] CaWrap4 <T:Sized> t : T }
 ca_wrap! { [Clone, Debug] CaWrap5 <T> t : T where T: 'static}
@@ -136,18 +120,30 @@ struct A {
     x: i32,
     v: Vec<i32>,
 }
-ca_wrap! { CaWrapA1 : A }
+ca_wrap! { CaWrapA1 t : A }
 ca_wrap_partial_eq! {
-    CaWrapA1 Both
+    CaWrapA1 t Both
     [x]
     [v]
 }
 
+ca_wrap! { CaTupleA2 0 : A }
+ca_wrap_partial_eq! {
+    CaTupleA2 0 Both
+    [x]
+    [v]
+}
+
+/*
 ca_wrap! { CaWrapAwithExpressions : A }
-// This fails because of macro hygiene. We can't pass expressions and have them "evaluated" within
+
+// This failed because of macro hygiene. We can't pass expressions and have them "evaluated" within
 // the context that a macro generates.
+//
+// See https://github.com/peter-kehl/camigo/commit/dbebbe10c0c341b55f2e5f51ae81e52b095dd049 for
+// ca_wrap_partial_eq back then.
 ca_wrap_partial_eq! {
     CaWrapAwithExpressions Both
     (self.t.x==other.t.x)
     (self.t.v==other.t.v)
-}
+}*/

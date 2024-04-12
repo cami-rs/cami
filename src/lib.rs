@@ -1,5 +1,6 @@
 //#![no_std]
 #![feature(hint_assert_unchecked)]
+#![feature(macro_metavar_expr)]
 
 pub use ca_wrap::*;
 use core::cmp::Ordering;
