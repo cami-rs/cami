@@ -45,6 +45,7 @@ macro_rules! ca_wrap_struct {
      $($tt:tt)+
     ) => {
         INCORRECT_MACRO_INVOCATION
+        $($tt:tt)+
     };
     // NOT adding Clone/Debug/Eq/Ord/PartialEq/PartialOrd to $derived
     ([$($($derived:path),+)?]
@@ -81,7 +82,6 @@ macro_rules! ca_wrap_tuple {
      $T:ty
      )
      $(where $($left:ty : $right:tt),+)?
-     // @TODO test with moving the "where" part before field_vis
     ) => {
         /// @TODO replace $item_type and $crate in this doc:
         ///
@@ -117,6 +117,7 @@ macro_rules! ca_wrap_tuple {
      $($tt:tt)+
     ) => {
         INCORRECT_MACRO_INVOCATION
+        $($tt:tt)+
     };
     // NOT adding Clone/Debug/Eq/Ord/PartialEq/PartialOrd to $derived
     ([$($($derived:path),+)?]
@@ -146,12 +147,17 @@ macro_rules! ca_wrap_struct_partial_eq {
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
 
-     $t:tt // Name of the only (wrapped) field, or 0 if tuple
+     $t:tt // The name of the only (wrapped) field, or 0 if tuple.
 
      $(where $($left:ty : $right:tt),+)?
-     $locality: ident // if this were a (const) `expr`, then we need a separator afterwards - TODO use separator =>
-
-     // Within each of the following two square pairs [], use exactly one of the two repeated parts.
+     // $locality is NOT an ident, so that we allow (const-time) expressions. 
+     //
+     // Because it's an `expr`, we need `=>` afterwards.
+     $locality: expr
+     =>
+     // Within each of the following two square pairs [], use exactly one of the two repeated parts:
+     // - the `..._ident` parts for non-tuple structs, and
+     // - the `..._idx` parts for tuples.
      $([$($local_ident:ident),* $($local_idx:literal),*]
        [$($non_local_ident:ident),* $($non_local_idx:literal),*]
      )?
@@ -159,7 +165,7 @@ macro_rules! ca_wrap_struct_partial_eq {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
         $(where $($left : $right),+)? {
-            const LOCALITY: $crate::Locality = $crate::Locality::$locality;
+            const LOCALITY: $crate::Locality = $locality;
 
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
@@ -199,22 +205,27 @@ struct A {
     x: i32,
     v: Vec<i32>,
 }
-ca_wrap_struct! { CaWrapA1 {t : A }}
-ca_wrap_struct_partial_eq! {
-    CaWrapA1 t Both
-    [x]
-    [v]
+
+mod test_macros {
+    use crate::ca_macros::A;
+    use crate::Locality::Both;
+
+    ca_wrap_struct! { CaWrapA1 {t : A }}
+    ca_wrap_struct_partial_eq! {
+        CaWrapA1 t Both =>
+        [x]
+        [v]
+    }
+
+    ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
+
+    ca_wrap_tuple! { CaTupleA2 (A) }
+    ca_wrap_struct_partial_eq! {
+        CaTupleA2 0 Both =>
+        [x]
+        [v]
+    }
 }
-
-ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
-
-ca_wrap_tuple! { CaTupleA2 (A) }
-ca_wrap_struct_partial_eq! {
-    CaTupleA2 0 Both
-    [x]
-    [v]
-}
-
 /*
 ca_wrap_struct! { CaWrapAwithExpressions : A }
 
