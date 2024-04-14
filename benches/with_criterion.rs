@@ -1,11 +1,92 @@
 use camigo::ca_struct;
-// @TODO pull request to Criterion that functions should not be imported - especially because it
-// "conflicts" with `core::hint::black_box`.
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use core::hint;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-pub fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("fib 20", |b| b.iter(|| fibonacci(black_box(20))));
+// On heap.
+const MAX_ITEMS: usize = 100_000;
+// On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
+// size may be a few times higer.
+const MAX_ITEM_LEN: usize = 1_000;
+
+// For purging the L1, L2..., in bytes.
+const MAX_CACHE_SIZE: usize = 2_080_000;
+
+const USIZE_MAX_HALF: usize = usize::MAX / 2;
+
+fn unfrequent_rnd<T>(recently_allocated: *const T) -> usize {
+    #[cfg(feature = "fastrand")]
+    return {
+        let _ = recently_allocated; // to avoid "unused" warning
+    };
+    #[cfg(not(feature = "fastrand"))]
+    return { recently_allocated as usize };
 }
 
-criterion_group!(benches, criterion_benchmark);
+fn frequent_rnd<T>(recently_allocated: *const T) -> usize {
+    #[cfg(feature = "rnd_frequent")]
+    return {
+        let _ = recently_allocated; // to avoid "unused" warning
+
+        #[cfg(feature = "fastrand")]
+        let _ = {};
+        // @TODO
+    };
+    #[cfg(not(feature = "rand_frequent"))]
+    return { recently_allocated as usize };
+}
+
+fn purge_cache() {
+    let mut vec = Vec::<u8>::with_capacity(MAX_CACHE_SIZE);
+
+    // Entropy doesn't matter here, the source/stream is only to fill up the cache, and then it goes
+    // to black_box.
+    let rnd_start = frequent_rnd(&vec) % USIZE_MAX_HALF;
+    let mut rnd = rnd_start;
+
+    for _ in [0..MAX_CACHE_SIZE] {
+        vec.push((rnd % 256) as u8);
+        rnd += rnd_start;
+        rnd %= USIZE_MAX_HALF;
+    }
+    hint::black_box(vec);
+}
+
+pub fn bench_strings(c: &mut Criterion) {
+    let num_items = unfrequent_rnd(&c) % MAX_ITEMS;
+    let mut items = Vec::<String>::with_capacity(num_items);
+    let mut total_length = 0usize;
+
+    for _ in [0..num_items] {
+        let item_len = frequent_rnd(&items) % MAX_ITEM_LEN;
+        let mut item = Vec::<char>::with_capacity(item_len);
+
+        let rnd_start = frequent_rnd(&item) % USIZE_MAX_HALF;
+        let mut rnd = rnd_start;
+
+        for i in [0..item_len] {
+            item.push(((rnd % 10) as u8 + b'0').into());
+            rnd += rnd_start;
+            rnd %= USIZE_MAX_HALF;
+        }
+        let mut string = String::with_capacity(4 * item_len);
+        string.extend(item.into_iter());
+        total_length += string.len();
+        items.push(string);
+    }
+
+    let mut group = c.benchmark_group("strings");
+
+    //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
+    let id_string = format!("{num_items} items, each of max. {MAX_ITEM_LEN} length. Total length (sum of length of all items) is {total_length}.");
+    group.bench_with_input(
+        BenchmarkId::new("Strings", id_string),
+        &point,
+        |b, (p_x, p_y)| b.iter(|| p_x * p_y),
+    );
+    //     //c.bench_function("fib 20", |b| b.iter(|| fibonacci(hint::black_box(20))));
+
+    group.finish();
+}
+
+criterion_group!(benches, bench_strings);
 criterion_main!(benches);

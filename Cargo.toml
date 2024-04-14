@@ -17,14 +17,26 @@ std = ["alloc"]
 deref_pure_trait = ["unsafe"]
 hint_assert_unchecked = ["unsafe"]
 nightly = []
-real_blackbox = [] #TODO
-unsafe = []
 
+rnd_frequent = [] # Whether to use "fastrand/rand/getrandom" also as a source of a very frequent randomnes.
+
+# real_blackbox = [] #TODO?
+unsafe = ["unsafe_from_rust_source"]
+unsafe_from_rust_source = []
+
+#default = [] 
 #default = ["hint_assert_unchecked"]
-default = []
+#default = ["fastrand"]
 #default = ["alloc"]
 
 [dependencies]
+
+fastrand = { version = "2.0.2", optional = true}
+
+# If using "rand" but without feature "rnd_frequent", rand serves only for some of the randomness.
+# (But, ultimately, the "frequent" randomness will depend on that "unfrequent" randomness
+# indirectly, anyway.)
+# rand = { version = "0.8.5", optional = true }
 
 [dev-dependencies]
 # @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?

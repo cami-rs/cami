@@ -1,6 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "hint_assert_unchecked", feature(hint_assert_unchecked))]
-#![cfg_attr(not(feature = "unsafe"), deny(unsafe_code))]
+#![cfg_attr(
+    not(any(feature = "unsafe", feature = "unsafe_from_rust_source")),
+    deny(unsafe_code)
+)]
 #![cfg_attr(feature = "deref_pure_trait", feature(deref_pure_trait))]
 
 use core::cmp::Ordering;

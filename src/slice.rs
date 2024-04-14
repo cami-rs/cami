@@ -19,6 +19,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
             // Any comparison is based on non-local fields only. Hence standard binary search.
             return <[T]>::binary_search(self, given);
         }
+        // @TODO change from `let` to `const`, wherever possible.
         let entry_size = mem::size_of::<T>();
         // TODO runtime: Use https://docs.rs/crossbeam-utils/latest/crossbeam_utils/struct.CachePadded.html && https://docs.rs/cache-size/latest/cache_size.
         let cache_line_size = 128usize; // in bytes
@@ -44,14 +45,17 @@ impl<T: COrd + Ord> Slice<T> for [T] {
         }
         //let max_right_neighbors_per_cache_line = max_entries_per_cache_line - 1;
         //
-        // TODO: Make these "Bulgarian" constants part of COrd trait and/or feature
+        // TODO: Make these constants part of COrd trait and/or feature
         //
         // Used with a `<` operator.
         let subslice_size_threshold = 3 * max_entries_per_cache_line + 2;
         // @TODO const
         let max_right_neighbors_in_cache_line = max_entries_per_cache_line - 2;
 
-        // Based on Rust source of `binary_search_by`
+        // Based on Rust source of `binary_search`
+        // (https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.binary_search) ->
+        // `binary_search_by`
+        // https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.binary_search_by
 
         // INVARIANTS:
         // - 0 <= left <= left + size = right <= self.len()
@@ -69,7 +73,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
             // Thus `left + size/2 < left + size`, which coupled with the `left + size <=
             // self.len()` invariant means we have `left + size/2 < self.len()`, and this is
             // in-bounds.
-            #[cfg(feature = "unsafe")]
+            #[cfg(feature = "unsafe_from_rust_source")]
             let entry = unsafe { self.get_unchecked(mid) };
             #[cfg(not(feature = "unsafe"))]
             let entry = &self[mid];
@@ -102,7 +106,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
                                 break mid + 1 + right_neighbor_distance;
                             }
 
-                            #[cfg(feature = "unsafe")]
+                            #[cfg(feature = "unsafe")] // NOT from Rust source
                             let entry =
                                 unsafe { self.get_unchecked(mid + 1 + right_neighbor_distance) };
                             #[cfg(not(feature = "unsafe"))]
@@ -149,6 +153,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
                     if cmp == Ordering::Equal {
                         // SAFETY: same as the `get_unchecked` above
                         #[cfg(feature = "hint_assert_unchecked")]
+                        // @TODO new feature w/ unsafe_from_rust_source
                         unsafe {
                             hint::assert_unchecked(mid < self.len())
                         };
@@ -159,7 +164,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
                     }
                 } else {
                     // SAFETY: same as the `get_unchecked` above
-                    #[cfg(feature = "hint_assert_unchecked")]
+                    #[cfg(feature = "hint_assert_unchecked")] //@TODO w/ unsafe_from_rust_source
                     unsafe {
                         hint::assert_unchecked(mid < self.len())
                     };
@@ -175,7 +180,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
 
         // SAFETY: directly true from the overall invariant. Note that this is `<=`, unlike the
         // assume in the `Ok` path.
-        #[cfg(feature = "hint_assert_unchecked")]
+        #[cfg(feature = "hint_assert_unchecked")] // @TODO w/ unsafe_from_rust_source
         unsafe {
             hint::assert_unchecked(left <= self.len())
         };
