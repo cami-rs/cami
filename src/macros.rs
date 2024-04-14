@@ -1,3 +1,8 @@
+#[cfg(feature = "unsafe")]
+use core::ops::DerefPure;
+use core::ops::{Deref, DerefMut};
+
+#[macro_export]
 macro_rules! ca_struct {
     // An INTERNAL rule
     (@[$($($derived:path),+)?]
@@ -52,6 +57,7 @@ macro_rules! ca_struct {
     };
 }
 
+#[macro_export]
 macro_rules! ca_tuple {
     // An INTERNAL rule
     (@
@@ -106,6 +112,7 @@ macro_rules! ca_tuple {
     };
 }
 
+#[macro_export]
 macro_rules! ca_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
@@ -147,6 +154,7 @@ macro_rules! ca_partial_eq {
     };
 }
 
+#[macro_export]
 macro_rules! ca_ord {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
@@ -210,6 +218,43 @@ macro_rules! ca_ord {
     };
 }
 
+impl From<CaWrap> for &str {
+    fn from(value: CaWrap) -> Self {
+        panic!()
+    }
+}
+impl From<&str> for CaWrap {
+    fn from(value: &str) -> Self {
+        panic!()
+    }
+}
+
+impl Deref for CaWrap {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        panic!()
+    }
+}
+impl DerefMut for CaWrap {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        panic!()
+    }
+}
+#[cfg(feature = "unsafe")]
+unsafe impl DerefPure for CaWrap {}
+
+fn into() {
+    let caw: CaWrap = "".into();
+    let caw: CaWrap = <&str>::into("");
+}
+fn from() {
+    let caw = CaWrap::from("");
+}
+
+fn deref(caw: &CaWrap) {
+    let _ = caw.len();
+}
+
 ca_struct! { pub CaWrap {t : u8}}
 ca_struct! { [Clone, Debug] CaWrap3 <T> {t : T }}
 ca_struct! { [Clone, Debug] CaWrap4 <T:Sized> {t : T }}
@@ -220,6 +265,7 @@ ca_struct! {
         t : T
     }
 }
+ca_struct! { pub CaWrapPub {pub t : u8}}
 
 mod test_macros {
     #[cfg(feature = "alloc")]

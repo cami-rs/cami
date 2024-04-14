@@ -2,7 +2,7 @@
 
 Zero cost wrappers & related implementation of cache-friendly comparison. `no_std`-friendly.
 
-## Non-vector types
+## Non-vector-like items
 
 This is about comparing values/objects other than slices/arrays/Vec/String/&str. Of course, these
 values/objects can be stored in a slice/array/Vec/String/&str, and that's most likely where this
@@ -11,9 +11,8 @@ cache-friendly comparison brings benefits.
 This comparison may DIFFER to the `#[derive(...)]`'s default order: [the top-to-bottom declaration
 order of the struct’s members](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#derivable).
 
-## Vec/slice/array/String/&str
+## Vec/slice/array/String/&str items
 
-<!-- see BTreeMap/BTreeSet source - whether we can hook in -->
 This DIFFERS to their [`Ord` > Lexicographical
 comparison](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#lexicographical-comparison).
 
@@ -24,12 +23,20 @@ comparison](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#lexicograp
   - item types that have both local fields and references (potentially much more beneficial than for
     local-only)
 
-## HashMap/HashSet
+## HashMap/HashSet items
 
 This comparison doesn't give as much benefit for `HashMap` & `HashSet` (because those use `Hash` for
 determining the buckets). But it can speed up comparison of keys in the same bucket (with the same
 hash). And, since `HashMap` & `HashSet` don't keep/guarantee any order, using `camigo` makes
 transition/backwards compatibility easier.
+
+## BTreeMap/BTreeSet items
+
+Transmuting those would be against their correctness, because they maintain the ordered state, and
+they depend on it. TODO explain more.
+
+Indeed, the actual items stored in a `BTreeMap/BTreeSet` can use this crate. (The items themselves
+must NOT be `BTreeMap/BTreeSet`-s.)
 
 ## Actual traits & applicability
 
@@ -52,7 +59,13 @@ Vec/slice/array/String/&str's lexicographic ordering.
 Compared to using `CPartialEq` and `COrd`, this doesn't give any binary search benefit for
 primitive/local-only types. But it can speed up binary search for types with references.
 
-# Design
+## Scope
+
+### No derive macro(s)
+We will never have `#derive(...)` macro(s) for `CPartialEq/COrd`, because no macro can
+access/differentiate/interpret/"know" types being used.
+
+## Design
 
 This design is (arguably) "coupled", because it puts these features together. Guess what: Life is
 too short for uncoupled designs here. They would be both difficult to implement, unergonomic to use,

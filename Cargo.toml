@@ -14,12 +14,23 @@ repository = "https://github.com/peter-kehl/camigo"
 # Keep features here sorted alphabetically
 alloc = []
 std = ["alloc"]
-unsafe = []
+deref_pure_trait = ["unsafe"]
 hint_assert_unchecked = ["unsafe"]
-unsafe_from_rust_source = ["unsafe"]
+nightly = []
+real_blackbox = [] #TODO
+unsafe = []
 
 #default = ["hint_assert_unchecked"]
-#default = ["unsafe"]
-default = ["alloc"]
+default = []
+#default = ["alloc"]
 
 [dependencies]
+
+[dev-dependencies]
+# @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?
+# criterion = { version = "0.5.1", features=['real_blackbox'] }
+criterion = { version = "0.5.1" }
+
+[[bench]]
+name = "with_criterion"
+harness = false

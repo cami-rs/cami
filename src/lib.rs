@@ -1,6 +1,7 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "hint_assert_unchecked", feature(hint_assert_unchecked))]
 #![cfg_attr(not(feature = "unsafe"), deny(unsafe_code))]
+#![cfg_attr(feature = "deref_pure_trait", feature(deref_pure_trait))]
 
 use core::cmp::Ordering;
 pub use slice::Slice;
@@ -9,7 +10,8 @@ pub use std_wrap::*;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-mod macros;
+#[macro_use]
+pub mod macros;
 
 #[macro_use]
 mod pure_local_macros;
@@ -19,6 +21,8 @@ mod slice;
 mod std_macros;
 mod std_wrap;
 mod string;
+
+// TODO compile fail if feature = "nightly" if NOT on nightly
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Locality {
