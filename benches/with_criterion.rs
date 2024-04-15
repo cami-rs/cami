@@ -19,7 +19,7 @@ fn unfrequent_rnd<T>(recently_allocated: *const T) -> usize {
         let _ = recently_allocated; // to avoid "unused" warning
     };
     #[cfg(not(feature = "fastrand"))]
-    return { recently_allocated as usize };
+    return recently_allocated as usize;
 }
 
 fn frequent_rnd<T>(recently_allocated: *const T) -> usize {
@@ -32,7 +32,7 @@ fn frequent_rnd<T>(recently_allocated: *const T) -> usize {
         // @TODO
     };
     #[cfg(not(feature = "rand_frequent"))]
-    return { recently_allocated as usize };
+    return recently_allocated as usize;
 }
 
 fn purge_cache() {
@@ -53,11 +53,11 @@ fn purge_cache() {
 
 pub fn bench_strings(c: &mut Criterion) {
     let num_items = unfrequent_rnd(&c) % MAX_ITEMS;
-    let mut items = Vec::<String>::with_capacity(num_items);
+    let mut unsorted_items = Vec::<String>::with_capacity(num_items);
     let mut total_length = 0usize;
 
     for _ in [0..num_items] {
-        let item_len = frequent_rnd(&items) % MAX_ITEM_LEN;
+        let item_len = frequent_rnd(&unsorted_items) % MAX_ITEM_LEN;
         let mut item = Vec::<char>::with_capacity(item_len);
 
         let rnd_start = frequent_rnd(&item) % USIZE_MAX_HALF;
@@ -71,19 +71,39 @@ pub fn bench_strings(c: &mut Criterion) {
         let mut string = String::with_capacity(4 * item_len);
         string.extend(item.into_iter());
         total_length += string.len();
-        items.push(string);
+        unsorted_items.push(string);
     }
 
     let mut group = c.benchmark_group("strings");
 
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
-    let id_string = format!("{num_items} items, each of max. {MAX_ITEM_LEN} length. Total length (sum of length of all items) is {total_length}.");
-    group.bench_with_input(
-        BenchmarkId::new("Strings", id_string),
-        &point,
-        |b, (p_x, p_y)| b.iter(|| p_x * p_y),
+    let id_string = format!(
+        "{num_items} items, each len max {MAX_ITEM_LEN}. Total len: {total_length}."
     );
-    //     //c.bench_function("fib 20", |b| b.iter(|| fibonacci(hint::black_box(20))));
+
+    let mut sorted = Vec::new();
+    group.bench_with_input(
+        BenchmarkId::new("std: sorting", id_string.clone()),
+        &unsorted_items,
+        |b, unsorted_items| {
+            b.iter(|| {
+                sorted = hint::black_box(unsorted_items.clone());
+                sorted.sort();
+            })
+        },
+    );
+    group.bench_with_input(
+        BenchmarkId::new("std: bin search", id_string.clone()),
+        &unsorted_items,
+        |b, unsorted_items| {
+            b.iter(|| {
+                let sorted = hint::black_box(&sorted);
+                for item in hint::black_box(unsorted_items.into_iter()) {
+                    hint::black_box(sorted.binary_search(item)).unwrap();
+                }
+            })
+        },
+    );
 
     group.finish();
 }
