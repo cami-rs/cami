@@ -144,7 +144,7 @@ macro_rules! ca_wrap_partial_eq {
         $(where $($left : $right),+)? {
             const LOCALITY: $crate::Locality = $locality;
 
-            fn eq_local<'eq_local_lifetime>(&'eq_local_lifetime self, other: &'eq_local_lifetime Self) -> bool {
+            fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
                 true
                 $(&& self.$t.$local_ident==other.$t.$local_ident)*
@@ -153,7 +153,7 @@ macro_rules! ca_wrap_partial_eq {
                 $(&& $($local_get_closure(&self.$t)==$local_get_closure(&other.$t))+)?
             }
 
-            fn eq_non_local<'eq_local_lifetime>(&'eq_local_lifetime self, other: &'eq_local_lifetime Self) -> bool {
+            fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
                 true
                 $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
@@ -166,27 +166,19 @@ macro_rules! ca_wrap_partial_eq {
 }
 
 /// For types OTHER than defined by `ca_wrap!` or `ca_wrap_tuple!`.`
+///
+/// See [ca_wrap_partial_eq].
 #[macro_export]
 macro_rules! ca_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
-     $struct_name:ident
-     $(<$($generic_right:tt),+>)?
+     $struct_name:path // @TODO rename -> struct_path; apply to the above macros
+     $(>$($generic_right:tt),+<)? // @TODO apply to the above macros
 
      $(where $($left:ty : $right:tt),+)?
-     // $locality is NOT an ident, so that we allow (const-time) expressions.
-     //
-     // Because it's an `expr`, we need `=>` afterwards.
-     $locality: expr
+     | $locality: expr
      =>
-     // Within each of the following two square pairs [], use exactly one of the three repeated
-     // parts:
-     // - `..._ident` parts for non-tuple structs, or
-     // - `..._idx` parts for tuples, or
-     // - `@` followed with ` ..._eq_expr` parts for expressions in closures. They must receive two
-     //   parameters, for example `this` and `other`. Both parameters must be types as references to
-     //   Self type.
-     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),*)?]
-     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),*)?]
+     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),+)? $(=> $($local_get_closure:expr),+)?]
+     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
@@ -198,7 +190,8 @@ macro_rules! ca_partial_eq {
                 true
                 $(&& self.$local_ident==other.$local_ident)*
                 $(&& self.$local_idx==other.$local_idx)*
-                $(&& $($local_eq_closure(&self, &other))*)?
+                $(&& $($local_eq_closure(&self, &other))+)?
+                $(&& $($local_get_closure(&self)==$local_get_closure(&other))+)?
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
@@ -206,7 +199,8 @@ macro_rules! ca_partial_eq {
                 true
                 $(&& self.$non_local_ident==other.$non_local_ident)*
                 $(&& self.$non_local_idx==other.$non_local_idx)*
-                $(&& $($non_local_eq_closure(&self, &other))*)?
+                $(&& $($non_local_eq_closure(&self, &other))+)?
+                $(&& $($non_local_get_closure(&self)==$non_local_get_closure(&other))+)?
             }
         }
     };
@@ -341,12 +335,15 @@ mod test_macros {
             v: Vec<i32>,
         }
 
-        use crate::Locality::Both;
+        use crate::Locality;
 
         ca_wrap! { CaWrapA1 {t : A }}
         ca_wrap_partial_eq! {
-            CaWrapA1 t Both =>
-            [@|this: &A, other: &A|this.x==other.x]
+            CaWrapA1
+            t // @TODO introduce {} here, etc.
+            Locality::Both
+            =>
+            [@ |this: &A, other: &A|this.x==other.x]
             [v]
         }
         ca_wrap_ord! {
@@ -363,7 +360,8 @@ mod test_macros {
         }
         ca_wrap_partial_eq! {
             <'a>
-            CaTupleA2 0 Both =>
+            CaTupleA2 0 Locality::Both
+            =>
             [=> |obj: &A| obj.x]
             // We can't specify return lifetimes here:
             //

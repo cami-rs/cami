@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
@@ -38,4 +40,14 @@ where
     fn cmp_full(&self, other: &Self) -> Ordering {
         self.len().cmp(&other.len()).then(self.cmp(&other))
     }
+}
+
+#[cfg(feature = "alloc")]
+ca_partial_eq! {
+    ::alloc::string::String // TODO -> Path?
+
+    | Locality::Both
+    =>
+    [=> |v: &String| v.len()]
+    [@ |this: &String, other: &String| this == other]
 }
