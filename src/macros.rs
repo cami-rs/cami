@@ -3,7 +3,7 @@ use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
 
 #[macro_export]
-macro_rules! ca_struct {
+macro_rules! ca_wrap {
     // An INTERNAL rule
     (@[$($($derived:path),+)?]
      $struct_vis:vis
@@ -38,7 +38,7 @@ macro_rules! ca_struct {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        ca_struct! {
+        ca_wrap! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -46,7 +46,7 @@ macro_rules! ca_struct {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        ca_struct! {
+        ca_wrap! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -58,7 +58,7 @@ macro_rules! ca_struct {
 }
 
 #[macro_export]
-macro_rules! ca_tuple {
+macro_rules! ca_wrap_tuple {
     // An INTERNAL rule
     (@
      [$($($derived:path),+)?]
@@ -93,7 +93,7 @@ macro_rules! ca_tuple {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        ca_tuple! {
+        ca_wrap_tuple! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -101,7 +101,7 @@ macro_rules! ca_tuple {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        ca_tuple! {
+        ca_wrap_tuple! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -113,7 +113,7 @@ macro_rules! ca_tuple {
 }
 
 #[macro_export]
-macro_rules! ca_partial_eq {
+macro_rules! ca_wrap_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
@@ -126,17 +126,67 @@ macro_rules! ca_partial_eq {
      // Because it's an `expr`, we need `=>` afterwards.
      $locality: expr
      =>
+     // Within each of the following two square pairs [], use exactly one of the four repeated
+     // parts:
+     // - `..._ident` parts for non-tuple structs, or
+     // - `..._idx` parts for tuples, or
+     // - `@` followed with ` ..._eq_closure` parts for expressions in closures. Each closure must
+     //   receive TWO parameters, for example `this` and `other`. Both parameters' type is a
+     //   reference to the wrapped type.
+     // - `=>` followed with ` ..._get_closure` parts for expressions in closures. Each closure must
+     //   receive ONE parameter, for example `this` or `obj`. That parameter's type is a reference
+     //   to the wrapped type.
+     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),+)? $(=> $($local_get_closure:expr),+)?]
+     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
+    ) => {
+        impl $(<$($generic_left $(: $bound)?)+>)?
+        $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
+        $(where $($left : $right),+)? {
+            const LOCALITY: $crate::Locality = $locality;
+
+            fn eq_local<'eq_local_lifetime>(&'eq_local_lifetime self, other: &'eq_local_lifetime Self) -> bool {
+                Self::LOCALITY.debug_reachable_for_local();
+                true
+                $(&& self.$t.$local_ident==other.$t.$local_ident)*
+                $(&& self.$t.$local_idx==other.$t.$local_idx)*
+                $(&& $($local_eq_closure(&self.$t, &other.$t))+)?
+                $(&& $($local_get_closure(&self.$t)==$local_get_closure(&other.$t))+)?
+            }
+
+            fn eq_non_local<'eq_local_lifetime>(&'eq_local_lifetime self, other: &'eq_local_lifetime Self) -> bool {
+                Self::LOCALITY.debug_reachable_for_non_local();
+                true
+                $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
+                $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
+                $(&& $($non_local_eq_closure(&self.$t, &other.$t))+)?
+                $(&& $($non_local_get_closure(&self.$t)==$non_local_get_closure(&other.$t))+)?
+            }
+        }
+    };
+}
+
+/// For types OTHER than defined by `ca_wrap!` or `ca_wrap_tuple!`.`
+#[macro_export]
+macro_rules! ca_partial_eq {
+    ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
+     $struct_name:ident
+     $(<$($generic_right:tt),+>)?
+
+     $(where $($left:ty : $right:tt),+)?
+     // $locality is NOT an ident, so that we allow (const-time) expressions.
+     //
+     // Because it's an `expr`, we need `=>` afterwards.
+     $locality: expr
+     =>
      // Within each of the following two square pairs [], use exactly one of the three repeated
      // parts:
-     // - `..._ident` parts for non-tuple structs, and
-     // - `..._idx` parts for tuples.
-     // - `@` followed with ` ..._eq_expr` parts for compound expressions. Those must use `self` and
-     //   `other`, and they muse yield a bool.
-
-     // TODO instead of :ident, consider :tt, and see if that covers expressions/function calls. Or,
-     // have that as a 3rd repetitive part $($local_expr:tt),*
-     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr)*)?]
-     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr)*)?]
+     // - `..._ident` parts for non-tuple structs, or
+     // - `..._idx` parts for tuples, or
+     // - `@` followed with ` ..._eq_expr` parts for expressions in closures. They must receive two
+     //   parameters, for example `this` and `other`. Both parameters must be types as references to
+     //   Self type.
+     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),*)?]
+     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),*)?]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
@@ -146,24 +196,24 @@ macro_rules! ca_partial_eq {
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
                 true
-                $(&& self.$t.$local_ident==other.$t.$local_ident)*
-                $(&& self.$t.$local_idx==other.$t.$local_idx)*
-                $(&& $($local_eq_closure(&self.$t, &other.$t))*)?
+                $(&& self.$local_ident==other.$local_ident)*
+                $(&& self.$local_idx==other.$local_idx)*
+                $(&& $($local_eq_closure(&self, &other))*)?
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
                 true
-                $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
-                $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
-                $(&& $($non_local_eq_closure(&self.$t, &other.$t))*)?
+                $(&& self.$non_local_ident==other.$non_local_ident)*
+                $(&& self.$non_local_idx==other.$non_local_idx)*
+                $(&& $($non_local_eq_closure(&self, &other))*)?
             }
         }
     };
 }
 
 #[macro_export]
-macro_rules! ca_ord {
+macro_rules! ca_wrap_ord {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_name:ident
      $(<$($generic_right:tt),+>)?
@@ -265,24 +315,25 @@ fn deref(caw: &CaWrap) {
     let _ = caw.len();
 }
 
-ca_struct! { pub CaWrap {t : u8}}
-ca_struct! { [Clone, Debug] CaWrap3 <T> {t : T }}
-ca_struct! { [Clone, Debug] CaWrap4 <T:Sized> {t : T }}
-ca_struct! {
+ca_wrap! { pub CaWrap {t : u8}}
+ca_wrap! { [Clone, Debug] CaWrap3 <T> {t : T }}
+ca_wrap! { [Clone, Debug] CaWrap4 <T:Sized> {t : T }}
+ca_wrap! {
     [Clone, Debug]
     CaWrap5 <T>
     where T: 'static {
         t : T
     }
 }
-ca_struct! { pub CaWrapPub {pub t : u8}}
+ca_wrap! { pub CaWrapPub {pub t : u8}}
 
+#[cfg(test)]
 mod test_macros {
     #[cfg(feature = "alloc")]
     mod with_alloc {
         use alloc::vec::Vec;
 
-        ca_struct! { CaWrap2 <A> {pub t : Vec<A> }}
+        ca_wrap! { CaWrap2 <A> {pub t : Vec<A> }}
 
         #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
         struct A {
@@ -292,43 +343,39 @@ mod test_macros {
 
         use crate::Locality::Both;
 
-        ca_struct! { CaWrapA1 {t : A }}
-        ca_partial_eq! {
+        ca_wrap! { CaWrapA1 {t : A }}
+        ca_wrap_partial_eq! {
             CaWrapA1 t Both =>
-            [x]
+            [@|this: &A, other: &A|this.x==other.x]
             [v]
         }
-        ca_ord! {
+        ca_wrap_ord! {
             CaWrapA1 t
             [x]
             [v]
         }
 
-        ca_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
+        ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
 
-        ca_tuple! { CaTupleA2 (A) }
-        ca_partial_eq! {
-            CaTupleA2 0 Both =>
-            [@ |left: &A, right: &A| left.x == right.x]
-            [@ |left: &A, right: &A| left.v == right.v]
+        ca_wrap_tuple! { CaTupleA2 (A) }
+        fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
+            &wrap.v
         }
-        ca_ord! {
+        ca_wrap_partial_eq! {
+            <'a>
+            CaTupleA2 0 Both =>
+            [=> |obj: &A| obj.x]
+            // We can't specify return lifetimes here:
+            //
+            // [@ |obj: &'l A| -> &'l Vec<i32> {&obj.v}]
+            //
+            // Hence a separate function:
+            [=> get_v]
+        }
+        ca_wrap_ord! {
             CaTupleA2 0
             [x]
             [v]
         }
     }
 }
-/*
-ca_struct! { CaWrapAwithExpressions : A }
-
-// This failed because of macro hygiene. We can't pass expressions and have them "evaluated" within
-// the context that a macro generates.
-//
-// See https://github.com/peter-kehl/camigo/commit/dbebbe10c0c341b55f2e5f51ae81e52b095dd049 for
-// ca_wrap_struct_partial_eq back then.
-ca_wrap_struct_partial_eq! {
-    CaWrapAwithExpressions Both
-    (self.t.x==other.t.x)
-    (self.t.v==other.t.v)
-}*/

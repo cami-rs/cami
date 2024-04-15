@@ -1,4 +1,4 @@
-use camigo::ca_struct;
+use camigo::{ca_struct, Slice};
 use core::hint;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
@@ -63,7 +63,7 @@ pub fn bench_strings(c: &mut Criterion) {
         let rnd_start = frequent_rnd(&item) % USIZE_MAX_HALF;
         let mut rnd = rnd_start;
 
-        for i in [0..item_len] {
+        for _ in 0..item_len {
             item.push(((rnd % 10) as u8 + b'0').into());
             rnd += rnd_start;
             rnd %= USIZE_MAX_HALF;
@@ -78,12 +78,12 @@ pub fn bench_strings(c: &mut Criterion) {
 
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
     let id_string =
-        format!("{num_items} items, each len max {MAX_ITEM_LEN}. Total len: {total_length}.");
+        format!("{num_items} items, each len max {MAX_ITEM_LEN}. Sum len: {total_length}.");
 
     let mut sorted = Vec::new();
     group.bench_with_input(
-        BenchmarkId::new("std: sorting", id_string.clone()),
-        &unsorted_items,
+        BenchmarkId::new("std sort      ", id_string.clone()),
+        hint::black_box(&unsorted_items),
         |b, unsorted_items| {
             b.iter(|| {
                 sorted = hint::black_box(unsorted_items.clone());
@@ -92,13 +92,25 @@ pub fn bench_strings(c: &mut Criterion) {
         },
     );
     group.bench_with_input(
-        BenchmarkId::new("std: bin search", id_string.clone()),
-        &unsorted_items,
+        BenchmarkId::new("std bin search", id_string.clone()),
+        hint::black_box(&unsorted_items),
         |b, unsorted_items| {
             b.iter(|| {
                 let sorted = hint::black_box(&sorted);
                 for item in hint::black_box(unsorted_items.into_iter()) {
                     hint::black_box(sorted.binary_search(item)).unwrap();
+                }
+            })
+        },
+    );
+    group.bench_with_input(
+        BenchmarkId::new("std bin search", id_string.clone()),
+        hint::black_box(&unsorted_items),
+        |b, unsorted_items| {
+            b.iter(|| {
+                let sorted = hint::black_box(&sorted);
+                for item in hint::black_box(unsorted_items.into_iter()) {
+                    hint::black_box(sorted.binary_search_ca(item)).unwrap();
                 }
             })
         },
