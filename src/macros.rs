@@ -126,11 +126,17 @@ macro_rules! ca_partial_eq {
      // Because it's an `expr`, we need `=>` afterwards.
      $locality: expr
      =>
-     // Within each of the following two square pairs [], use exactly one of the two repeated parts:
-     // - the `..._ident` parts for non-tuple structs, and
-     // - the `..._idx` parts for tuples.
-     [$($local_ident:ident),* $($local_idx:literal),*]
-     [$($non_local_ident:ident),* $($non_local_idx:literal),*]
+     // Within each of the following two square pairs [], use exactly one of the three repeated
+     // parts:
+     // - `..._ident` parts for non-tuple structs, and
+     // - `..._idx` parts for tuples.
+     // - `@` followed with ` ..._eq_expr` parts for compound expressions. Those must use `self` and
+     //   `other`, and they muse yield a bool.
+
+     // TODO instead of :ident, consider :tt, and see if that covers expressions/function calls. Or,
+     // have that as a 3rd repetitive part $($local_expr:tt),*
+     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr)*)?]
+     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr)*)?]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
@@ -142,6 +148,7 @@ macro_rules! ca_partial_eq {
                 true
                 $(&& self.$t.$local_ident==other.$t.$local_ident)*
                 $(&& self.$t.$local_idx==other.$t.$local_idx)*
+                $(&& $($local_eq_closure(&self.$t, &other.$t))*)?
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
@@ -149,6 +156,7 @@ macro_rules! ca_partial_eq {
                 true
                 $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
                 $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
+                $(&& $($non_local_eq_closure(&self.$t, &other.$t))*)?
             }
         }
     };
@@ -218,6 +226,7 @@ macro_rules! ca_ord {
     };
 }
 
+// @TODO
 impl From<CaWrap> for &str {
     fn from(value: CaWrap) -> Self {
         panic!()
@@ -229,6 +238,7 @@ impl From<&str> for CaWrap {
     }
 }
 
+// @TODO
 impl Deref for CaWrap {
     type Target = str;
     fn deref(&self) -> &Self::Target {
@@ -299,8 +309,8 @@ mod test_macros {
         ca_tuple! { CaTupleA2 (A) }
         ca_partial_eq! {
             CaTupleA2 0 Both =>
-            [x]
-            [v]
+            [@ |left: &A, right: &A| left.x == right.x]
+            [@ |left: &A, right: &A| left.v == right.v]
         }
         ca_ord! {
             CaTupleA2 0

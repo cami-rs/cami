@@ -27,7 +27,7 @@ unsafe_from_rust_source = []
 #default = [] 
 #default = ["hint_assert_unchecked"]
 #default = ["fastrand"]
-#default = ["alloc"]
+default = ["alloc"]
 
 [dependencies]
 

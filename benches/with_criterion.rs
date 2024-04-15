@@ -77,9 +77,8 @@ pub fn bench_strings(c: &mut Criterion) {
     let mut group = c.benchmark_group("strings");
 
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
-    let id_string = format!(
-        "{num_items} items, each len max {MAX_ITEM_LEN}. Total len: {total_length}."
-    );
+    let id_string =
+        format!("{num_items} items, each len max {MAX_ITEM_LEN}. Total len: {total_length}.");
 
     let mut sorted = Vec::new();
     group.bench_with_input(
