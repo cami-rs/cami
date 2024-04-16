@@ -113,57 +113,67 @@ macro_rules! ca_wrap_tuple {
 }
 
 #[macro_export]
-macro_rules! ca_wrap_partial_eq {
+macro_rules! c_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
      $(>$($generic_right:tt),+<)?
 
      // $locality is NOT an ident, so that we allow (const-time) expressions.
-     { $t:tt @ $locality: expr }// The name of the only (wrapped) field, or 0 if tuple.
+     { $locality: expr
+       // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
+       // defined by `ca_wrap!` or `ca_wrap_tuple!`.` Otherwise $t is empty.
+       $( => $t:tt )?
+     }
 
      $(where $($left:ty : $right:tt),+)?
-     // Within each of the following two oval pairs (), repeat any of the THREE parts:
+     // TODO update this doc.
+     //
+     // TODO change (...)(...) => [...][...]
+     //
+     // Within each of the following two square pairs [], repeat any of the THREE parts:
      // - `..._ident` for non-tuple structs, or
      // - `..._idx` for tuples, or
-     // - [` ..._eq_closure`] for a boolean closure. Each closure must receive TWO parameters, for
-     //   example `this` and `other`. Both parameters' type is a reference to the wrapped type. The
-     //   closure compares the same chosen field in both references, and returns their equality.
+     // - (` ..._eq_closure`) for a boolean closure. Each closure must receive TWO parameters, for
+     //   example `this` and `other`. Both parameters' type is a reference to the wrapped type (if
+     //   you provided `$t`), or `Self` (if no `$t`). The closure compares the same chosen field in
+     //   both references, and returns their equality.
      // - {` ..._get_closure`} for an accessor closure. Each closure must receive ONE parameter, for
-     //   example `this` or `obj`. That parameter's type is a reference to the wrapped type. The
-     //   closure returns (reference, or copy) of a chosen field, or a value based on that field if
-     //   such a value is unique per the field's value.
-     (
+     //   example `this` or `obj`. That parameter's type is a reference to the wrapped type (if you
+     //   provided `$t`), or `Self` (if no `$t`). The closure returns (reference, or copy) of a
+     //   chosen field, or a value based on that field if such a value is unique per the field's
+     //   value.
+     [
         $(
            $(
             $local_ident:ident
             $(. $($local_ident_ident:ident)? $($local_ident_idx:literal)?
              )*)?
-           
+
            $(
             $local_idx:literal
             $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
              )* )?
 
-           $([$local_eq_closure:expr])?
+           $(($local_eq_closure:expr))?
            $({$local_get_closure:expr})?
         ),*
-     )
-     (
+     ]
+     [
         $(
            $(
             $non_local_ident:ident
             $(. $($non_local_ident_ident:ident)? $($non_local_ident_idx:literal)?
              )*)?
-           
+
            $(
             $non_local_idx:literal
             $(. $($non_local_idx_ident:ident)? $($non_local_idx_idx:literal)?
              )* )?
 
-           $([$non_local_eq_closure:expr])?
+           $(($non_local_eq_closure:expr))?
            $({$non_local_get_closure:expr})?
         ),*
-     )
+     ]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
@@ -172,113 +182,128 @@ macro_rules! ca_wrap_partial_eq {
 
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
+                let this = &self;
+                $( let this = &this.$t;
+                   let other = &other.$t;
+                )?
                 true
                 $(
                     //$(&& self.$t.$local_ident_first==other.$t.$local_ident_first)?
-                    $(&& self.$t.$local_ident
+                    $(&& this.$local_ident
                         $(.$($local_ident_ident)? $($local_ident_idx)?
                          )* ==
-                         other.$t.$local_ident
+                         other.$local_ident
                         $(.$($local_ident_ident)? $($local_ident_idx)?
                          )*
                     )?
                     //$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
-                    $(&& self.$t.$local_idx
+                    $(&& this.$local_idx
                         $(.$($local_idx_ident)? $($local_idx_idx)?
                          )* ==
-                         other.$t.$local_idx
+                         other.$local_idx
                         $(.$($local_idx_ident)? $($local_idx_idx)?
                          )*
                     )?
 
-                    $(&& $local_eq_closure(&self.$t, &other.$t))?
-                    $(&& $local_get_closure(&self.$t)==$local_get_closure(&other.$t))?
+                    $(&& $local_eq_closure(&this, &other))?
+                    $(&& $local_get_closure(&this)==$local_get_closure(&other))?
                 )*
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
+                let this = &self;
+                $( let this = &this.$t;
+                   let other = &other.$t;
+                )?
                 true
                 $(
                     //$(&& self.$t.$non_local_ident_first==other.$t.$non_local_ident_first)?
-                    $(&& self.$t.$non_local_ident
+                    $(&& this.$non_local_ident
                         $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
                          )* ==
-                         other.$t.$non_local_ident
+                         other.$non_local_ident
                         $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
                          )*
                     )?
                     //$(&& self.$t.$non_local_idx_first==other.$t.$non_local_idx_first)?
-                    $(&& self.$t.$non_local_idx
+                    $(&& this.$non_local_idx
                         $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
                          )* ==
-                         other.$t.$non_local_idx
+                         other.$non_local_idx
                         $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
                          )*
                     )?
 
-                    $(&& $non_local_eq_closure(&self.$t, &other.$t))?
-                    $(&& $non_local_get_closure(&self.$t)==$non_local_get_closure(&other.$t))?
+                    $(&& $non_local_eq_closure(&this, &other))?
+                    $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other))?
                 )*
             }
         }
     };
 }
 
-/// For types OTHER than defined by `ca_wrap!` or `ca_wrap_tuple!`.`
-///
-/// See [ca_wrap_partial_eq].
+// @TODO ca_* ---> c_*
+/// Like [c_partial_eq], but for [COrd].
 #[macro_export]
-macro_rules! ca_partial_eq {
+macro_rules! c_ord {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
      $(>$($generic_right:tt),+<)?
 
-     $(where $($left:ty : $right:tt),+)?
-     { $locality: expr }
-     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),+)? $(=> $($local_get_closure:expr),+)?]
-     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
-    ) => {
-        impl $(<$($generic_left $(: $bound)?)+>)?
-        $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
-        $(where $($left : $right),+)? {
-            const LOCALITY: $crate::Locality = $locality;
-
-            fn eq_local(&self, other: &Self) -> bool {
-                Self::LOCALITY.debug_reachable_for_local();
-                true
-                $(&& self.$local_ident==other.$local_ident)*
-                $(&& self.$local_idx==other.$local_idx)*
-                $(&& $($local_eq_closure(&self, &other))+)?
-                $(&& $($local_get_closure(&self)==$local_get_closure(&other))+)?
-            }
-
-            fn eq_non_local(&self, other: &Self) -> bool {
-                Self::LOCALITY.debug_reachable_for_non_local();
-                true
-                $(&& self.$non_local_ident==other.$non_local_ident)*
-                $(&& self.$non_local_idx==other.$non_local_idx)*
-                $(&& $($non_local_eq_closure(&self, &other))+)?
-                $(&& $($non_local_get_closure(&self)==$non_local_get_closure(&other))+)?
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! ca_wrap_ord {
-    ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
-     $struct_path:path
-     $(>$($generic_right:tt),+<)?
-
-     { $t:tt }// The name of the only (wrapped) field, or 0 if tuple.
+     $({
+       // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
+       // defined by `ca_wrap!` or `ca_wrap_tuple!`.` Otherwise $t is empty.
+       $t:tt
+     })?
 
      $(where $($left:ty : $right:tt),+)?
-     // Within each of the following two square pairs [], use exactly one of the two repeated parts:
-     // - the `..._ident` parts for non-tuple structs, and
-     // - the `..._idx` parts for tuples.
-     [$($local_ident:ident),* $($local_idx:literal),*]
-     [$($non_local_ident:ident),* $($non_local_idx:literal),*]
+     // TODO update this doc.
+     //
+     // Within each of the following two square pairs [], repeat any of the THREE parts:
+     // - `..._ident` for non-tuple structs, or
+     // - `..._idx` for tuples, or
+     // - (` ..._cmp_closure`) for a boolean closure. Each closure must receive TWO parameters, for
+     //   example `this` and `other`. Both parameters' type is a reference to the wrapped type (if
+     //   you provided `$t`), or `Self` (if no `$t`). The closure compares the same chosen field in
+     //   both references, and returns their .cmp(&...).
+     // - {` ..._get_closure`} for an accessor closure. Each closure must receive ONE parameter, for
+     //   example `this` or `obj`. That parameter's type is a reference to the wrapped type (if you
+     //   provided `$t`), or `Self` (if no `$t`). The closure returns (reference, or copy) of a
+     //   chosen field, or a value based on that field if such a value is unique per the field's
+     //   value.
+     [
+        $(
+           $(
+            $local_ident:ident
+            $(. $($local_ident_ident:ident)? $($local_ident_idx:literal)?
+             )*)?
+
+           $(
+            $local_idx:literal
+            $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
+             )* )?
+
+           $(($local_cmp_closure:expr))?
+           $({$local_get_closure:expr})?
+        ),*
+     ]
+     [
+        $(
+           $(
+            $non_local_ident:ident
+            $(. $($non_local_ident_ident:ident)? $($non_local_ident_idx:literal)?
+             )*)?
+
+           $(
+            $non_local_idx:literal
+            $(. $($non_local_idx_ident:ident)? $($non_local_idx_idx:literal)?
+             )* )?
+
+           $([$non_local_cmp_closure:expr])?
+           $({$non_local_get_closure:expr})?
+        ),*
+     ]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::COrd for $struct_path $(<$($generic_right),+>)?
@@ -286,6 +311,10 @@ macro_rules! ca_wrap_ord {
             fn cmp_local(&self, other: &Self) -> ::core::cmp::Ordering {
                 use crate::CPartialEq;
                 Self::LOCALITY.debug_reachable_for_local();
+                let this = &self;
+                $( let this = &this.$t;
+                   let other = &other.$t;
+                )?
                 let result = ::core::cmp::Ordering::Equal;
                 // LLVM should be able to optimize away the first comparison of
                 // result==::core::cmp::Ordering::Equal
@@ -293,13 +322,30 @@ macro_rules! ca_wrap_ord {
                     if result!=::core::cmp::Ordering::Equal {
                         return result;
                     }
-                    let result = (&self.$t.$local_ident).cmp(&other.$t.$local_ident);
-                )*
-                $(
-                    if result!=::core::cmp::Ordering::Equal {
-                        return result;
-                    }
-                    let result = (&self.$t.$local_idx).cmp(&other.$t.$local_idx);
+                    $(let result =
+                         this.$local_ident
+                        $(.$($local_ident_ident)? $($local_ident_idx)?
+                         )* .cmp(
+                         &other.$local_ident
+                        $(.$($local_ident_ident)? $($local_ident_idx)?
+                         )*
+                        );
+                    )?
+                    $(let result =
+                         this.$local_idx
+                        $(.$($local_idx_ident)? $($local_idx_idx)?
+                         )* .cmp(
+                         &other.$local_idx
+                        $(.$($local_idx_ident)? $($local_idx_idx)?
+                         )*
+                        );
+                    )?
+                    $(let result =
+                        $local_cmp_closure(&this, &other);
+                    )?
+                    $(let result =
+                        $local_get_closure(&this).cmp(&$local_get_closure(&other));
+                    )?
                 )*
                 result
             }
@@ -307,24 +353,42 @@ macro_rules! ca_wrap_ord {
             fn cmp_non_local(&self, other: &Self) -> ::core::cmp::Ordering {
                 use crate::CPartialEq;
                 Self::LOCALITY.debug_reachable_for_non_local();
+                let this = &self;
+                $( let this = &this.$t;
+                   let other = &other.$t;
+                )?
                 let result = ::core::cmp::Ordering::Equal;
-                // LLVM should be able to optimize away the first comparison of
-                // result==::core::cmp::Ordering::Equal
                 $(
                     if result!=::core::cmp::Ordering::Equal {
                         return result;
                     }
-                    let result = (&self.$t.$non_local_ident).cmp(&other.$t.$non_local_ident);
-                )*
-                $(
-                    if result!=::core::cmp::Ordering::Equal {
-                        return result;
-                    }
-                    let result = (&self.$t.$non_local_idx).cmp(&other.$t.$non_local_idx);
+                    $(let result =
+                         this.$non_local_ident
+                        $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
+                         )* .cmp(
+                         &other.$non_local_ident
+                        $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
+                         )*
+                        );
+                    )?
+                    $(let result =
+                         this.$non_local_idx
+                        $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
+                         )* .cmp(
+                         &other.$non_local_idx
+                        $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
+                         )*
+                        );
+                    )?
+                    $(let result =
+                        $non_local_cmp_closure(&this, &other);
+                    )?
+                    $(let result =
+                        $non_local_get_closure(&this).cmp(&$non_local_get_closure(&other));
+                    )?
                 )*
                 result
             }
-            // NOT re-implemeting cmp_full(...), but using its default impl.
         }
     };
 }
@@ -406,25 +470,24 @@ mod test_macros {
         use crate::Locality;
 
         ca_wrap! { CaWrapA1 {t : A }}
-        ca_wrap_partial_eq! {
+        c_partial_eq! {
             CaWrapA1 {
-                t @ Locality::Both
+                Locality::Both => t
             }
-            ([|this: &A, other: &A| this.x==other.x]
-            )
-            (v)
+            [(|this: &A, other: &A| this.x==other.x)]
+            [v]
         }
-        ca_wrap_ord! {
+        c_ord! {
             CaWrapA1 { t }
-            [x]
+            [{ |a: &A| a.x }]
             [v]
         }
 
-        ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
+        ca_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Sized}
 
         mod tuple_2 {
-            use crate::Locality;
             use crate::macros::test_macros::with_alloc::A;
+            use crate::Locality;
             use alloc::vec::Vec;
             //use alloc::string::String;
 
@@ -432,23 +495,23 @@ mod test_macros {
             fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
                 &wrap.v
             }
-            ca_wrap_partial_eq! {
+            c_partial_eq! {
                 <'a>
                 CaTupleA2 {
-                    0 @ Locality::Both
+                    Locality::Both => 0
                 }
-                ( {|obj: &A| obj.x}
-                )
+                [ {|obj: &A| obj.x}
+                ]
                 // We can't specify return lifetimes here:
                 //
                 // [@ |obj: &'l A| -> &'l Vec<i32> {&obj.v}]
                 //
                 // Hence a separate function:
-                ( {get_v} )
+                [ {get_v} ]
             }
-            ca_wrap_ord! {
+            c_ord! {
                 CaTupleA2 { 0 }
-                [x]
+                [( |this: &A, other: &A| this.x.cmp(&other.x) )]
                 [v]
             }
         }
@@ -457,20 +520,20 @@ mod test_macros {
             use crate::Locality;
             //use alloc::vec::Vec;
             use alloc::string::String;
-            
+
             type Amount = u16;
 
             #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
             struct Food {
                 name: String,
-                amount: Amount
+                amount: Amount,
             }
 
             #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
             struct FoodList {
                 common: Food,
                 gluten_free: Food,
-                vegan: Food
+                vegan: Food,
             }
 
             ca_wrap! {
@@ -478,19 +541,19 @@ mod test_macros {
                     t : FoodList
                 }
             }
-            ca_wrap_partial_eq! {
+            c_partial_eq! {
                 FoodListCa {
-                    t @ Locality::Both
+                    Locality::Both => t
                 }
-                (
+                [
                     common.amount,
                     {|food_list: &FoodList| food_list.gluten_free.amount},
-                    [|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name]
-                )
+                    (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
+                ]
                 // @TODO empty, or have a special rule to capture that:
-                (   common.name, gluten_free.name,
-                    [|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name]
-                )
+                [   common.name, gluten_free.name,
+                    (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
+                ]
             }
         }
     }

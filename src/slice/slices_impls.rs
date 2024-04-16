@@ -43,9 +43,9 @@ where
 }
 
 #[cfg(feature = "alloc")]
-ca_partial_eq! {
-    ::alloc::string::String // TODO -> Path?
+c_partial_eq! {
+    ::alloc::string::String
     { Locality::Both }
-    [=> |v: &String| v.len()]
-    [@ |this: &String, other: &String| this == other]
+    [{|v: &String| v.len()}]
+    [(|this: &String, other: &String| this == other)]
 }
