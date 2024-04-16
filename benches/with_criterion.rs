@@ -1,4 +1,4 @@
-use camigo::{ca_struct, Slice};
+use camigo::{ca_wrap, Slice};
 use core::hint;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
@@ -80,36 +80,64 @@ pub fn bench_strings(c: &mut Criterion) {
     let id_string =
         format!("{num_items} items, each len max {MAX_ITEM_LEN}. Sum len: {total_length}.");
 
-    let mut sorted = Vec::new();
+    let mut sorted_lexi = Vec::new();
     group.bench_with_input(
-        BenchmarkId::new("std sort      ", id_string.clone()),
+        BenchmarkId::new("std sort lexi.          ", id_string.clone()),
         hint::black_box(&unsorted_items),
         |b, unsorted_items| {
             b.iter(|| {
-                sorted = hint::black_box(unsorted_items.clone());
-                sorted.sort();
+                sorted_lexi = hint::black_box(unsorted_items.clone());
+                sorted_lexi.sort();
             })
         },
     );
     group.bench_with_input(
-        BenchmarkId::new("std bin search", id_string.clone()),
+        BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
         hint::black_box(&unsorted_items),
         |b, unsorted_items| {
             b.iter(|| {
-                let sorted = hint::black_box(&sorted);
+                let sorted = hint::black_box(&sorted_lexi);
                 for item in hint::black_box(unsorted_items.into_iter()) {
                     hint::black_box(sorted.binary_search(item)).unwrap();
                 }
             })
         },
     );
+    let mut sorted_non_lexi = Vec::new();
     group.bench_with_input(
-        BenchmarkId::new("std bin search", id_string.clone()),
+        BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
         hint::black_box(&unsorted_items),
         |b, unsorted_items| {
             b.iter(|| {
-                let sorted = hint::black_box(&sorted);
+                sorted_non_lexi = hint::black_box(unsorted_items.clone()); // @TODO Transmute
+                sorted_non_lexi.sort();
+            })
+        },
+    );
+    group.bench_with_input(
+        BenchmarkId::new("std bin search (non-lexi)", id_string.clone()),
+        hint::black_box(&unsorted_items),
+        |b, unsorted_items| {
+            b.iter(|| {
+                let sorted = hint::black_box(&sorted_lexi);
                 for item in hint::black_box(unsorted_items.into_iter()) {
+                    hint::black_box(sorted_non_lexi.binary_search(item)).unwrap();
+                }
+            })
+        },
+    );
+    group.bench_with_input(
+        BenchmarkId::new("ca  bin search      ", id_string.clone()),
+        hint::black_box(&unsorted_items),
+        |b, unsorted_items| {
+            b.iter(|| {
+                let sorted = hint::black_box(&sorted_lexi); // @TODO sorted_non_lexi?
+                for item in hint::black_box(unsorted_items.into_iter()) {
+                    // !! TODO
+                    // 
+                    // Check: Should we FIRST sort the items as per COrd (on-lexi)?
+                    //
+                    // If so, transmute unsorted_items, clone, .sort().
                     hint::black_box(sorted.binary_search_ca(item)).unwrap();
                 }
             })
