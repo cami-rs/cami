@@ -1,4 +1,4 @@
-use camigo::{ca_wrap, Slice};
+use camigo::{c_wrap, Slice};
 use core::hint;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
@@ -91,6 +91,7 @@ pub fn bench_strings(c: &mut Criterion) {
             })
         },
     );
+    purge_cache();
     group.bench_with_input(
         BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
         hint::black_box(&unsorted_items),
@@ -103,6 +104,8 @@ pub fn bench_strings(c: &mut Criterion) {
             })
         },
     );
+
+    purge_cache();
     let mut sorted_non_lexi = Vec::new();
     group.bench_with_input(
         BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
@@ -114,6 +117,7 @@ pub fn bench_strings(c: &mut Criterion) {
             })
         },
     );
+    purge_cache();
     group.bench_with_input(
         BenchmarkId::new("std bin search (non-lexi)", id_string.clone()),
         hint::black_box(&unsorted_items),
@@ -126,6 +130,7 @@ pub fn bench_strings(c: &mut Criterion) {
             })
         },
     );
+    purge_cache();
     group.bench_with_input(
         BenchmarkId::new("ca  bin search      ", id_string.clone()),
         hint::black_box(&unsorted_items),
@@ -135,7 +140,7 @@ pub fn bench_strings(c: &mut Criterion) {
                 for item in hint::black_box(unsorted_items.into_iter()) {
                     // !! TODO
                     //
-                    // Check: Should we FIRST sort the items as per COrd (on-lexi)?
+                    // Check: Should we FIRST sort the items as per COrd (non-lexi)?
                     //
                     // If so, transmute unsorted_items, clone, .sort().
                     hint::black_box(sorted.binary_search_ca(item)).unwrap();

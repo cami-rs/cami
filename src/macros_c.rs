@@ -3,7 +3,7 @@ use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
 
 #[macro_export]
-macro_rules! ca_wrap {
+macro_rules! c_wrap {
     // An INTERNAL rule
     (@[$($($derived:path),+)?]
      $struct_vis:vis
@@ -38,7 +38,7 @@ macro_rules! ca_wrap {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        ca_wrap! {
+        c_wrap! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -46,7 +46,7 @@ macro_rules! ca_wrap {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        ca_wrap! {
+        c_wrap! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -58,7 +58,7 @@ macro_rules! ca_wrap {
 }
 
 #[macro_export]
-macro_rules! ca_wrap_tuple {
+macro_rules! c_wrap_tuple {
     // An INTERNAL rule
     (@
      [$($($derived:path),+)?]
@@ -93,7 +93,7 @@ macro_rules! ca_wrap_tuple {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        ca_wrap_tuple! {
+        c_wrap_tuple! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -101,7 +101,7 @@ macro_rules! ca_wrap_tuple {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        ca_wrap_tuple! {
+        c_wrap_tuple! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -121,7 +121,7 @@ macro_rules! c_partial_eq {
      // $locality is NOT an ident, so that we allow (const-time) expressions.
      { $locality: expr
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
-       // defined by `ca_wrap!` or `ca_wrap_tuple!`.` Otherwise $t is empty.
+       // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise $t is empty.
        $( => $t:tt )?
      }
 
@@ -253,7 +253,7 @@ macro_rules! c_ord {
 
      $({
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
-       // defined by `ca_wrap!` or `ca_wrap_tuple!`.` Otherwise $t is empty.
+       // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise $t is empty.
        $t:tt
      })?
 
@@ -405,7 +405,7 @@ impl From<&str> for CaWrap {
     }
 }
 
-ca_wrap! {
+c_wrap! {
     pub CaWrap {
         t : u8
     }
@@ -438,16 +438,16 @@ fn _deref(caw: &CaWrap) {
     let _ = caw.len();
 }
 
-ca_wrap! { [Clone, Debug] _CaWrap3 <T> {t : T }}
-ca_wrap! { [Clone, Debug] _CaWrap4 <T:Sized> {t : T }}
-ca_wrap! {
+c_wrap! { [Clone, Debug] _CaWrap3 <T> {t : T }}
+c_wrap! { [Clone, Debug] _CaWrap4 <T:Sized> {t : T }}
+c_wrap! {
     [Clone, Debug]
     _CaWrap5 <T>
     where T: 'static {
         t : T
     }
 }
-ca_wrap! { pub CaWrapPub {pub t : u8}}
+c_wrap! { pub CaWrapPub {pub t : u8}}
 
 #[cfg(test)]
 mod test_macros {
@@ -461,7 +461,7 @@ mod test_macros {
             v: Vec<i32>,
         }
 
-        ca_wrap! {
+        c_wrap! {
             _CaWrap2 <A> {
                 pub t : Vec<A>
             }
@@ -469,7 +469,7 @@ mod test_macros {
 
         use crate::Locality;
 
-        ca_wrap! { CaWrapA1 {t : A }}
+        c_wrap! { CaWrapA1 {t : A }}
         c_partial_eq! {
             CaWrapA1 {
                 Locality::Both => t
@@ -483,15 +483,15 @@ mod test_macros {
             [v]
         }
 
-        ca_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Sized}
+        c_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Sized}
 
         mod tuple_2 {
-            use crate::macros::test_macros::with_alloc::A;
+            use crate::macros_c::test_macros::with_alloc::A;
             use crate::Locality;
             use alloc::vec::Vec;
             //use alloc::string::String;
 
-            ca_wrap_tuple! { CaTupleA2 (A) }
+            c_wrap_tuple! { CaTupleA2 (A) }
             fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
                 &wrap.v
             }
@@ -536,7 +536,7 @@ mod test_macros {
                 vegan: Food,
             }
 
-            ca_wrap! {
+            c_wrap! {
                 pub FoodListCa {
                     t : FoodList
                 }

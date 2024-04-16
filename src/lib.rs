@@ -14,14 +14,14 @@ pub use std_wrap::*;
 extern crate alloc;
 
 #[macro_use]
-pub mod macros;
+pub mod macros_c;
 
 #[macro_use]
 mod pure_local_macros;
 mod pure_local_impls;
 mod slice;
 #[macro_use]
-mod std_macros;
+mod macros_s;
 mod std_wrap;
 mod string;
 
