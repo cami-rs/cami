@@ -134,7 +134,7 @@ pub fn bench_strings(c: &mut Criterion) {
                 let sorted = hint::black_box(&sorted_lexi); // @TODO sorted_non_lexi?
                 for item in hint::black_box(unsorted_items.into_iter()) {
                     // !! TODO
-                    // 
+                    //
                     // Check: Should we FIRST sort the items as per COrd (on-lexi)?
                     //
                     // If so, transmute unsorted_items, clone, .sort().
