@@ -45,9 +45,7 @@ where
 #[cfg(feature = "alloc")]
 ca_partial_eq! {
     ::alloc::string::String // TODO -> Path?
-
-    | Locality::Both
-    =>
+    { Locality::Both }
     [=> |v: &String| v.len()]
     [@ |this: &String, other: &String| this == other]
 }

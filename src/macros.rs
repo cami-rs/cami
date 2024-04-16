@@ -118,26 +118,36 @@ macro_rules! ca_wrap_partial_eq {
      $struct_path:path
      $(>$($generic_right:tt),+<)?
 
-     { $t:tt }// The name of the only (wrapped) field, or 0 if tuple.
+     // $locality is NOT an ident, so that we allow (const-time) expressions.
+     { $t:tt @ $locality: expr }// The name of the only (wrapped) field, or 0 if tuple.
 
      $(where $($left:ty : $right:tt),+)?
-     // $locality is NOT an ident, so that we allow (const-time) expressions.
-     //
-     // Because it's an `expr`, we need `=>` afterwards.
-     $locality: expr
-     =>
-     // Within each of the following two square pairs [], use exactly one of the four repeated
-     // parts:
-     // - `..._ident` parts for non-tuple structs, or
-     // - `..._idx` parts for tuples, or
-     // - `@` followed with ` ..._eq_closure` parts for expressions in closures. Each closure must
-     //   receive TWO parameters, for example `this` and `other`. Both parameters' type is a
-     //   reference to the wrapped type.
-     // - `=>` followed with ` ..._get_closure` parts for expressions in closures. Each closure must
-     //   receive ONE parameter, for example `this` or `obj`. That parameter's type is a reference
-     //   to the wrapped type.
-     [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),+)? $(=> $($local_get_closure:expr),+)?]
-     [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
+     // Within each of the following two oval pairs (), repeat any of the four parts:
+     // - `..._ident` for non-tuple structs, or
+     // - `..._idx` for tuples, or
+     // - [` ..._eq_closure`] for a boolean closure. Each closure must receive TWO parameters, for
+     //   example `this` and `other`. Both parameters' type is a reference to the wrapped type. The
+     //   closure compares the same chosen field in both references, and returns their equality.
+     // - {` ..._get_closure`} for an accessor closure. Each closure must receive ONE parameter, for
+     //   example `this` or `obj`. That parameter's type is a reference to the wrapped type. The
+     //   closure returns (reference, or copy) of a chosen field, or a value based on that field if
+     //   such a value is unique per the field's value.
+     (
+        $(
+           $($local_idx:literal)?
+           $($local_ident:ident)?
+           $([$local_eq_closure:expr])?
+           $({$local_get_closure:expr})?
+        ),*
+     )
+     (
+        $(
+           $($non_local_idx:literal)?
+           $($non_local_ident:ident)?
+           $([$non_local_eq_closure:expr])?
+           $({$non_local_get_closure:expr})?
+        ),*
+     )
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
@@ -147,19 +157,23 @@ macro_rules! ca_wrap_partial_eq {
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
                 true
-                $(&& self.$t.$local_ident==other.$t.$local_ident)*
-                $(&& self.$t.$local_idx==other.$t.$local_idx)*
-                $(&& $($local_eq_closure(&self.$t, &other.$t))+)?
-                $(&& $($local_get_closure(&self.$t)==$local_get_closure(&other.$t))+)?
+                $(
+                    $(&& self.$t.$local_ident==other.$t.$local_ident)?
+                    $(&& self.$t.$local_idx==other.$t.$local_idx)?
+                    $(&& $local_eq_closure(&self.$t, &other.$t))?
+                    $(&& $local_get_closure(&self.$t)==$local_get_closure(&other.$t))?
+                )*
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
                 true
-                $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)*
-                $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)*
-                $(&& $($non_local_eq_closure(&self.$t, &other.$t))+)?
-                $(&& $($non_local_get_closure(&self.$t)==$non_local_get_closure(&other.$t))+)?
+                $(
+                    $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)?
+                    $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)?
+                    $(&& $non_local_eq_closure(&self.$t, &other.$t))?
+                    $(&& $non_local_get_closure(&self.$t)==$non_local_get_closure(&other.$t))?
+                )*
             }
         }
     };
@@ -172,11 +186,10 @@ macro_rules! ca_wrap_partial_eq {
 macro_rules! ca_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
-     $(>$($generic_right:tt),+<)? // @TODO apply to the above macros
+     $(>$($generic_right:tt),+<)?
 
      $(where $($left:ty : $right:tt),+)?
-     | $locality: expr
-     =>
+     { $locality: expr }
      [$($local_ident:ident),* $($local_idx:literal),* $(@ $($local_eq_closure:expr),+)? $(=> $($local_get_closure:expr),+)?]
      [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
     ) => {
@@ -272,13 +285,19 @@ macro_rules! ca_wrap_ord {
 
 // @TODO
 impl From<CaWrap> for &str {
-    fn from(value: CaWrap) -> Self {
+    fn from(_value: CaWrap) -> Self {
         panic!()
     }
 }
 impl From<&str> for CaWrap {
-    fn from(value: &str) -> Self {
+    fn from(_value: &str) -> Self {
         panic!()
+    }
+}
+
+ca_wrap! {
+    pub CaWrap {
+        t : u8
     }
 }
 
@@ -297,24 +316,23 @@ impl DerefMut for CaWrap {
 #[cfg(feature = "unsafe")]
 unsafe impl DerefPure for CaWrap {}
 
-fn into() {
-    let caw: CaWrap = "".into();
-    let caw: CaWrap = <&str>::into("");
+fn _into() {
+    let _caw: CaWrap = "".into();
+    let _caw: CaWrap = <&str>::into("");
 }
-fn from() {
-    let caw = CaWrap::from("");
+fn _from() {
+    let _caw = CaWrap::from("");
 }
 
-fn deref(caw: &CaWrap) {
+fn _deref(caw: &CaWrap) {
     let _ = caw.len();
 }
 
-ca_wrap! { pub CaWrap {t : u8}}
-ca_wrap! { [Clone, Debug] CaWrap3 <T> {t : T }}
-ca_wrap! { [Clone, Debug] CaWrap4 <T:Sized> {t : T }}
+ca_wrap! { [Clone, Debug] _CaWrap3 <T> {t : T }}
+ca_wrap! { [Clone, Debug] _CaWrap4 <T:Sized> {t : T }}
 ca_wrap! {
     [Clone, Debug]
-    CaWrap5 <T>
+    _CaWrap5 <T>
     where T: 'static {
         t : T
     }
@@ -327,24 +345,28 @@ mod test_macros {
     mod with_alloc {
         use alloc::vec::Vec;
 
-        ca_wrap! { CaWrap2 <A> {pub t : Vec<A> }}
-
         #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
         struct A {
             x: i32,
             v: Vec<i32>,
         }
 
+        ca_wrap! {
+            CaWrap2 <A> {
+                pub t : Vec<A>
+            }
+        }
+
         use crate::Locality;
 
         ca_wrap! { CaWrapA1 {t : A }}
         ca_wrap_partial_eq! {
-            CaWrapA1
-            { t } // @TODO introduce {} here, etc.
-            Locality::Both
-            =>
-            [@ |this: &A, other: &A|this.x==other.x]
-            [v]
+            CaWrapA1 {
+                t @ Locality::Both
+            }
+            ([|this: &A, other: &A| this.x==other.x]
+            )
+            (v)
         }
         ca_wrap_ord! {
             CaWrapA1 { t }
@@ -354,26 +376,34 @@ mod test_macros {
 
         ca_wrap_tuple! { CaTupleGen1 <T> (pub T) where T: Sized}
 
-        ca_wrap_tuple! { CaTupleA2 (A) }
-        fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
-            &wrap.v
-        }
-        ca_wrap_partial_eq! {
-            <'a>
-            CaTupleA2 { 0 } Locality::Both
-            =>
-            [=> |obj: &A| obj.x]
-            // We can't specify return lifetimes here:
-            //
-            // [@ |obj: &'l A| -> &'l Vec<i32> {&obj.v}]
-            //
-            // Hence a separate function:
-            [=> get_v]
-        }
-        ca_wrap_ord! {
-            CaTupleA2 { 0 }
-            [x]
-            [v]
+        mod tuple_2 {
+            use crate::Locality;
+            use crate::macros::test_macros::with_alloc::A;
+            use alloc::vec::Vec;
+
+            ca_wrap_tuple! { CaTupleA2 (A) }
+            fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
+                &wrap.v
+            }
+            ca_wrap_partial_eq! {
+                <'a>
+                CaTupleA2 {
+                    0 @ Locality::Both
+                }
+                ( {|obj: &A| obj.x}
+                )
+                // We can't specify return lifetimes here:
+                //
+                // [@ |obj: &'l A| -> &'l Vec<i32> {&obj.v}]
+                //
+                // Hence a separate function:
+                ( {get_v} )
+            }
+            ca_wrap_ord! {
+                CaTupleA2 { 0 }
+                [x]
+                [v]
+            }
         }
     }
 }

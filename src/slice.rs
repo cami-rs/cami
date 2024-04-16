@@ -1,6 +1,8 @@
 use crate::COrd;
 use core::cmp::Ordering;
-use core::{hint, mem};
+#[cfg(feature = "hint_assert_unchecked")]
+use core::hint;
+use core::mem;
 
 mod slices_impls;
 
@@ -23,7 +25,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
         let entry_size = mem::size_of::<T>();
         // TODO runtime: Use https://docs.rs/crossbeam-utils/latest/crossbeam_utils/struct.CachePadded.html && https://docs.rs/cache-size/latest/cache_size.
         let cache_line_size = 128usize; // in bytes
-        const CACHE_LINE_START_MASK: usize = 0xFFFFFFFFFFFFFFE0;
+        const _CACHE_LINE_START_MASK: usize = 0xFFFFFFFFFFFFFFE0;
 
         //let cache_line_threshold
         // let ratio
