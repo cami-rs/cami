@@ -300,7 +300,7 @@ macro_rules! c_ord {
             $(. $($non_local_idx_ident:ident)? $($non_local_idx_idx:literal)?
              )* )?
 
-           $([$non_local_cmp_closure:expr])?
+           $(($non_local_cmp_closure:expr))?
            $({$non_local_get_closure:expr})?
         ),*
      ]

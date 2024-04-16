@@ -49,3 +49,10 @@ c_partial_eq! {
     [{|v: &String| v.len()}]
     [(|this: &String, other: &String| this == other)]
 }
+
+#[cfg(feature = "alloc")]
+c_ord! {
+    ::alloc::string::String
+    [{|v: &String| v.len()}]
+    [(|this: &String, other: &String| this.cmp(&other))]
+}
