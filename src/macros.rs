@@ -122,7 +122,7 @@ macro_rules! ca_wrap_partial_eq {
      { $t:tt @ $locality: expr }// The name of the only (wrapped) field, or 0 if tuple.
 
      $(where $($left:ty : $right:tt),+)?
-     // Within each of the following two oval pairs (), repeat any of the four parts:
+     // Within each of the following two oval pairs (), repeat any of the THREE parts:
      // - `..._ident` for non-tuple structs, or
      // - `..._idx` for tuples, or
      // - [` ..._eq_closure`] for a boolean closure. Each closure must receive TWO parameters, for
@@ -134,16 +134,32 @@ macro_rules! ca_wrap_partial_eq {
      //   such a value is unique per the field's value.
      (
         $(
-           $($local_idx:literal)?
-           $($local_ident:ident)?
+           $(
+            $local_ident:ident
+            $(. $($local_ident_ident:ident)? $($local_ident_idx:literal)?
+             )*)?
+           
+           $(
+            $local_idx:literal
+            $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
+             )* )?
+
            $([$local_eq_closure:expr])?
            $({$local_get_closure:expr})?
         ),*
      )
      (
         $(
-           $($non_local_idx:literal)?
-           $($non_local_ident:ident)?
+           $(
+            $non_local_ident:ident
+            $(. $($non_local_ident_ident:ident)? $($non_local_ident_idx:literal)?
+             )*)?
+           
+           $(
+            $non_local_idx:literal
+            $(. $($non_local_idx_ident:ident)? $($non_local_idx_idx:literal)?
+             )* )?
+
            $([$non_local_eq_closure:expr])?
            $({$non_local_get_closure:expr})?
         ),*
@@ -158,8 +174,23 @@ macro_rules! ca_wrap_partial_eq {
                 Self::LOCALITY.debug_reachable_for_local();
                 true
                 $(
-                    $(&& self.$t.$local_ident==other.$t.$local_ident)?
-                    $(&& self.$t.$local_idx==other.$t.$local_idx)?
+                    //$(&& self.$t.$local_ident_first==other.$t.$local_ident_first)?
+                    $(&& self.$t.$local_ident
+                        $(.$($local_ident_ident)? $($local_ident_idx)?
+                         )* ==
+                         other.$t.$local_ident
+                        $(.$($local_ident_ident)? $($local_ident_idx)?
+                         )*
+                    )?
+                    //$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
+                    $(&& self.$t.$local_idx
+                        $(.$($local_idx_ident)? $($local_idx_idx)?
+                         )* ==
+                         other.$t.$local_idx
+                        $(.$($local_idx_ident)? $($local_idx_idx)?
+                         )*
+                    )?
+
                     $(&& $local_eq_closure(&self.$t, &other.$t))?
                     $(&& $local_get_closure(&self.$t)==$local_get_closure(&other.$t))?
                 )*
@@ -169,8 +200,23 @@ macro_rules! ca_wrap_partial_eq {
                 Self::LOCALITY.debug_reachable_for_non_local();
                 true
                 $(
-                    $(&& self.$t.$non_local_ident==other.$t.$non_local_ident)?
-                    $(&& self.$t.$non_local_idx==other.$t.$non_local_idx)?
+                    //$(&& self.$t.$non_local_ident_first==other.$t.$non_local_ident_first)?
+                    $(&& self.$t.$non_local_ident
+                        $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
+                         )* ==
+                         other.$t.$non_local_ident
+                        $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
+                         )*
+                    )?
+                    //$(&& self.$t.$non_local_idx_first==other.$t.$non_local_idx_first)?
+                    $(&& self.$t.$non_local_idx
+                        $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
+                         )* ==
+                         other.$t.$non_local_idx
+                        $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
+                         )*
+                    )?
+
                     $(&& $non_local_eq_closure(&self.$t, &other.$t))?
                     $(&& $non_local_get_closure(&self.$t)==$non_local_get_closure(&other.$t))?
                 )*
@@ -352,7 +398,7 @@ mod test_macros {
         }
 
         ca_wrap! {
-            CaWrap2 <A> {
+            _CaWrap2 <A> {
                 pub t : Vec<A>
             }
         }
@@ -380,6 +426,7 @@ mod test_macros {
             use crate::Locality;
             use crate::macros::test_macros::with_alloc::A;
             use alloc::vec::Vec;
+            //use alloc::string::String;
 
             ca_wrap_tuple! { CaTupleA2 (A) }
             fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
@@ -403,6 +450,47 @@ mod test_macros {
                 CaTupleA2 { 0 }
                 [x]
                 [v]
+            }
+        }
+
+        mod party {
+            use crate::Locality;
+            //use alloc::vec::Vec;
+            use alloc::string::String;
+            
+            type Amount = u16;
+
+            #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+            struct Food {
+                name: String,
+                amount: Amount
+            }
+
+            #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+            struct FoodList {
+                common: Food,
+                gluten_free: Food,
+                vegan: Food
+            }
+
+            ca_wrap! {
+                pub FoodListCa {
+                    t : FoodList
+                }
+            }
+            ca_wrap_partial_eq! {
+                FoodListCa {
+                    t @ Locality::Both
+                }
+                (
+                    common.amount,
+                    {|food_list: &FoodList| food_list.gluten_free.amount},
+                    [|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name]
+                )
+                // @TODO empty, or have a special rule to capture that:
+                (   common.name, gluten_free.name,
+                    [|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name]
+                )
             }
         }
     }
