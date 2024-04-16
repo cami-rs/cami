@@ -115,10 +115,10 @@ macro_rules! ca_wrap_tuple {
 #[macro_export]
 macro_rules! ca_wrap_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
-     $struct_name:ident
-     $(<$($generic_right:tt),+>)?
+     $struct_path:path
+     $(>$($generic_right:tt),+<)?
 
-     $t:tt // The name of the only (wrapped) field, or 0 if tuple.
+     { $t:tt }// The name of the only (wrapped) field, or 0 if tuple.
 
      $(where $($left:ty : $right:tt),+)?
      // $locality is NOT an ident, so that we allow (const-time) expressions.
@@ -140,7 +140,7 @@ macro_rules! ca_wrap_partial_eq {
      [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
-        $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
+        $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
         $(where $($left : $right),+)? {
             const LOCALITY: $crate::Locality = $locality;
 
@@ -171,7 +171,7 @@ macro_rules! ca_wrap_partial_eq {
 #[macro_export]
 macro_rules! ca_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
-     $struct_name:path // @TODO rename -> struct_path; apply to the above macros
+     $struct_path:path
      $(>$($generic_right:tt),+<)? // @TODO apply to the above macros
 
      $(where $($left:ty : $right:tt),+)?
@@ -181,7 +181,7 @@ macro_rules! ca_partial_eq {
      [$($non_local_ident:ident),* $($non_local_idx:literal),* $(@ $($non_local_eq_closure:expr),+)? $(=> $($non_local_get_closure:expr),+)?]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
-        $crate::CPartialEq for $struct_name $(<$($generic_right),+>)?
+        $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
         $(where $($left : $right),+)? {
             const LOCALITY: $crate::Locality = $locality;
 
@@ -209,10 +209,10 @@ macro_rules! ca_partial_eq {
 #[macro_export]
 macro_rules! ca_wrap_ord {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
-     $struct_name:ident
-     $(<$($generic_right:tt),+>)?
+     $struct_path:path
+     $(>$($generic_right:tt),+<)?
 
-     $t:tt // The name of the only (wrapped) field, or 0 if tuple.
+     { $t:tt }// The name of the only (wrapped) field, or 0 if tuple.
 
      $(where $($left:ty : $right:tt),+)?
      // Within each of the following two square pairs [], use exactly one of the two repeated parts:
@@ -222,7 +222,7 @@ macro_rules! ca_wrap_ord {
      [$($non_local_ident:ident),* $($non_local_idx:literal),*]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
-        $crate::COrd for $struct_name $(<$($generic_right),+>)?
+        $crate::COrd for $struct_path $(<$($generic_right),+>)?
         $(where $($left : $right),+)? {
             fn cmp_local(&self, other: &Self) -> ::core::cmp::Ordering {
                 use crate::CPartialEq;
@@ -340,14 +340,14 @@ mod test_macros {
         ca_wrap! { CaWrapA1 {t : A }}
         ca_wrap_partial_eq! {
             CaWrapA1
-            t // @TODO introduce {} here, etc.
+            { t } // @TODO introduce {} here, etc.
             Locality::Both
             =>
             [@ |this: &A, other: &A|this.x==other.x]
             [v]
         }
         ca_wrap_ord! {
-            CaWrapA1 t
+            CaWrapA1 { t }
             [x]
             [v]
         }
@@ -360,7 +360,7 @@ mod test_macros {
         }
         ca_wrap_partial_eq! {
             <'a>
-            CaTupleA2 0 Locality::Both
+            CaTupleA2 { 0 } Locality::Both
             =>
             [=> |obj: &A| obj.x]
             // We can't specify return lifetimes here:
@@ -371,7 +371,7 @@ mod test_macros {
             [=> get_v]
         }
         ca_wrap_ord! {
-            CaTupleA2 0
+            CaTupleA2 { 0 }
             [x]
             [v]
         }
