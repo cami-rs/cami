@@ -8,7 +8,6 @@
 
 use core::cmp::Ordering;
 pub use slice::Slice;
-pub use std_wrap::*;
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

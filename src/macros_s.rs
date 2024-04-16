@@ -1,3 +1,4 @@
+/*
 // @TODO consider removing completely
 macro_rules! std_wrap {
     // NOT adding Clone/Debug
@@ -35,7 +36,7 @@ macro_rules! std_wrap {
             $t: $T,
         }
     };
-}
+}*/
 
 /// Implement [core::cmp::PartialEq] for type `T` that implements[crate::CPartialEq].
 macro_rules! s_partial_eq {

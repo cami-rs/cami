@@ -42,6 +42,11 @@ where
     }
 }
 
+// @TODO
+// - confusion - should this be behind a feature?
+// - without it, we'd need more `transmute`.
+// --- even if we do have it, it doesn't "automagically" apply to core/std's slice::sort(). And we don't want to copy-and-paste sort()
+// ----- TODO inspect & benchmark sort_by().
 #[cfg(feature = "alloc")]
 c_partial_eq! {
     ::alloc::string::String
