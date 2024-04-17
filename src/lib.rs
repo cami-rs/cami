@@ -89,11 +89,8 @@ pub trait CPartialEq {
     // If unsure, then it's `false`.
     //
     //const COMPATIBLE_WITH_PARTIAL_EQ: bool;
-
     fn eq_local(&self, other: &Self) -> bool;
-
     fn eq_non_local(&self, other: &Self) -> bool;
-
     fn eq_full(&self, other: &Self) -> bool {
         if Self::LOCALITY.has_local() {
             let local = self.eq_local(other);

@@ -1,6 +1,7 @@
 [package]
 name = "camigo"
 version = "0.0.1"
+# TODO Could this be 2018 edition?
 edition = "2021"
 
 description = "Cache-friendly comparison, binary & sequential search."
@@ -9,6 +10,8 @@ categories = ["algorithms", "caching", "data-structures", "no-std", "text-proces
 authors = ["Peter Kehl <peter.kehl@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/peter-kehl/camigo"
+
+# TODO MSRV
 
 [features]
 # Keep features here sorted alphabetically
@@ -46,3 +49,6 @@ criterion = { version = "0.5.1" }
 [[bench]]
 name = "with_criterion"
 harness = false
+
+[lints.rust]
+warnings = "allow"

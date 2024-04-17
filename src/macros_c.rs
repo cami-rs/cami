@@ -144,34 +144,46 @@ macro_rules! c_partial_eq {
      //   value.
      [
         $(
-           $(
-            $local_ident:ident
-            $(. $($local_ident_ident:ident)? $($local_ident_idx:literal)?
-             )*)?
-
-           $(
-            $local_idx:literal
-            $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
-             )* )?
-
            $(($local_eq_closure:expr))?
            $({$local_get_closure:expr})?
+           
+           $(
+            //$local_ident:tt //$local_ident:ident $(. $($local_ident_ident:ident)?
+            //$($local_ident_idx:literal)?
+            //
+            // @TODO 
+            // - Could this also handle?: .len()
+            // - We can still have a leading $local_id:ident, with no leading dot. Then use a
+            // leading dot only for the first index being numeric (for a tuple).
+            // - Have a separate sub-rule for matching (chains of) field that themselves impl
+            //   PartialEq, so that the macro injects an `.eq_local(.., ..)` call with them in.
+            $(. $local_ident:tt
+             )+
+           )?
+
+           /*$(
+            $local_idx:literal
+            $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
+             )* )?*/
         ),*
      ]
      [
         $(
-           $(
-            $non_local_ident:ident
-            $(. $($non_local_ident_ident:ident)? $($non_local_ident_idx:literal)?
-             )*)?
-
-           $(
-            $non_local_idx:literal
-            $(. $($non_local_idx_ident:ident)? $($non_local_idx_idx:literal)?
-             )* )?
-
            $(($non_local_eq_closure:expr))?
            $({$non_local_get_closure:expr})?
+
+           /*$(
+            $non_local_ident:ident
+            $(. $non_local_ident_more:tt )*
+           )?
+
+           $(
+            . $non_local_idx:tt
+           )* */
+           $(
+            $(. $non_local_ident:tt
+             )+
+           )?
         ),*
      ]
     ) => {
@@ -188,22 +200,18 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
-                    //$(&& self.$t.$local_ident_first==other.$t.$local_ident_first)?
-                    $(&& this.$local_ident
-                        $(.$($local_ident_ident)? $($local_ident_idx)?
-                         )* ==
-                         other.$local_ident
-                        $(.$($local_ident_ident)? $($local_ident_idx)?
-                         )*
+                    $(&& this$( . $local_ident )+
+                        ==
+                         other$( . $local_ident )+
                     )?
-                    //$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
+                    /*//$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
                     $(&& this.$local_idx
                         $(.$($local_idx_ident)? $($local_idx_idx)?
                          )* ==
                          other.$local_idx
                         $(.$($local_idx_ident)? $($local_idx_idx)?
                          )*
-                    )?
+                    )?*/
 
                     $(&& $local_eq_closure(&this, &other))?
                     $(&& $local_get_closure(&this)==$local_get_closure(&other))?
@@ -218,6 +226,22 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
+                    $(&& this$( . $non_local_ident )+
+                        ==
+                         other$( . $non_local_ident )+
+                    )?
+                    /*//$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
+                    $(&& this.$local_idx
+                        $(.$($local_idx_ident)? $($local_idx_idx)?
+                         )* ==
+                         other.$local_idx
+                        $(.$($local_idx_ident)? $($local_idx_idx)?
+                         )*
+                    )?*/
+
+                    $(&& $non_local_eq_closure(&this, &other))?
+                    $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other))?
+                    /*
                     //$(&& self.$t.$non_local_ident_first==other.$t.$non_local_ident_first)?
                     $(&& this.$non_local_ident
                         $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
@@ -237,6 +261,7 @@ macro_rules! c_partial_eq {
 
                     $(&& $non_local_eq_closure(&this, &other))?
                     $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other))?
+                    */
                 )*
             }
         }
@@ -475,7 +500,7 @@ mod test_macros {
                 Locality::Both => t
             }
             [(|this: &A, other: &A| this.x==other.x)]
-            [v]
+            [.v]
         }
         c_ord! {
             CaWrapA1 { t }
@@ -483,7 +508,7 @@ mod test_macros {
             [v]
         }
 
-        c_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Sized}
+        c_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Clone}
 
         mod tuple_2 {
             use crate::macros_c::test_macros::with_alloc::A;
@@ -518,7 +543,6 @@ mod test_macros {
 
         mod party {
             use crate::Locality;
-            //use alloc::vec::Vec;
             use alloc::string::String;
 
             type Amount = u16;
@@ -529,30 +553,84 @@ mod test_macros {
                 amount: Amount,
             }
 
-            #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+            //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
             struct FoodList {
                 common: Food,
                 gluten_free: Food,
+                dairy_free: Food,
                 vegan: Food,
             }
 
-            c_wrap! {
+            //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+            struct Table (Food, Food);
+            /*c_wrap! {
                 pub FoodListCa {
                     t : FoodList
                 }
-            }
+            }*/
+            
+            //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+            struct Room (Table, Table);
+
             c_partial_eq! {
-                FoodListCa {
-                    Locality::Both => t
+                Food {
+                    Locality::Both
                 }
+                // local:
+                [.amount]
+                [(|this: &Food, other: &Food| this.name==other.name)]
+            }
+            // @TODO Food, but using eq_local & eq_non_local from String .name
+
+            c_partial_eq! {
+                FoodList { //FoodListCa {
+                    Locality::Both //=> t
+                }
+                // local:
                 [
-                    common.amount,
+                    .common.amount,
                     {|food_list: &FoodList| food_list.gluten_free.amount},
+                    .dairy_free.amount,
                     (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
                 ]
-                // @TODO empty, or have a special rule to capture that:
-                [   common.name, gluten_free.name,
+                // non-local:
+                // @TODO handle empty, or have a special rule to capture that:
+                [   .common.name,
+                    .gluten_free.name,
+                    .dairy_free.name,
                     (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
+                ]
+            }
+            c_partial_eq! {
+                Table {
+                    Locality::Both
+                }
+                // local:
+                [
+                    .0.amount,
+                    {|table: &Table| table.1.amount}
+                ]
+                // non-local:
+                [   .0.name,
+                    (|this: &Table, other: &Table| this.1.name==other.1.name)
+                ]
+            }
+            c_partial_eq! {
+                Room {
+                    Locality::Both
+                }
+                // local:
+                [
+                    .0.0.amount,
+                    {|room: &Room| room.0.1.amount},
+                    (|this: &Room, other: &Room| this.1.0.amount==other.1.0.amount),
+                    (|this: &Room, other: &Room| this.1.0.eq_local(&other.1.0))
+                ]
+                // non-local:
+                // @TODO handle empty, or have a special rule to capture that:
+                [   .0.0.name,
+
+                    (|this: &Room, other: &Room| this.0.1.name==other.0.1.name)
                 ]
             }
         }

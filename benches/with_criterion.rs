@@ -1,3 +1,5 @@
+//#![allow(warnings, unused)] 
+
 use camigo::{c_wrap, Slice};
 use core::hint;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
