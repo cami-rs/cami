@@ -1,5 +1,3 @@
-use alloc::string::String;
-
 use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
@@ -51,7 +49,8 @@ where
 c_partial_eq! {
     ::alloc::string::String
     { Locality::Both }
-    [{|v: &String| v.len()}]
+    //[{|v: &String| v.len()}]
+    [.len()] // @TODO
     [(|this: &String, other: &String| this == other)]
 }
 

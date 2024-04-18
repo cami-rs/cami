@@ -17,7 +17,7 @@ repository = "https://github.com/peter-kehl/camigo"
 # Keep features here sorted alphabetically
 alloc = []
 std = ["alloc"]
-deref_pure_trait = ["unsafe"]
+deref_pure_trait = ["unsafe", "nightly"]
 hint_assert_unchecked = ["unsafe"]
 nightly = []
 
@@ -28,11 +28,11 @@ unsafe = ["unsafe_from_rust_source"]
 unsafe_from_rust_source = []
 
 #default = [] 
-#default = ["hint_assert_unchecked"]
+#default = ["hint_assert_unchecked", "hint_assert_unchecked", "deref_pure_trait"]
 #default = ["fastrand"]
-default = ["alloc"]
+#default = ["alloc", "unsafe_from_rust_source", "deref_pure_trait"]
 
-[dependencies]
+[dev.dependencies]
 
 fastrand = { version = "2.0.2", optional = true}
 
