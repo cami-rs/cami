@@ -51,12 +51,12 @@ c_partial_eq! {
     { Locality::Both }
     //[{|v: &String| v.len()}]
     [.len()] // @TODO
-    [(|this: &String, other: &String| this == other)]
+    [(|this: &::alloc::string::String, other: &::alloc::string::String| this == other)]
 }
 
 #[cfg(feature = "alloc")]
 c_ord! {
     ::alloc::string::String
-    [{|v: &String| v.len()}]
-    [(|this: &String, other: &String| this.cmp(&other))]
+    [{|v: &::alloc::string::String| v.len()}]
+    [(|this: &::alloc::string::String, other: &::alloc::string::String| this.cmp(&other))]
 }

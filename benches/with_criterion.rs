@@ -1,4 +1,4 @@
-//#![allow(warnings, unused)] 
+//#![allow(warnings, unused)]
 
 use camigo::{c_wrap, Slice};
 use core::hint;

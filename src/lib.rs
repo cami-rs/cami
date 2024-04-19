@@ -6,7 +6,6 @@
 )]
 #![cfg_attr(feature = "deref_pure_trait", feature(deref_pure_trait))]
 
-
 // @TODO in tests-only => dev dependency: use David Tolnay's rust version crate:
 /*#cfg[(and(feature = "nightly", arch--...-))]
 const NOT_SUPPORTED: () = {

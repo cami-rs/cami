@@ -21,30 +21,22 @@ deref_pure_trait = ["unsafe", "nightly"]
 hint_assert_unchecked = ["unsafe"]
 nightly = []
 
-rnd_frequent = [] # Whether to use "fastrand/rand/getrandom" also as a source of a very frequent randomnes.
-
 # real_blackbox = [] #TODO?
 unsafe = ["unsafe_from_rust_source"]
 unsafe_from_rust_source = []
 
-#default = [] 
+default = ["alloc"] 
 #default = ["hint_assert_unchecked", "hint_assert_unchecked", "deref_pure_trait"]
 #default = ["fastrand"]
 #default = ["alloc", "unsafe_from_rust_source", "deref_pure_trait"]
-
-[dev.dependencies]
-
-fastrand = { version = "2.0.2", optional = true}
-
-# If using "rand" but without feature "rnd_frequent", rand serves only for some of the randomness.
-# (But, ultimately, the "frequent" randomness will depend on that "unfrequent" randomness
-# indirectly, anyway.)
-# rand = { version = "0.8.5", optional = true }
 
 [dev-dependencies]
 # @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?
 # criterion = { version = "0.5.1", features=['real_blackbox'] }
 criterion = { version = "0.5.1" }
+
+fastrand = { version = "2.0.2"}
+# rand = { version = "0.8.5"}
 
 [[bench]]
 name = "with_criterion"

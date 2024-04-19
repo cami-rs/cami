@@ -128,8 +128,6 @@ macro_rules! c_partial_eq {
      $(where $($left:ty : $right:tt),+)?
      // TODO update this doc.
      //
-     // TODO change (...)(...) => [...][...]
-     //
      // Within each of the following two square pairs [], repeat any of the THREE parts:
      // - `..._ident` for non-tuple structs, or
      // - `..._idx` for tuples, or
@@ -146,19 +144,29 @@ macro_rules! c_partial_eq {
         $(
            $(($local_eq_closure:expr))?
            $({$local_get_closure:expr})?
-           
+
            $(
             //$local_ident:tt //$local_ident:ident $(. $($local_ident_ident:ident)?
             //$($local_ident_idx:literal)?
             //
-            // @TODO 
+            // @TODO
             // - Could this also handle?: .len()
             // - We can still have a leading $local_id:ident, with no leading dot. Then use a
             // leading dot only for the first index being numeric (for a tuple).
             // - Have a separate sub-rule for matching (chains of) field that themselves impl
             //   PartialEq, so that the macro injects an `.eq_local(.., ..)` call with them in.
-            $(. $local_ident:tt
-             )+
+            /*$(. $local_ident:tt
+             )+*/
+            //. $local_ident:tt $($local_ident_more:tt)*
+            $( .
+               $( $local_dotted:tt )?
+               $( (
+                   // This does NOT match "expressions" passed to functions. It's here ONLY to
+                   // capture a pair of PARENS with NO parameters within.
+                   $( $local_within_parens:tt )?
+                  )
+               )?
+            )+
            )?
 
            /*$(
@@ -200,10 +208,26 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
-                    $(&& this$( . $local_ident )+
+                    $(&& this  $( .
+                                  $( $local_dotted )?
+                                  $( (
+                                       $( $local_within_parens )?
+                                     )
+                                   )?
+                                )+
+                        ==
+                         other $( .
+                                  $( $local_dotted )?
+                                  $( (
+                                       $( $local_within_parens )?
+                                     )
+                                   )?
+                                )+
+                    )?
+                    /*$(&& this$( . $local_ident )+
                         ==
                          other$( . $local_ident )+
-                    )?
+                    )?*/
                     /*//$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
                     $(&& this.$local_idx
                         $(.$($local_idx_ident)? $($local_idx_idx)?
@@ -562,15 +586,15 @@ mod test_macros {
             }
 
             //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-            struct Table (Food, Food);
+            struct Table(Food, Food);
             /*c_wrap! {
                 pub FoodListCa {
                     t : FoodList
                 }
             }*/
-            
+
             //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-            struct Room (Table, Table);
+            struct Room(Table, Table);
 
             c_partial_eq! {
                 Food {
