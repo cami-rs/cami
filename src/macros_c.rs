@@ -2,6 +2,12 @@
 use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
 
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "alloc")]
+    mod party;
+}
+
 #[macro_export]
 macro_rules! c_wrap {
     // An INTERNAL rule
@@ -189,8 +195,15 @@ macro_rules! c_partial_eq {
             . $non_local_idx:tt
            )* */
            $(
-            $(. $non_local_ident:tt
-             )+
+            $( .
+               $( $non_local_dotted:tt )?
+               $( (
+                   // This does NOT match "expressions" passed to functions. It's here ONLY to
+                   // capture a pair of PARENS with NO parameters within.
+                   $( $non_local_within_parens:tt )?
+                  )
+               )?
+            )+
            )?
         ),*
      ]
@@ -250,18 +263,22 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
-                    $(&& this$( . $non_local_ident )+
+                    $(&& this  $( .
+                                  $( $non_local_dotted )?
+                                  $( (
+                                       $( $non_local_within_parens )?
+                                     )
+                                   )?
+                                )+
                         ==
-                         other$( . $non_local_ident )+
+                         other $( .
+                                  $( $non_local_dotted )?
+                                  $( (
+                                       $( $non_local_within_parens )?
+                                     )
+                                   )?
+                                )+
                     )?
-                    /*//$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
-                    $(&& this.$local_idx
-                        $(.$($local_idx_ident)? $($local_idx_idx)?
-                         )* ==
-                         other.$local_idx
-                        $(.$($local_idx_ident)? $($local_idx_idx)?
-                         )*
-                    )?*/
 
                     $(&& $non_local_eq_closure(&this, &other))?
                     $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other))?
@@ -562,100 +579,6 @@ mod test_macros {
                 CaTupleA2 { 0 }
                 [( |this: &A, other: &A| this.x.cmp(&other.x) )]
                 [v]
-            }
-        }
-
-        mod party {
-            use crate::Locality;
-            use alloc::string::String;
-
-            type Amount = u16;
-
-            #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-            struct Food {
-                name: String,
-                amount: Amount,
-            }
-
-            //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-            struct FoodList {
-                common: Food,
-                gluten_free: Food,
-                dairy_free: Food,
-                vegan: Food,
-            }
-
-            //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-            struct Table(Food, Food);
-            /*c_wrap! {
-                pub FoodListCa {
-                    t : FoodList
-                }
-            }*/
-
-            //#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-            struct Room(Table, Table);
-
-            c_partial_eq! {
-                Food {
-                    Locality::Both
-                }
-                // local:
-                [.amount]
-                [(|this: &Food, other: &Food| this.name==other.name)]
-            }
-            // @TODO Food, but using eq_local & eq_non_local from String .name
-
-            c_partial_eq! {
-                FoodList { //FoodListCa {
-                    Locality::Both //=> t
-                }
-                // local:
-                [
-                    .common.amount,
-                    {|food_list: &FoodList| food_list.gluten_free.amount},
-                    .dairy_free.amount,
-                    (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
-                ]
-                // non-local:
-                // @TODO handle empty, or have a special rule to capture that:
-                [   .common.name,
-                    .gluten_free.name,
-                    .dairy_free.name,
-                    (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
-                ]
-            }
-            c_partial_eq! {
-                Table {
-                    Locality::Both
-                }
-                // local:
-                [
-                    .0.amount,
-                    {|table: &Table| table.1.amount}
-                ]
-                // non-local:
-                [   .0.name,
-                    (|this: &Table, other: &Table| this.1.name==other.1.name)
-                ]
-            }
-            c_partial_eq! {
-                Room {
-                    Locality::Both
-                }
-                // local:
-                [
-                    .0.0.amount,
-                    {|room: &Room| room.0.1.amount},
-                    (|this: &Room, other: &Room| this.1.0.amount==other.1.0.amount),
-                    (|this: &Room, other: &Room| this.1.0.eq_local(&other.1.0))
-                ]
-                // non-local:
-                // @TODO handle empty, or have a special rule to capture that:
-                [   .0.0.name,
-
-                    (|this: &Room, other: &Room| this.0.1.name==other.0.1.name)
-                ]
             }
         }
     }
