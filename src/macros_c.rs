@@ -148,23 +148,16 @@ macro_rules! c_partial_eq {
      //   value.
      [
         $(
-           $(($local_eq_closure:expr))?
-           $({$local_get_closure:expr})?
+           $(($local_eq_closure:expr)
+            )?
+
+           $({$local_get_closure:expr}
+            )?
 
            // This is necessary only to match fields/chains of fields that have the first/top level
-           // field a numeric index to a tuple. (We can't match it with :literal, because then
-           // the generated code fails due to scope/context mixed in.)
+           // field a numeric index to a tuple. (We can't match it with :literal, because then the
+           // generated code fails to compile due to scope/context mixed in.)
            $(
-            //$local_ident:tt //$local_ident:ident $(. $($local_ident_ident:ident)?
-            //$($local_ident_idx:literal)?
-            //
-            // @TODO
-            // - Could this also handle?: .len()
-            // - We can still have a leading $local_id:ident, with no leading dot. Then use a
-            // leading dot only for the first index being numeric (for a tuple).
-            // - Have a separate sub-rule for matching (chains of) field that themselves impl
-            //   PartialEq, so that the macro injects an `.eq_local(.., ..)` call with them in.
-            // Same as "local_after_ident_dotted" part below.
             $( .
                $local_dotted:tt
                $( (
@@ -199,8 +192,11 @@ macro_rules! c_partial_eq {
      ]
      [
         $(
-           $(($non_local_eq_closure:expr))?
-           $({$non_local_get_closure:expr})?
+           $(($non_local_eq_closure:expr)
+            )?
+
+           $({$non_local_get_closure:expr}
+            )?
 
            $(
             $( .
@@ -247,6 +243,29 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
+                    $(&& $local_eq_closure(&this, &other)
+                     )?
+                    
+                    $(&& $local_get_closure(&this)==$local_get_closure(&other)
+                     )?
+
+                    $(&& this  $( .
+                                  $local_dotted
+                                  $( (
+                                       $( $local_within_parens )?
+                                     )
+                                   )?
+                                )+
+                        ==
+                         other $( .
+                                  $local_dotted
+                                  $( (
+                                       $( $local_within_parens )?
+                                     )
+                                   )?
+                                )+
+                    )?
+                    
                     $(&& this  .
                                $local_ident
                                $( (
@@ -275,26 +294,6 @@ macro_rules! c_partial_eq {
                                    )?
                                 )*
                     )?
-
-                    $(&& this  $( .
-                                  $local_dotted
-                                  $( (
-                                       $( $local_within_parens )?
-                                     )
-                                   )?
-                                )+
-                        ==
-                         other $( .
-                                  $local_dotted
-                                  $( (
-                                       $( $local_within_parens )?
-                                     )
-                                   )?
-                                )+
-                    )?
-
-                    $(&& $local_eq_closure(&this, &other))?
-                    $(&& $local_get_closure(&this)==$local_get_closure(&other))?
                 )*
             }
 
@@ -306,6 +305,12 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
+                    $(&& $non_local_eq_closure(&this, &other)
+                     )?
+                     
+                    $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other)
+                     )?
+
                     $(&& this  $( .
                                   $non_local_dotted
                                   $( (
@@ -322,30 +327,6 @@ macro_rules! c_partial_eq {
                                    )?
                                 )+
                     )?
-
-                    $(&& $non_local_eq_closure(&this, &other))?
-                    $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other))?
-                    /*
-                    //$(&& self.$t.$non_local_ident_first==other.$t.$non_local_ident_first)?
-                    $(&& this.$non_local_ident
-                        $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
-                         )* ==
-                         other.$non_local_ident
-                        $(.$($non_local_ident_ident)? $($non_local_ident_idx)?
-                         )*
-                    )?
-                    //$(&& self.$t.$non_local_idx_first==other.$t.$non_local_idx_first)?
-                    $(&& this.$non_local_idx
-                        $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
-                         )* ==
-                         other.$non_local_idx
-                        $(.$($non_local_idx_ident)? $($non_local_idx_idx)?
-                         )*
-                    )?
-
-                    $(&& $non_local_eq_closure(&this, &other))?
-                    $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other))?
-                    */
                 )*
             }
         }
