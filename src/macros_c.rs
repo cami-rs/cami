@@ -206,17 +206,9 @@ macro_rules! c_partial_eq {
            $(($non_local_eq_closure:expr))?
            $({$non_local_get_closure:expr})?
 
-           /*$(
-            $non_local_ident:ident
-            $(. $non_local_ident_more:tt )*
-           )?
-
-           $(
-            . $non_local_idx:tt
-           )* */
            $(
             $( .
-               $( $non_local_dotted:tt )?
+               $non_local_dotted:tt
                $( (
                    // This does NOT match "expressions" passed to functions. It's here ONLY to
                    // capture a pair of PARENS with NO parameters within.
@@ -318,7 +310,7 @@ macro_rules! c_partial_eq {
                 true
                 $(
                     $(&& this  $( .
-                                  $( $non_local_dotted )?
+                                  $non_local_dotted
                                   $( (
                                        $( $non_local_within_parens )?
                                      )
@@ -326,7 +318,7 @@ macro_rules! c_partial_eq {
                                 )+
                         ==
                          other $( .
-                                  $( $non_local_dotted )?
+                                  $non_local_dotted
                                   $( (
                                        $( $non_local_within_parens )?
                                      )
