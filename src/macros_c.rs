@@ -118,19 +118,6 @@ macro_rules! c_wrap_tuple {
     };
 }
 
-macro_rules! tt_separators {
-    (
-        $(
-            $(
-                $tt:tt
-             )?
-            $(
-                <$sep_tt:tt>
-             )?
-         ),*
-    ) => {};
-}
-
 #[macro_export]
 macro_rules! c_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
