@@ -3,9 +3,9 @@ use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     #[cfg(feature = "alloc")]
-    mod party;
+    pub mod party;
 }
 
 #[macro_export]
@@ -207,6 +207,11 @@ macro_rules! c_partial_eq {
            )?
         ),*
      ]
+     // @TODO
+     /*$( [
+
+        ]
+     )?*/
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
@@ -540,12 +545,12 @@ mod test_macros {
             CaWrapA1 {
                 Locality::Both => t
             }
-            [(|this: &A, other: &A| this.x==other.x)]
+            [ (|this: &A, other: &A| this.x==other.x) ]
             [.v]
         }
         c_ord! {
             CaWrapA1 { t }
-            [{ |a: &A| a.x }]
+            [ {|a: &A| a.x} ]
             [v]
         }
 

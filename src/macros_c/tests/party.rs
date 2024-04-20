@@ -5,7 +5,7 @@ use alloc::string::String;
 type Amount = u16;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-struct Food {
+pub struct Food {
     name: String,
     amount: Amount,
 }
@@ -18,7 +18,7 @@ impl Food {
     }
 }
 
-struct FoodList {
+pub struct FoodList {
     common: Food,
     gluten_free: Food,
     dairy_free: Food,
@@ -39,16 +39,16 @@ impl FoodList {
     }
 }
 
-struct Table(Food, Food);
+pub struct Table(Food, Food);
 
-struct Room(Table, Table);
+pub struct Room(Table, Table);
 
 c_partial_eq! {
     Food {
         Locality::Both
     }
     [.amount]
-    [(|this: &Food, other: &Food| this.name==other.name)]
+    [ (|this: &Food, other: &Food| this.name==other.name) ]
 }
 // @TODO Food, but using eq_local & eq_non_local from String .name
 
