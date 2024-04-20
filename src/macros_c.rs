@@ -118,6 +118,19 @@ macro_rules! c_wrap_tuple {
     };
 }
 
+macro_rules! tt_separators {
+    (
+        $(
+            $(
+                $tt:tt
+             )?
+            $(
+                <$sep_tt:tt>
+             )?
+         ),*
+    ) => {};
+}
+
 #[macro_export]
 macro_rules! c_partial_eq {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
@@ -151,6 +164,9 @@ macro_rules! c_partial_eq {
            $(($local_eq_closure:expr))?
            $({$local_get_closure:expr})?
 
+           // This is necessary only to match fields/chains of fields, where the first/top level
+           // field is a numeric index to a tuple. (We can't match it with :literal, because then
+           // the generated code fails due to scope/context mixed in.)
            $(
             //$local_ident:tt //$local_ident:ident $(. $($local_ident_ident:ident)?
             //$($local_ident_idx:literal)?
@@ -164,8 +180,10 @@ macro_rules! c_partial_eq {
             /*$(. $local_ident:tt
              )+*/
             //. $local_ident:tt $($local_ident_more:tt)*
+            //
+            // Same as "local_after_ident_dotted" part above.
             $( .
-               $( $local_dotted:tt )?
+               $local_dotted:tt
                $( (
                    // This does NOT match "expressions" passed to functions. It's here ONLY to
                    // capture a pair of PARENS with NO parameters within.
@@ -175,6 +193,25 @@ macro_rules! c_partial_eq {
             )+
            )?
 
+           $(
+               $local_ident:ident
+               $( (
+                   // This does NOT match "expressions" passed to functions. It's here ONLY to
+                   // capture a pair of PARENS with NO parameters within.
+                   $( $local_after_ident_within_parens:tt )?
+                  )
+               )?
+               // Same as "local_dotted" part below.
+               $( .
+                  $( $local_after_ident_dotted:tt )?
+                  $( (
+                       // This does NOT match "expressions" passed to functions. It's here ONLY to
+                       // capture a pair of PARENS with NO parameters within.
+                       $( $local_after_ident_dotted_within_parens:tt )?
+                     )
+                  )?
+               )*
+           )?
            /*$(
             $local_idx:literal
             $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
@@ -226,8 +263,37 @@ macro_rules! c_partial_eq {
                 )?
                 true
                 $(
+                    $(&& this  .
+                               $local_ident
+                               $( (
+                                    $( $local_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $local_after_ident_dotted )?
+                                  $( (
+                                       $( $local_after_ident_within_parens )?
+                                     )
+                                   )?
+                                )*
+                        ==
+                         other  .
+                               $local_ident
+                               $( (
+                                    $( $local_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $local_after_ident_dotted )?
+                                  $( (
+                                       $( $local_after_ident_within_parens )?
+                                     )
+                                   )?
+                                )*
+                    )?
+
                     $(&& this  $( .
-                                  $( $local_dotted )?
+                                  $local_dotted
                                   $( (
                                        $( $local_within_parens )?
                                      )
@@ -235,7 +301,7 @@ macro_rules! c_partial_eq {
                                 )+
                         ==
                          other $( .
-                                  $( $local_dotted )?
+                                  $local_dotted
                                   $( (
                                        $( $local_within_parens )?
                                      )
