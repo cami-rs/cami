@@ -126,14 +126,14 @@ macro_rules! c_partial_eq {
 
      // $locality is NOT an ident, so that we allow (const-time) expressions.
      { $locality: expr
+       // Only for 1-field wrapper types (newtype): 
+       //
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
        // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise $t is empty.
        $( => $t:tt )?
      }
 
      $(where $($left:ty : $right:tt),+)?
-     // TODO update this doc.
-     //
      // Within each of the following two square pairs [], repeat any of the THREE parts:
      // - `..._ident` for non-tuple structs, or
      // - `..._idx` for tuples, or
@@ -151,8 +151,8 @@ macro_rules! c_partial_eq {
            $(($local_eq_closure:expr))?
            $({$local_get_closure:expr})?
 
-           // This is necessary only to match fields/chains of fields, where the first/top level
-           // field is a numeric index to a tuple. (We can't match it with :literal, because then
+           // This is necessary only to match fields/chains of fields that have the first/top level
+           // field a numeric index to a tuple. (We can't match it with :literal, because then
            // the generated code fails due to scope/context mixed in.)
            $(
             //$local_ident:tt //$local_ident:ident $(. $($local_ident_ident:ident)?
@@ -164,11 +164,7 @@ macro_rules! c_partial_eq {
             // leading dot only for the first index being numeric (for a tuple).
             // - Have a separate sub-rule for matching (chains of) field that themselves impl
             //   PartialEq, so that the macro injects an `.eq_local(.., ..)` call with them in.
-            /*$(. $local_ident:tt
-             )+*/
-            //. $local_ident:tt $($local_ident_more:tt)*
-            //
-            // Same as "local_after_ident_dotted" part above.
+            // Same as "local_after_ident_dotted" part below.
             $( .
                $local_dotted:tt
                $( (
@@ -188,7 +184,7 @@ macro_rules! c_partial_eq {
                    $( $local_after_ident_within_parens:tt )?
                   )
                )?
-               // Same as "local_dotted" part below.
+               // Same as "local_dotted" part above.
                $( .
                   $( $local_after_ident_dotted:tt )?
                   $( (
