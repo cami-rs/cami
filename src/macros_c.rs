@@ -327,6 +327,35 @@ macro_rules! c_partial_eq {
                                    )?
                                 )+
                     )?
+
+                    $(&& this  .
+                               $non_local_ident
+                               $( (
+                                    $( $non_local_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $non_local_after_ident_dotted )?
+                                  $( (
+                                       $( $non_local_after_ident_within_parens )?
+                                     )
+                                   )?
+                                )*
+                        ==
+                         other  .
+                               $non_local_ident
+                               $( (
+                                    $( $non_local_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $non_local_after_ident_dotted )?
+                                  $( (
+                                       $( $non_local_after_ident_within_parens )?
+                                     )
+                                   )?
+                                )*
+                    )?
                 )*
             }
         }
