@@ -195,10 +195,6 @@ macro_rules! c_partial_eq {
                   )?
                )*
            )?
-           /*$(
-            $local_idx:literal
-            $(. $($local_idx_ident:ident)? $($local_idx_idx:literal)?
-             )* )?*/
         ),*
      ]
      [
@@ -210,12 +206,25 @@ macro_rules! c_partial_eq {
             $( .
                $non_local_dotted:tt
                $( (
-                   // This does NOT match "expressions" passed to functions. It's here ONLY to
-                   // capture a pair of PARENS with NO parameters within.
                    $( $non_local_within_parens:tt )?
                   )
                )?
             )+
+           )?
+
+           $(
+               $non_local_ident:ident
+               $( (
+                   $( $non_local_after_ident_within_parens:tt )?
+                  )
+               )?
+               $( .
+                  $( $non_local_after_ident_dotted:tt )?
+                  $( (
+                       $( $non_local_after_ident_dotted_within_parens:tt )?
+                     )
+                  )?
+               )*
            )?
         ),*
      ]
@@ -283,18 +292,6 @@ macro_rules! c_partial_eq {
                                    )?
                                 )+
                     )?
-                    /*$(&& this$( . $local_ident )+
-                        ==
-                         other$( . $local_ident )+
-                    )?*/
-                    /*//$(&& self.$t.$local_idx_first==other.$t.$local_idx_first)?
-                    $(&& this.$local_idx
-                        $(.$($local_idx_ident)? $($local_idx_idx)?
-                         )* ==
-                         other.$local_idx
-                        $(.$($local_idx_ident)? $($local_idx_idx)?
-                         )*
-                    )?*/
 
                     $(&& $local_eq_closure(&this, &other))?
                     $(&& $local_get_closure(&this)==$local_get_closure(&other))?
