@@ -52,6 +52,7 @@ c_partial_eq! {
     //[{|v: &String| v.len()}]
     [.len()] // @TODO
     [(|this: &::alloc::string::String, other: &::alloc::string::String| this == other)]
+    [ {|instance: &Self| true} ]
 }
 
 #[cfg(feature = "alloc")]

@@ -2,6 +2,16 @@ use crate::c_partial_eq;
 use crate::Locality;
 use alloc::string::String;
 
+struct Empty {}
+c_partial_eq! {
+    Empty {
+        Locality::Both
+    }
+    [ {|_instance: &Self| true} ]
+    [ {|_instance: &Empty| true} ]
+    [ {|_instance: &Empty| true} ]
+}
+
 type Amount = u16;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
@@ -49,6 +59,7 @@ c_partial_eq! {
     }
     [amount]
     [ (|this: &Food, other: &Food| this.name==other.name) ]
+    [ {|instance: &Food| true} ]
 }
 // @TODO Food, but using eq_local & eq_non_local from String .name
 
@@ -69,6 +80,7 @@ c_partial_eq! {
         dairy_free().name,
         (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
     ]
+    [ {|instance: &Self| true} ]
 }
 c_partial_eq! {
     Table {
@@ -83,6 +95,7 @@ c_partial_eq! {
     [   .0.name(),
         (|this: &Table, other: &Table| this.1.name==other.1.name)
     ]
+    [ {|instance: &Self| true} ]
 }
 c_partial_eq! {
     Room {
@@ -101,4 +114,5 @@ c_partial_eq! {
 
         (|this: &Room, other: &Room| this.0.1.name==other.0.1.name)
     ]
+    [ {|instance: &Self| true} ]
 }

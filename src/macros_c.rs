@@ -134,14 +134,19 @@ macro_rules! c_partial_eq {
      }
 
      $(where $($left:ty : $right:tt),+)?
-     // Within each of the following two square pairs [], repeat any of the THREE parts:
+     // The following two or three square pairs [] represent local fields, non-local fields, and
+     // optional: fields that themselves implement [CPartialEq]. And of those two or three kinds of
+     // fields may be "deep fields".
+     //
+     // Within each square pair [], repeat any of the four parts (or three parts in case of "deep
+     // fields"):
      // - `..._ident` for non-tuple structs, or
      // - `..._idx` for tuples, or
-     // - (` ..._eq_closure`) for a boolean closure. Each closure must receive TWO parameters, for
-     //   example `this` and `other`. Both parameters' type is a reference to the wrapped type (if
-     //   you provided `$t`), or `Self` (if no `$t`). The closure compares the same chosen field in
-     //   both references, and returns their equality.
-     // - {` ..._get_closure`} for an accessor closure. Each closure must receive ONE parameter, for
+     // - (` ..._eq_closure`) for a boolean closure - except for "deep fields". Each closure must
+     //   receive two parameters, for example `this` and `other`. Both parameters' type is a
+     //   reference to the wrapped type (if you provided `$t`), or `Self` (if no `$t`). The closure
+     //   compares the same chosen field in both references, and returns their equality.
+     // - {` ..._get_closure`} for an accessor closure. Each closure must receive one parameter, for
      //   example `this` or `obj`. That parameter's type is a reference to the wrapped type (if you
      //   provided `$t`), or `Self` (if no `$t`). The closure returns (reference, or copy) of a
      //   chosen field, or a value based on that field if such a value is unique per the field's
@@ -224,11 +229,37 @@ macro_rules! c_partial_eq {
            )?
         ),*
      ]
-     // @TODO
-     /*$( [
+     [
+        $(
+           $({$deep_get_closure:expr}
+            )?
 
-        ]
-     )?*/
+           $(
+            $( .
+               $deep_dotted:tt
+               $( (
+                   $( $deep_within_parens:tt )?
+                  )
+               )?
+            )+
+           )?
+
+           $(
+               $deep_ident:ident
+               $( (
+                   $( $deep_after_ident_within_parens:tt )?
+                  )
+               )?
+               $( .
+                  $( $deep_after_ident_dotted:tt )?
+                  $( (
+                       $( $deep_after_ident_dotted_within_parens:tt )?
+                     )
+                  )?
+               )*
+           )?
+        ),*
+     ]
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
@@ -295,6 +326,59 @@ macro_rules! c_partial_eq {
                                 )*
                     )?
                 )*
+                $(
+                    $(&& $deep_get_closure(&this)==$deep_get_closure(&other)
+                     )?
+
+                    $(&& this  $( .
+                                  $deep_dotted
+                                  $( (
+                                       $( $deep_within_parens )?
+                                     )
+                                   )?
+                                )+
+                        .eq_local( &
+                         other $( .
+                                  $deep_dotted
+                                  $( (
+                                       $( $deep_within_parens )?
+                                     )
+                                   )?
+                                )+
+                        )
+                    )?
+
+                    $(&& this  .
+                               $deep_ident
+                               $( (
+                                    $( $deep_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $deep_after_ident_dotted )?
+                                  $( (
+                                       $( $deep_after_ident_dotted_within_parens )?
+                                     )
+                                   )?
+                                )*
+                        .eq_local( &
+                         other  .
+                               $deep_ident
+                               $( (
+                                    $( $deep_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $deep_after_ident_dotted )?
+                                  $( (
+                                       $( $deep_after_ident_dotted_within_parens )?
+                                     )
+                                   )?
+                                )*
+                        )
+                    )?
+                )*
+                /* */
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
@@ -595,6 +679,8 @@ mod test_macros {
             }
             [ (|this: &A, other: &A| this.x==other.x) ]
             [.v]
+            // @TODO to auto-generate, we need to capture `A` in the macro:
+            [ {|instance: &A| true} ]
         }
         c_ord! {
             CaWrapA1 { t }
@@ -627,6 +713,7 @@ mod test_macros {
                 //
                 // Hence a separate function:
                 [ {get_v} ]
+                [ {|_instance: &A| true} ]
             }
             c_ord! {
                 CaTupleA2 { 0 }
