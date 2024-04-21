@@ -120,7 +120,8 @@ macro_rules! c_wrap_tuple {
 
 #[macro_export]
 macro_rules! c_partial_eq {
-    ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
+    (
+     $(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
      $(>$($generic_right:tt),+<)?
 
@@ -130,7 +131,7 @@ macro_rules! c_partial_eq {
        //
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
        // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise $t is empty.
-       $( => $t:tt )?
+       => $t:tt : $t_type:ty
      }
 
      $(where $($left:ty : $right:tt),+)?
@@ -151,6 +152,100 @@ macro_rules! c_partial_eq {
      //   provided `$t`), or `Self` (if no `$t`). The closure returns (reference, or copy) of a
      //   chosen field, or a value based on that field if such a value is unique per the field's
      //   value.
+    [
+        $( $local:tt )*
+    ]
+    [
+        $( $non_local:tt )*
+    ]
+    [
+        $( $deep:tt )*
+    ]
+    ) => {
+        $crate::c_partial_eq_forwarded! {
+            $(<$($generic_left $(: $bound)?),+>)?
+            $struct_path
+            $(>$($generic_right),+<)?
+
+            { $locality
+              => $t
+            }
+
+            $(where $($left : $right),+)?
+            [
+                // Injecting a const `true`-generating closure. Without this, handling empty square
+                // pair [] was extremely difficult because of "ambiguity: multiple successful
+                // parses" (because we need a zero-or-more repetitive block that can match empty
+                // content).
+                {|_instance: &$t_type| true},
+                $( $local )*
+            ]
+            [
+                {|_instance: &$t_type| true},
+                $( $non_local )*
+            ]
+            [
+                {|_instance: &$t_type| true},
+                $( $deep )*
+            ]
+        }
+    };
+
+    (
+     $(<$($generic_left:tt $(: $bound:tt)?),+>)?
+     $struct_path:path
+     $(>$($generic_right:tt),+<)?
+
+     { $locality: expr
+     }
+
+     $(where $($left:ty : $right:tt),+)?
+    [
+        $( $local:tt )*
+    ]
+    [
+        $( $non_local:tt )*
+    ]
+    [
+        $( $deep:tt )*
+    ]
+    ) => {
+        $crate::c_partial_eq_forwarded! {
+            $(<$($generic_left $(: $bound)?),+>)?
+            $struct_path
+            $(>$($generic_right),+<)?
+
+            { $locality
+            }
+
+            $(where $($left : $right),+)?
+            [
+                {|_instance: &Self| true},
+                $( $local )*
+            ]
+            [
+                {|_instance: &Self| true},
+                $( $non_local )*
+            ]
+            [
+                {|_instance: &Self| true},
+                $( $deep )*
+            ]
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! c_partial_eq_forwarded {
+    ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
+     $struct_path:path
+     $(>$($generic_right:tt),+<)?
+
+     { $locality: expr
+       $( => $t:tt )?
+     }
+
+     $(where $($left:ty : $right:tt),+)?
      [
         $(
            $(($local_eq_closure:expr)
@@ -675,7 +770,7 @@ mod test_macros {
         c_wrap! { CaWrapA1 {t : A }}
         c_partial_eq! {
             CaWrapA1 {
-                Locality::Both => t
+                Locality::Both => t : A
             }
             [ (|this: &A, other: &A| this.x==other.x) ]
             [.v]
@@ -703,7 +798,7 @@ mod test_macros {
             c_partial_eq! {
                 <'a>
                 CaTupleA2 {
-                    Locality::Both => 0
+                    Locality::Both => 0 : A
                 }
                 [ {|obj: &A| obj.x}
                 ]
@@ -713,7 +808,7 @@ mod test_macros {
                 //
                 // Hence a separate function:
                 [ {get_v} ]
-                [ {|_instance: &A| true} ]
+                []
             }
             c_ord! {
                 CaTupleA2 { 0 }
