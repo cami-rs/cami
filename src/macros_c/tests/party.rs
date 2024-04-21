@@ -64,9 +64,9 @@ c_partial_eq! {
     ]
     // non-local:
     // @TODO handle empty, or have a special rule to capture that:
-    [   .common.name,
-        .gluten_free.name(),
-        .dairy_free().name,
+    [   common.name,
+        gluten_free.name(),
+        dairy_free().name,
         (|this: &FoodList, other: &FoodList| this.vegan.name==other.vegan.name)
     ]
 }
@@ -80,7 +80,7 @@ c_partial_eq! {
         {|table: &Table| table.1.amount}
     ]
     // non-local:
-    [   .0.name,
+    [   .0.name(),
         (|this: &Table, other: &Table| this.1.name==other.1.name)
     ]
 }

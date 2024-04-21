@@ -126,7 +126,7 @@ macro_rules! c_partial_eq {
 
      // $locality is NOT an ident, so that we allow (const-time) expressions.
      { $locality: expr
-       // Only for 1-field wrapper types (newtype): 
+       // Only for 1-field wrapper types (newtype):
        //
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
        // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise $t is empty.
@@ -245,7 +245,7 @@ macro_rules! c_partial_eq {
                 $(
                     $(&& $local_eq_closure(&this, &other)
                      )?
-                    
+
                     $(&& $local_get_closure(&this)==$local_get_closure(&other)
                      )?
 
@@ -265,7 +265,7 @@ macro_rules! c_partial_eq {
                                    )?
                                 )+
                     )?
-                    
+
                     $(&& this  .
                                $local_ident
                                $( (
@@ -275,7 +275,7 @@ macro_rules! c_partial_eq {
                                $( .
                                   $( $local_after_ident_dotted )?
                                   $( (
-                                       $( $local_after_ident_within_parens )?
+                                       $( $local_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
@@ -289,7 +289,7 @@ macro_rules! c_partial_eq {
                                $( .
                                   $( $local_after_ident_dotted )?
                                   $( (
-                                       $( $local_after_ident_within_parens )?
+                                       $( $local_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
@@ -307,7 +307,7 @@ macro_rules! c_partial_eq {
                 $(
                     $(&& $non_local_eq_closure(&this, &other)
                      )?
-                     
+
                     $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other)
                      )?
 
@@ -337,7 +337,7 @@ macro_rules! c_partial_eq {
                                $( .
                                   $( $non_local_after_ident_dotted )?
                                   $( (
-                                       $( $non_local_after_ident_within_parens )?
+                                       $( $non_local_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
@@ -351,7 +351,7 @@ macro_rules! c_partial_eq {
                                $( .
                                   $( $non_local_after_ident_dotted )?
                                   $( (
-                                       $( $non_local_after_ident_within_parens )?
+                                       $( $non_local_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
