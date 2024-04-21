@@ -130,7 +130,8 @@ macro_rules! c_partial_eq {
        // Only for 1-field wrapper types (newtype):
        //
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
-       // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise $t is empty.
+       // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise see the second input pattern of this
+       // macro.
        => $t:tt : $t_type:ty
      }
 
@@ -606,7 +607,6 @@ macro_rules! c_partial_eq_full_squares {
     };
 }
 
-// @TODO ca_* ---> c_*
 /// Like [c_partial_eq], but for [COrd].
 #[macro_export]
 macro_rules! c_ord {
@@ -621,20 +621,7 @@ macro_rules! c_ord {
      })?
 
      $(where $($left:ty : $right:tt),+)?
-     // TODO update this doc.
-     //
-     // Within each of the following two square pairs [], repeat any of the THREE parts:
-     // - `..._ident` for non-tuple structs, or
-     // - `..._idx` for tuples, or
-     // - (` ..._cmp_closure`) for a boolean closure. Each closure must receive TWO parameters, for
-     //   example `this` and `other`. Both parameters' type is a reference to the wrapped type (if
-     //   you provided `$t`), or `Self` (if no `$t`). The closure compares the same chosen field in
-     //   both references, and returns their .cmp(&...).
-     // - {` ..._get_closure`} for an accessor closure. Each closure must receive ONE parameter, for
-     //   example `this` or `obj`. That parameter's type is a reference to the wrapped type (if you
-     //   provided `$t`), or `Self` (if no `$t`). The closure returns (reference, or copy) of a
-     //   chosen field, or a value based on that field if such a value is unique per the field's
-     //   value.
+     // Documentation of [c_partial_eq] applies, but replace "_eq_" with "_cmp_" .
      [
         $(
            $(
@@ -865,7 +852,7 @@ mod test_macros {
                 }
                 [ {|obj: &A| obj.x}
                 ]
-                // We can't specify return lifetimes here:
+                // @TODO: We can't specify return lifetimes here:
                 //
                 // [{ |obj: &'l A| -> &'l Vec<i32> {&obj.v} }]
                 //

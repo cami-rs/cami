@@ -58,9 +58,9 @@ c_partial_eq! {
         Locality::Both
     }
     [amount]
-    [ (|this: &Food, other: &Food| this.name==other.name) ]
+    [] //[ (|this: &Food, other: &Food| this.name==other.name) ]
+    [name]
 }
-// @TODO Food, but using eq_local & eq_non_local from String .name
 
 c_partial_eq! {
     FoodList {
