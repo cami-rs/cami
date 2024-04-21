@@ -162,7 +162,7 @@ macro_rules! c_partial_eq {
         $( $deep:tt )*
     ]
     ) => {
-        $crate::c_partial_eq_forwarded! {
+        $crate::c_partial_eq_full_squares! {
             $(<$($generic_left $(: $bound)?),+>)?
             $struct_path
             $(>$($generic_right),+<)?
@@ -177,15 +177,15 @@ macro_rules! c_partial_eq {
                 // pair [] was extremely difficult because of "ambiguity: multiple successful
                 // parses" (because we need a zero-or-more repetitive block that can match empty
                 // content).
-                {|_instance: &$t_type| true},
+                {|_instance: &$t_type| &true},
                 $( $local )*
             ]
             [
-                {|_instance: &$t_type| true},
+                {|_instance: &$t_type| &true},
                 $( $non_local )*
             ]
             [
-                {|_instance: &$t_type| true},
+                {|_instance: &$t_type| &true},
                 $( $deep )*
             ]
         }
@@ -210,7 +210,7 @@ macro_rules! c_partial_eq {
         $( $deep:tt )*
     ]
     ) => {
-        $crate::c_partial_eq_forwarded! {
+        $crate::c_partial_eq_full_squares! {
             $(<$($generic_left $(: $bound)?),+>)?
             $struct_path
             $(>$($generic_right),+<)?
@@ -220,15 +220,15 @@ macro_rules! c_partial_eq {
 
             $(where $($left : $right),+)?
             [
-                {|_instance: &Self| true},
+                {|_instance: &Self| &true},
                 $( $local )*
             ]
             [
-                {|_instance: &Self| true},
+                {|_instance: &Self| &true},
                 $( $non_local )*
             ]
             [
-                {|_instance: &Self| true},
+                {|_instance: &Self| &true},
                 $( $deep )*
             ]
         }
@@ -236,7 +236,7 @@ macro_rules! c_partial_eq {
 }
 
 #[macro_export]
-macro_rules! c_partial_eq_forwarded {
+macro_rules! c_partial_eq_full_squares {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
      $(>$($generic_right:tt),+<)?
@@ -422,7 +422,7 @@ macro_rules! c_partial_eq_forwarded {
                     )?
                 )*
                 $(
-                    $(&& $deep_get_closure(&this)==$deep_get_closure(&other)
+                    $(&& $deep_get_closure(&this).eq_local($deep_get_closure(&other))
                      )?
 
                     $(&& this  $( .
@@ -473,7 +473,6 @@ macro_rules! c_partial_eq_forwarded {
                         )
                     )?
                 )*
-                /* */
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
@@ -534,6 +533,58 @@ macro_rules! c_partial_eq_forwarded {
                                      )
                                    )?
                                 )*
+                    )?
+                )*
+                $(
+                    $(&& $deep_get_closure(&this).eq_non_local($deep_get_closure(&other))
+                     )?
+
+                    $(&& this  $( .
+                                  $deep_dotted
+                                  $( (
+                                       $( $deep_within_parens )?
+                                     )
+                                   )?
+                                )+
+                        .eq_non_local( &
+                         other $( .
+                                  $deep_dotted
+                                  $( (
+                                       $( $deep_within_parens )?
+                                     )
+                                   )?
+                                )+
+                        )
+                    )?
+
+                    $(&& this  .
+                               $deep_ident
+                               $( (
+                                    $( $deep_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $deep_after_ident_dotted )?
+                                  $( (
+                                       $( $deep_after_ident_dotted_within_parens )?
+                                     )
+                                   )?
+                                )*
+                        .eq_non_local( &
+                         other  .
+                               $deep_ident
+                               $( (
+                                    $( $deep_after_ident_within_parens )?
+                                  )
+                               )?
+                               $( .
+                                  $( $deep_after_ident_dotted )?
+                                  $( (
+                                       $( $deep_after_ident_dotted_within_parens )?
+                                     )
+                                   )?
+                                )*
+                        )
                     )?
                 )*
             }
@@ -775,7 +826,7 @@ mod test_macros {
             [ (|this: &A, other: &A| this.x==other.x) ]
             [.v]
             // @TODO to auto-generate, we need to capture `A` in the macro:
-            [ {|instance: &A| true} ]
+            []
         }
         c_ord! {
             CaWrapA1 { t }

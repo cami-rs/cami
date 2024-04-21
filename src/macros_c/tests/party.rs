@@ -73,8 +73,6 @@ c_partial_eq! {
         .dairy_free.amount(),
         (|this: &FoodList, other: &FoodList| this.vegan.amount==other.vegan.amount)
     ]
-    // non-local:
-    // @TODO handle empty, or have a special rule to capture that:
     [   common.name,
         gluten_free.name(),
         dairy_free().name,
@@ -86,12 +84,10 @@ c_partial_eq! {
     Table {
         Locality::Both
     }
-    // local:
     [
         .0.amount,
         {|table: &Table| table.1.amount}
     ]
-    // non-local:
     [   .0.name(),
         (|this: &Table, other: &Table| this.1.name==other.1.name)
     ]
@@ -101,15 +97,12 @@ c_partial_eq! {
     Room {
         Locality::Both
     }
-    // local:
     [
         .0.0.amount,
         {|room: &Room| room.0.1.amount},
         (|this: &Room, other: &Room| this.1.0.amount==other.1.0.amount),
         (|this: &Room, other: &Room| this.1.0.eq_local(&other.1.0))
     ]
-    // non-local:
-    // @TODO handle empty, or have a special rule to capture that:
     [   .0.0.name,
 
         (|this: &Room, other: &Room| this.0.1.name==other.0.1.name)
