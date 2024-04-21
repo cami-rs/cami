@@ -136,23 +136,26 @@ macro_rules! c_partial_eq {
      }
 
      $(where $($left:ty : $right:tt),+)?
-     // The following two or three square pairs [] represent local fields, non-local fields, and
-     // optional: fields that themselves implement [CPartialEq]. And of those two or three kinds of
-     // fields may be "deep fields".
+     // The following two or three square pairs [] represent:
+     // - local field(s),
+     // - non-local field(s), and
+     // - optional: field(s) that themselves implement [CPartialEq] ("camigo field(s)").
      //
-     // Within each square pair [], repeat any of the four parts (or three parts in case of "deep
-     // fields"):
+     // Any of those two or three kinds of fields may be "deep fields".
+     //
+     // Within each square pair [], repeat any of the four parts (or three parts in case of "camigo"
+     // field(s)"):
      // - `..._ident` for non-tuple structs, or
      // - `..._idx` for tuples, or
-     // - (` ..._eq_closure`) for a boolean closure - except for "deep fields". Each closure must
-     //   receive two parameters, for example `this` and `other`. Both parameters' type is a
+     // - (` ..._eq_closure`) for an equality closure - except for "camigo field(s)". Each closure
+     //   must receive two parameters, for example `this` and `other`. Both parameters' type is a
      //   reference to the wrapped type (if you provided `$t`), or `Self` (if no `$t`). The closure
-     //   compares the same chosen field in both references, and returns their equality.
+     //   compares the same chosen field in both references, and returns their equality (as `bool`).
      // - {` ..._get_closure`} for an accessor closure. Each closure must receive one parameter, for
-     //   example `this` or `obj`. That parameter's type is a reference to the wrapped type (if you
-     //   provided `$t`), or `Self` (if no `$t`). The closure returns (reference, or copy) of a
-     //   chosen field, or a value based on that field if such a value is unique per the field's
-     //   value.
+     //   example `instance` or `obj`. That parameter's type is a reference to the wrapped type (if
+     //   you provided `$t`), or `Self` (if no `$t`). The closure returns (a reference, or a copy
+     //   of) a chosen field (or a value based on that field). Ideally return a reference to the
+     //   field; beware of returning value of a (silent) `Copy` of large types.
     [
         $( $local:tt )*
     ]
@@ -161,7 +164,7 @@ macro_rules! c_partial_eq {
     ]
     $(
     [
-        $( $deep:tt )*
+        $( $camigo:tt )*
     ]
     )?
     ) => {
@@ -190,7 +193,7 @@ macro_rules! c_partial_eq {
             $(
             [
                 {|_instance: &$t_type| &true},
-                $( $deep )*
+                $( $camigo )*
             ]
             )?
         }
@@ -213,7 +216,7 @@ macro_rules! c_partial_eq {
     ]
     $(
     [
-        $( $deep:tt )*
+        $( $camigo:tt )*
     ]
     )?
     ) => {
@@ -237,7 +240,7 @@ macro_rules! c_partial_eq {
             $(
             [
                 {|_instance: &Self| &true},
-                $( $deep )*
+                $( $camigo )*
             ]
             )?
         }
@@ -336,29 +339,29 @@ macro_rules! c_partial_eq_full_squares {
      $(
      [
         $(
-           $({$deep_get_closure:expr}
+           $({$camigo_get_closure:expr}
             )?
 
            $(
             $( .
-               $deep_dotted:tt
+               $camigo_dotted:tt
                $( (
-                   $( $deep_within_parens:tt )?
+                   $( $camigo_within_parens:tt )?
                   )
                )?
             )+
            )?
 
            $(
-               $deep_ident:ident
+               $camigo_ident:ident
                $( (
-                   $( $deep_after_ident_within_parens:tt )?
+                   $( $camigo_after_ident_within_parens:tt )?
                   )
                )?
                $( .
-                  $( $deep_after_ident_dotted:tt )?
+                  $( $camigo_after_ident_dotted:tt )?
                   $( (
-                       $( $deep_after_ident_dotted_within_parens:tt )?
+                       $( $camigo_after_ident_dotted_within_parens:tt )?
                      )
                   )?
                )*
@@ -434,21 +437,21 @@ macro_rules! c_partial_eq_full_squares {
                 )*
                 $(
                 $(
-                    $(&& $deep_get_closure(&this).eq_local($deep_get_closure(&other))
+                    $(&& $camigo_get_closure(&this).eq_local($camigo_get_closure(&other))
                      )?
 
                     $(&& this  $( .
-                                  $deep_dotted
+                                  $camigo_dotted
                                   $( (
-                                       $( $deep_within_parens )?
+                                       $( $camigo_within_parens )?
                                      )
                                    )?
                                 )+
                         .eq_local( &
                          other $( .
-                                  $deep_dotted
+                                  $camigo_dotted
                                   $( (
-                                       $( $deep_within_parens )?
+                                       $( $camigo_within_parens )?
                                      )
                                    )?
                                 )+
@@ -456,29 +459,29 @@ macro_rules! c_partial_eq_full_squares {
                     )?
 
                     $(&& this  .
-                               $deep_ident
+                               $camigo_ident
                                $( (
-                                    $( $deep_after_ident_within_parens )?
+                                    $( $camigo_after_ident_within_parens )?
                                   )
                                )?
                                $( .
-                                  $( $deep_after_ident_dotted )?
+                                  $( $camigo_after_ident_dotted )?
                                   $( (
-                                       $( $deep_after_ident_dotted_within_parens )?
+                                       $( $camigo_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
                         .eq_local( &
                          other  .
-                               $deep_ident
+                               $camigo_ident
                                $( (
-                                    $( $deep_after_ident_within_parens )?
+                                    $( $camigo_after_ident_within_parens )?
                                   )
                                )?
                                $( .
-                                  $( $deep_after_ident_dotted )?
+                                  $( $camigo_after_ident_dotted )?
                                   $( (
-                                       $( $deep_after_ident_dotted_within_parens )?
+                                       $( $camigo_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
@@ -550,21 +553,21 @@ macro_rules! c_partial_eq_full_squares {
                 )*
                 $(
                 $(
-                    $(&& $deep_get_closure(&this).eq_non_local($deep_get_closure(&other))
+                    $(&& $camigo_get_closure(&this).eq_non_local($camigo_get_closure(&other))
                      )?
 
                     $(&& this  $( .
-                                  $deep_dotted
+                                  $camigo_dotted
                                   $( (
-                                       $( $deep_within_parens )?
+                                       $( $camigo_within_parens )?
                                      )
                                    )?
                                 )+
                         .eq_non_local( &
                          other $( .
-                                  $deep_dotted
+                                  $camigo_dotted
                                   $( (
-                                       $( $deep_within_parens )?
+                                       $( $camigo_within_parens )?
                                      )
                                    )?
                                 )+
@@ -572,29 +575,29 @@ macro_rules! c_partial_eq_full_squares {
                     )?
 
                     $(&& this  .
-                               $deep_ident
+                               $camigo_ident
                                $( (
-                                    $( $deep_after_ident_within_parens )?
+                                    $( $camigo_after_ident_within_parens )?
                                   )
                                )?
                                $( .
-                                  $( $deep_after_ident_dotted )?
+                                  $( $camigo_after_ident_dotted )?
                                   $( (
-                                       $( $deep_after_ident_dotted_within_parens )?
+                                       $( $camigo_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
                         .eq_non_local( &
                          other  .
-                               $deep_ident
+                               $camigo_ident
                                $( (
-                                    $( $deep_after_ident_within_parens )?
+                                    $( $camigo_after_ident_within_parens )?
                                   )
                                )?
                                $( .
-                                  $( $deep_after_ident_dotted )?
+                                  $( $camigo_after_ident_dotted )?
                                   $( (
-                                       $( $deep_after_ident_dotted_within_parens )?
+                                       $( $camigo_after_ident_dotted_within_parens )?
                                      )
                                    )?
                                 )*
