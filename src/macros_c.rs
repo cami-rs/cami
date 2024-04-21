@@ -158,9 +158,11 @@ macro_rules! c_partial_eq {
     [
         $( $non_local:tt )*
     ]
+    $(
     [
         $( $deep:tt )*
     ]
+    )?
     ) => {
         $crate::c_partial_eq_full_squares! {
             $(<$($generic_left $(: $bound)?),+>)?
@@ -184,10 +186,12 @@ macro_rules! c_partial_eq {
                 {|_instance: &$t_type| &true},
                 $( $non_local )*
             ]
+            $(
             [
                 {|_instance: &$t_type| &true},
                 $( $deep )*
             ]
+            )?
         }
     };
 
@@ -206,9 +210,11 @@ macro_rules! c_partial_eq {
     [
         $( $non_local:tt )*
     ]
+    $(
     [
         $( $deep:tt )*
     ]
+    )?
     ) => {
         $crate::c_partial_eq_full_squares! {
             $(<$($generic_left $(: $bound)?),+>)?
@@ -227,10 +233,12 @@ macro_rules! c_partial_eq {
                 {|_instance: &Self| &true},
                 $( $non_local )*
             ]
+            $(
             [
                 {|_instance: &Self| &true},
                 $( $deep )*
             ]
+            )?
         }
     };
 }
@@ -324,6 +332,7 @@ macro_rules! c_partial_eq_full_squares {
            )?
         ),*
      ]
+     $(
      [
         $(
            $({$deep_get_closure:expr}
@@ -355,6 +364,7 @@ macro_rules! c_partial_eq_full_squares {
            )?
         ),*
      ]
+     )?
     ) => {
         impl $(<$($generic_left $(: $bound)?)+>)?
         $crate::CPartialEq for $struct_path $(<$($generic_right),+>)?
@@ -422,6 +432,7 @@ macro_rules! c_partial_eq_full_squares {
                     )?
                 )*
                 $(
+                $(
                     $(&& $deep_get_closure(&this).eq_local($deep_get_closure(&other))
                      )?
 
@@ -473,6 +484,7 @@ macro_rules! c_partial_eq_full_squares {
                         )
                     )?
                 )*
+                )?
             }
 
             fn eq_non_local(&self, other: &Self) -> bool {
@@ -536,6 +548,7 @@ macro_rules! c_partial_eq_full_squares {
                     )?
                 )*
                 $(
+                $(
                     $(&& $deep_get_closure(&this).eq_non_local($deep_get_closure(&other))
                      )?
 
@@ -587,6 +600,7 @@ macro_rules! c_partial_eq_full_squares {
                         )
                     )?
                 )*
+                )?
             }
         }
     };
@@ -825,8 +839,6 @@ mod test_macros {
             }
             [ (|this: &A, other: &A| this.x==other.x) ]
             [.v]
-            // @TODO to auto-generate, we need to capture `A` in the macro:
-            []
         }
         c_ord! {
             CaWrapA1 { t }
@@ -855,7 +867,7 @@ mod test_macros {
                 ]
                 // We can't specify return lifetimes here:
                 //
-                // [@ |obj: &'l A| -> &'l Vec<i32> {&obj.v}]
+                // [{ |obj: &'l A| -> &'l Vec<i32> {&obj.v} }]
                 //
                 // Hence a separate function:
                 [ {get_v} ]

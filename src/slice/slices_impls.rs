@@ -49,9 +49,9 @@ where
 c_partial_eq! {
     ::alloc::string::String
     { Locality::Both }
-    //[{|v: &String| v.len()}]
-    [.len()] // @TODO
+    [.len()]
     [(|this: &::alloc::string::String, other: &::alloc::string::String| this == other)]
+    //[{|instance: &Self| instance}] //@TODO lifetime
     []
 }
 
