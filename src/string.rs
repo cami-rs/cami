@@ -29,3 +29,25 @@ impl COrd for &str {
     }
 }
 // @TODO special wrapper for &[char]?
+
+// @TODO
+// - confusion - should this be behind a feature (other than "alloc")?
+// - without it, we'd need more `transmute`.
+// --- even if we do have it, it doesn't "auto-magically" apply to core/std's slice::sort(). And we don't want to copy-and-paste sort()
+// ----- TODO inspect & benchmark sort_by() & unstable_sort_by().
+#[cfg(feature = "alloc")]
+c_partial_eq! {
+    ::alloc::string::String
+    { Locality::Both }
+    [.len()]
+    [(|this: &::alloc::string::String, other: &::alloc::string::String| this == other)]
+    //[{|instance: &Self| instance}] //@TODO lifetime
+    []
+}
+
+#[cfg(feature = "alloc")]
+c_ord! {
+    ::alloc::string::String
+    [{|v: &::alloc::string::String| v.len()}]
+    [(|this: &::alloc::string::String, other: &::alloc::string::String| this.cmp(&other))]
+}

@@ -383,6 +383,8 @@ macro_rules! c_partial_eq_full_squares {
                 )?
                 true
                 $(
+                    // @TODO here and any "..._closure" below: Enclose this in a block {...}.
+                    // Inside, first, store the closure in a local variable. Then yield the value.
                     $(&& $local_eq_closure(&this, &other)
                      )?
 
