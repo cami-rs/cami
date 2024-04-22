@@ -2,6 +2,11 @@
 
 Zero cost wrappers & related implementation of cache-friendly comparison. `no_std`-friendly.
 
+## Disambiguation
+
+Are you searching for a UTF-8-friendly alternative to Path? See
+[Camino](https://crates.io/crates/camino).
+
 ## Non-vector-like items
 
 This is about comparing values/objects other than slices/arrays/Vec/String/&str. Of course, these
