@@ -36,7 +36,6 @@ default = ["alloc"]
 criterion = { version = "0.5.1" }
 
 fastrand = { version = "2.0.2"}
-# rand = { version = "0.8.5"}
 
 [[bench]]
 name = "with_criterion"

@@ -1,10 +1,12 @@
 //#![allow(warnings, unused)]
 
 use camigo::{c_wrap, Slice};
-use core::hint;
+use core::{hint, iter, ops::RangeBounds};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use fastrand::Rng;
 
 // On heap.
+const MIN_ITEMS: usize = 10;
 const MAX_ITEMS: usize = 100_000;
 // On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
 // size may be a few times higer.
@@ -15,61 +17,35 @@ const MAX_CACHE_SIZE: usize = 2_080_000;
 
 const USIZE_MAX_HALF: usize = usize::MAX / 2;
 
-fn unfrequent_rnd<T>(recently_allocated: *const T) -> usize {
-    #[cfg(feature = "fastrand")]
-    return {
-        let _ = recently_allocated; // to avoid "unused" warning
-    };
-    #[cfg(not(feature = "fastrand"))]
-    return recently_allocated as usize;
-}
-
-fn frequent_rnd<T>(recently_allocated: *const T) -> usize {
-    #[cfg(feature = "rnd_frequent")]
-    return {
-        let _ = recently_allocated; // to avoid "unused" warning
-
-        #[cfg(feature = "fastrand")]
-        let _ = {};
-        // @TODO
-    };
-    #[cfg(not(feature = "rand_frequent"))]
-    return recently_allocated as usize;
-}
-
-fn purge_cache() {
+fn purge_cache(rng: &mut Rng) {
     let mut vec = Vec::<u8>::with_capacity(MAX_CACHE_SIZE);
 
-    // Entropy doesn't matter here, the source/stream is only to fill up the cache, and then it goes
-    // to black_box.
-    let rnd_start = frequent_rnd(&vec) % USIZE_MAX_HALF;
-    let mut rnd = rnd_start;
-
     for _ in [0..MAX_CACHE_SIZE] {
-        vec.push((rnd % 256) as u8);
-        rnd += rnd_start;
-        rnd %= USIZE_MAX_HALF;
+        vec.push(rng.u8(..));
     }
     hint::black_box(vec);
 }
 
 pub fn bench_strings(c: &mut Criterion) {
-    let num_items = unfrequent_rnd(&c) % MAX_ITEMS;
+    let mut rng = Rng::new();
+
+    bench_strings_range(c, &mut rng, MIN_ITEMS..MAX_ITEMS);
+}
+
+pub fn bench_strings_range(
+    c: &mut Criterion,
+    mut rng: &mut Rng,
+    num_items: impl RangeBounds<usize>,
+) {
+    let num_items = rng.usize(num_items);
     let mut unsorted_items = Vec::<String>::with_capacity(num_items);
     let mut total_length = 0usize;
 
     for _ in [0..num_items] {
-        let item_len = frequent_rnd(&unsorted_items) % MAX_ITEM_LEN;
+        let item_len = rng.usize(..MAX_ITEM_LEN);
         let mut item = Vec::<char>::with_capacity(item_len);
+        item.extend(iter::repeat_with(|| rng.char(..)).take(item_len));
 
-        let rnd_start = frequent_rnd(&item) % USIZE_MAX_HALF;
-        let mut rnd = rnd_start;
-
-        for _ in 0..item_len {
-            item.push(((rnd % 10) as u8 + b'0').into());
-            rnd += rnd_start;
-            rnd %= USIZE_MAX_HALF;
-        }
         let mut string = String::with_capacity(4 * item_len);
         string.extend(item.into_iter());
         total_length += string.len();
@@ -93,7 +69,7 @@ pub fn bench_strings(c: &mut Criterion) {
             })
         },
     );
-    purge_cache();
+    purge_cache(&mut rng);
     group.bench_with_input(
         BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
         hint::black_box(&unsorted_items),
@@ -107,7 +83,7 @@ pub fn bench_strings(c: &mut Criterion) {
         },
     );
 
-    purge_cache();
+    purge_cache(&mut rng);
     let mut sorted_non_lexi = Vec::new();
     group.bench_with_input(
         BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
@@ -119,20 +95,21 @@ pub fn bench_strings(c: &mut Criterion) {
             })
         },
     );
-    purge_cache();
+    purge_cache(&mut rng);
     group.bench_with_input(
         BenchmarkId::new("std bin search (non-lexi)", id_string.clone()),
         hint::black_box(&unsorted_items),
         |b, unsorted_items| {
             b.iter(|| {
-                let sorted = hint::black_box(&sorted_lexi);
+                let sorted = hint::black_box(&sorted_non_lexi);
                 for item in hint::black_box(unsorted_items.into_iter()) {
-                    hint::black_box(sorted_non_lexi.binary_search(item)).unwrap();
+                    //@TODO wrap/transmute item
+                    hint::black_box(sorted.binary_search(item)).unwrap();
                 }
             })
         },
     );
-    purge_cache();
+    purge_cache(&mut rng);
     group.bench_with_input(
         BenchmarkId::new("ca  bin search      ", id_string.clone()),
         hint::black_box(&unsorted_items),
