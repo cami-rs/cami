@@ -1,5 +1,5 @@
+use crate::{locality, COrd, CPartialEq, Locality};
 use crate::{pure_local_cord, pure_local_cpartial_eq};
-use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
 impl CPartialEq for () {
@@ -10,6 +10,7 @@ impl CPartialEq for () {
     }
 
     fn eq_non_local(&self, other: &Self) -> bool {
+        locality::debug_fail_unreachable_for_non_local();
         true
     }
 }
@@ -20,7 +21,7 @@ impl COrd for () {
     }
 
     fn cmp_non_local(&self, other: &Self) -> Ordering {
-        debug_assert!(false, "unreachable");
+        locality::debug_fail_unreachable_for_non_local();
         Ordering::Equal
     }
 }

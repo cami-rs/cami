@@ -1,3 +1,4 @@
+/// NOT for public (for now). Otherwise make [crate::Locality::debug_fail_unreachable_for_non_local] public, too.
 #[macro_export]
 macro_rules! pure_local_cpartial_eq {
     ($T:ident) => {
@@ -8,7 +9,7 @@ macro_rules! pure_local_cpartial_eq {
                 self == other
             }
             fn eq_non_local(&self, other: &Self) -> bool {
-                debug_assert!(false, "unreachable");
+                $crate::locality::debug_fail_unreachable_for_non_local();
                 self == other
             }
             fn eq_full(&self, other: &Self) -> bool {
@@ -18,6 +19,7 @@ macro_rules! pure_local_cpartial_eq {
     };
 }
 
+/// NOT for public (for now). Otherwise make [crate::Locality::debug_fail_unreachable_for_non_local] public, too.
 #[macro_export]
 macro_rules! pure_local_cord {
     ($T:ident) => {
@@ -27,7 +29,7 @@ macro_rules! pure_local_cord {
             }
 
             fn cmp_non_local(&self, other: &Self) -> core::cmp::Ordering {
-                debug_assert!(false, "unreachable");
+                $crate::locality::debug_fail_unreachable_for_non_local();
                 self.cmp(other)
             }
 

@@ -17,9 +17,6 @@ pub use locality::Locality;
 pub use macros::mac_c::always_equal_ref;
 pub use traits::{COrd, CPartialEq};
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
 mod impls;
 mod locality;
 #[macro_use]
@@ -27,3 +24,6 @@ mod macros;
 pub mod prelude;
 mod std_wrap;
 mod traits;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
