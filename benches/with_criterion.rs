@@ -1,7 +1,7 @@
 //#![allow(warnings, unused)]
 
 use camigo::{c_wrap, Slice};
-use core::{hint, iter, ops::RangeBounds};
+use core::{hint, iter, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use fastrand::Rng;
 
@@ -9,7 +9,7 @@ use fastrand::Rng;
 const MIN_ITEMS: usize = 10;
 const MAX_ITEMS: usize = 100_000;
 // On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
-// size may be a few times higer.
+// size may be a few times higher.
 const MAX_ITEM_LEN: usize = 1_000;
 
 // For purging the L1, L2..., in bytes.
@@ -131,5 +131,9 @@ pub fn bench_strings_range(
     group.finish();
 }
 
-criterion_group!(benches, bench_strings);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().warm_up_time(Duration::from_millis(200));
+    targets = bench_strings
+}
 criterion_main!(benches);
