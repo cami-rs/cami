@@ -1,3 +1,9 @@
+#[cfg(test)]
+mod loc_tests;
+
+#[cfg(test)]
+mod loc_tests_unreachable;
+
 /// Used to indicate if a type implementing [CPartialEq]/[COrd] has custom logic in only one, or
 /// both, of "local_*" & "non_local_*" methods.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -23,7 +29,7 @@ impl Locality {
         }
     }
 
-    /// NOT a part of public API. Only for use by macro-generated code. Subject to change.
+    /// NOT a part of public API. Only for use by macro-generated code (and internal code). Subject to change.
     #[doc(hidden)]
     #[inline]
     pub const fn debug_reachable_for_local(&self) {
@@ -33,7 +39,7 @@ impl Locality {
         }
     }
 
-    /// NOT a part of public API. Only for use by macro-generated code. Subject to change.
+    /// NOT a part of public API. Only for use by macro-generated code (and internal code). Subject to change.
     #[doc(hidden)]
     #[inline]
     pub const fn debug_reachable_for_non_local(&self) {
@@ -44,5 +50,16 @@ impl Locality {
     }
 }
 
-#[cfg(test)]
-mod loc_tests;
+/// Panic, in debug only, with the same message as [Locality::debug_reachable_for_local] when called
+/// with [Locality::PureNonLocal].
+#[inline]
+pub(crate) fn debug_fail_unreachable_for_local() {
+    Locality::PureNonLocal.debug_reachable_for_local()
+}
+
+/// Panic, in debug only, with the same message as [Locality::debug_reachable_for_non_local] when
+/// called with [Locality::PureLocal].
+#[inline]
+pub(crate) fn debug_fail_unreachable_for_non_local() {
+    Locality::PureLocal.debug_reachable_for_non_local()
+}

@@ -1,6 +1,6 @@
-## Internal conventions
+## Internal Conventions
 
-### Internal package names & filenames
+### Filenames & Internal Package Names
 
 No `mod.rs` files.
 
