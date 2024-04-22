@@ -5,13 +5,13 @@ use core::hint;
 use core::mem;
 
 #[cfg(test)]
-mod slice_ext_test_2d;
+mod se_tests_2d;
 #[cfg(test)]
-mod slice_ext_test_3d;
+mod se_tests_3d;
 #[cfg(test)]
-mod slice_ext_test_bin_search;
+mod se_tests_bin_search;
 #[cfg(test)]
-mod slice_ext_test_strs;
+mod se_tests_strs;
 
 pub trait SliceExt<T> {
     fn binary_search_ca(&self, x: &T) -> Result<usize, usize>

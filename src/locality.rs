@@ -1,8 +1,8 @@
 #[cfg(test)]
-mod loc_tests;
+mod l_tests;
 
 #[cfg(test)]
-mod loc_tests_unreachable;
+mod l_tests_unreachable;
 
 /// Used to indicate if a type implementing [CPartialEq]/[COrd] has custom logic in only one, or
 /// both, of "local_*" & "non_local_*" methods.
