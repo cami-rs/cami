@@ -1,3 +1,4 @@
+use crate::{c_ord, c_partial_eq};
 use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 

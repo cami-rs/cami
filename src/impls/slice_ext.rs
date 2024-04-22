@@ -4,16 +4,14 @@ use core::cmp::Ordering;
 use core::hint;
 use core::mem;
 
-mod slices_impls;
-
-pub trait Slice<T> {
+pub trait SliceExt<T> {
     fn binary_search_ca(&self, x: &T) -> Result<usize, usize>
     where
         T: COrd;
     // @TODO non-binary methods, like contains()
 }
 
-impl<T: COrd + Ord> Slice<T> for [T] {
+impl<T: COrd + Ord> SliceExt<T> for [T] {
     // @TODO factor out part(s) to separate, non-generic functions, to decrease the cost of generic
     // copies
     fn binary_search_ca(&self, given: &T) -> Result<usize, usize> {
@@ -196,7 +194,7 @@ impl<T: COrd + Ord> Slice<T> for [T] {
 #[cfg(test)]
 mod tests {
     mod u8s_bin_search {
-        use crate::Slice;
+        use crate::SliceExt;
 
         const ITEM_0: u8 = 0;
         const ITEM_1: u8 = 2;
@@ -238,7 +236,7 @@ mod tests {
     }
 
     mod u8s_2d {
-        use crate::Slice;
+        use crate::SliceExt;
 
         const ITEM_0: &[u8] = &[9];
         const ITEM_1: &[u8] = &[5, 4];
@@ -293,7 +291,7 @@ mod tests {
 
     /// Not proving much here, but if you're curious...
     mod u8s_3d {
-        use crate::Slice;
+        use crate::SliceExt;
 
         const ITEM_0_0: &[u8] = &[9];
         const ITEM_0_1: &[u8] = &[0, 5];
@@ -338,7 +336,7 @@ mod tests {
     }
 
     mod strs {
-        use crate::Slice;
+        use crate::SliceExt;
 
         const ALL: &[&str] = &["a", "f", "g", "z", "dd", "ccc", "bbbb", "aaaaa"];
 

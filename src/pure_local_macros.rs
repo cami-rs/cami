@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! pure_local_cpartial_eq {
     ($T:ident) => {
         impl $crate::CPartialEq for $T {
@@ -17,6 +18,7 @@ macro_rules! pure_local_cpartial_eq {
     };
 }
 
+#[macro_export]
 macro_rules! pure_local_cord {
     ($T:ident) => {
         impl $crate::COrd for $T {

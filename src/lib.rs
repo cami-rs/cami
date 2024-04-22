@@ -12,26 +12,23 @@ const NOT_SUPPORTED: () = {
     panic!("NOT_SUPPORTED")
 };*/
 
+pub use impls::*;
 pub use locality::Locality;
 pub use macros_c::always_equal_ref;
-pub use slice::Slice;
 pub use traits::{COrd, CPartialEq};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+mod impls;
 mod locality;
 #[macro_use]
 mod macros_c;
 pub mod prelude;
-mod primitives;
 
 #[macro_use]
 mod pure_local_macros;
-mod pure_local_impls;
-mod slice;
 #[macro_use]
 mod macros_s;
 mod std_wrap;
-mod string;
 mod traits;

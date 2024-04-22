@@ -1,3 +1,4 @@
+use crate::{pure_local_cord, pure_local_cpartial_eq};
 use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
@@ -45,3 +46,7 @@ impl COrd for () {
         self.cmp(&other)
     }
 }
+//--------
+
+pure_local_cpartial_eq! { u8 }
+pure_local_cord! { u8 }
