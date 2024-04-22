@@ -1,12 +1,12 @@
-/*
 // @TODO consider removing completely
-macro_rules! std_wrap {
+#[macro_export]
+macro_rules! s_wrap {
     // NOT adding Clone/Debug
     ($struct_name:ident) => {
-        std_wrap! { $struct_name <T> T}
+        s_wrap! { $struct_name <T> T}
     };
     ($struct_name:ident <$generics:tt> $T:ty) => {
-        std_wrap! { [::core::clone::Clone, ::core::fmt::Debug] $struct_name <$generics> t $T}
+        s_wrap! { [::core::clone::Clone, ::core::fmt::Debug] $struct_name <$generics> t $T}
     };
     // NOT adding Clone/Debug
     ([$($($derived:path),+)?] $struct_name:ident <$generics:tt> $t:ident $T:ty) => {
@@ -36,9 +36,10 @@ macro_rules! std_wrap {
             $t: $T,
         }
     };
-}*/
+}
 
 /// Implement [core::cmp::PartialEq] for type `T` that implements[crate::CPartialEq].
+#[macro_export]
 macro_rules! s_partial_eq {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::PartialEq for $wrapper_name<$T>
@@ -62,13 +63,15 @@ macro_rules! s_partial_eq {
 
 // Not really necessary, but let's have it for consistency.
 /// Implement [core::cmp::Eq] for type `T` that implements[crate::CPartialEq].
-macro_rules! std_eq {
+#[macro_export]
+macro_rules! s_eq {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::Eq for $wrapper_name<$T> where $T: $crate::CPartialEq {}
     };
 }
 
 /// Implement [core::cmp::PartialOrd] for type `T` that implements[crate::CPartialOrd].
+#[macro_export]
 macro_rules! s_partial_ord {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::PartialOrd for $wrapper_name<$T>
@@ -101,6 +104,7 @@ macro_rules! s_partial_ord {
 }
 
 /// Implement [core::cmp::Ord] for type `T` that implements[crate::COrd].
+#[macro_export]
 macro_rules! s_ord {
     ($wrapper_name:ident <$generics:tt> $T:ty) => {
         impl<$generics> ::core::cmp::Ord for $wrapper_name<$T>
