@@ -14,7 +14,7 @@ const NOT_SUPPORTED: () = {
 
 pub use impls::*;
 pub use locality::Locality;
-pub use macros_c::always_equal_ref;
+pub use macros::mac_c::always_equal_ref;
 pub use traits::{COrd, CPartialEq};
 
 #[cfg(feature = "alloc")]
@@ -23,12 +23,7 @@ extern crate alloc;
 mod impls;
 mod locality;
 #[macro_use]
-mod macros_c;
+mod macros;
 pub mod prelude;
-
-#[macro_use]
-mod pure_local_macros;
-#[macro_use]
-mod macros_s;
 mod std_wrap;
 mod traits;
