@@ -19,7 +19,7 @@ pub use slice::Slice;
 extern crate alloc;
 
 #[macro_use]
-pub mod macros_c;
+mod macros_c;
 pub mod prelude;
 mod primitives;
 
@@ -156,4 +156,20 @@ pub trait COrd: CPartialEq {
             self.cmp_non_local(other)
         }
     }
+}
+
+/// NOT a part of public API.
+///
+/// The main benefit: With this, we don't need to capture the wrapped type in `c_partial_eq` &
+/// `c_ord when we apply those macros to a (`#[repr(transparent)]`) wrapper struct or tuple. See
+/// also how we needed `$t_type:ty` (in commit `06cfc12`):
+/// <https://github.com/peter-kehl/camigo/blob/06cfc120812179e71a291a92b9c1034a792551eb/src/macros_c.rs#L135>.
+///
+/// A smaller benefit: Less duplication in `c_partial_eq` & `c_ord` macros: no need for an
+/// (anonymous) filler closure.
+// This has to return a reference, hence "_ref" in its name.
+#[doc(hidden)]
+#[inline]
+pub fn always_equal_ref<T>(_instance: &T) -> &() {
+    &()
 }

@@ -132,7 +132,7 @@ macro_rules! c_partial_eq {
        // The name of the only (wrapped) field, or 0 if tuple, for example if the struct has been
        // defined by `c_wrap!` or `c_wrap_tuple!`.` Otherwise see the second input pattern of this
        // macro.
-       => $t:tt : $t_type:ty
+       => $t:tt
      }
 
      $(where $($left:ty : $right:tt),+)?
@@ -183,16 +183,16 @@ macro_rules! c_partial_eq {
                 // pair [] was extremely difficult because of "ambiguity: multiple successful
                 // parses" (because we need a zero-or-more repetitive block that can match empty
                 // content).
-                {|_instance: &$t_type| &true},
+                {$crate::always_equal_ref},
                 $( $local )*
             ]
             [
-                {|_instance: &$t_type| &true},
+                {$crate::always_equal_ref},
                 $( $non_local )*
             ]
             $(
             [
-                {|_instance: &$t_type| &true},
+                {$crate::always_equal_ref},
                 $( $camigo )*
             ]
             )?
@@ -230,16 +230,16 @@ macro_rules! c_partial_eq {
 
             $(where $($left : $right),+)?
             [
-                {|_instance: &Self| &()},
+                {$crate::always_equal_ref},
                 $( $local )*
             ]
             [
-                {|_instance: &Self| &()},
+                {$crate::always_equal_ref},
                 $( $non_local )*
             ]
             $(
             [
-                {|_instance: &Self| &()},
+                {$crate::always_equal_ref},
                 $( $camigo )*
             ]
             )?
@@ -827,7 +827,7 @@ mod test_macros {
         c_wrap! { CaWrapA1 {t : A }}
         c_partial_eq! {
             CaWrapA1 {
-                Locality::Both => t : A
+                Locality::Both => t
             }
             [ (|this: &A, other: &A| this.x==other.x) ]
             [.v]
@@ -853,7 +853,7 @@ mod test_macros {
             c_partial_eq! {
                 <'a>
                 CaTupleA2 {
-                    Locality::Both => 0 : A
+                    Locality::Both => 0
                 }
                 [ {|obj: &A| obj.x}
                 ]
