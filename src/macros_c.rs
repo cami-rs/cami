@@ -230,16 +230,16 @@ macro_rules! c_partial_eq {
 
             $(where $($left : $right),+)?
             [
-                {|_instance: &Self| &true},
+                {|_instance: &Self| &()},
                 $( $local )*
             ]
             [
-                {|_instance: &Self| &true},
+                {|_instance: &Self| &()},
                 $( $non_local )*
             ]
             $(
             [
-                {|_instance: &Self| &true},
+                {|_instance: &Self| &()},
                 $( $camigo )*
             ]
             )?
