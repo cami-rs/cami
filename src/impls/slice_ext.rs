@@ -4,11 +4,20 @@ use core::cmp::Ordering;
 use core::hint;
 use core::mem;
 
+#[cfg(test)]
+mod slice_ext_test_2d;
+#[cfg(test)]
+mod slice_ext_test_3d;
+#[cfg(test)]
+mod slice_ext_test_bin_search;
+#[cfg(test)]
+mod slice_ext_test_strs;
+
 pub trait SliceExt<T> {
     fn binary_search_ca(&self, x: &T) -> Result<usize, usize>
     where
         T: COrd;
-    // @TODO non-binary methods, like contains()
+    // @TODO ?? non-binary methods, like contains()
 }
 
 impl<T: COrd + Ord> SliceExt<T> for [T] {
@@ -188,189 +197,5 @@ impl<T: COrd + Ord> SliceExt<T> for [T] {
         debug_assert!(left <= self.len());
 
         Err(left)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    mod u8s_bin_search {
-        use crate::SliceExt;
-
-        const ITEM_0: u8 = 0;
-        const ITEM_1: u8 = 2;
-        const ITEM_2: u8 = 6;
-        const ITEM_3: u8 = 40;
-        const ITEM_4: u8 = 41;
-        const ITEM_5: u8 = 80;
-        const ITEM_6: u8 = 81;
-        const ALL: &[u8] = &[ITEM_0, ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6];
-
-        #[test]
-        fn item_0() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_0), Ok(0));
-        }
-        #[test]
-        fn item_1() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_1), Ok(1));
-        }
-        #[test]
-        fn item_2() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_2), Ok(2));
-        }
-        #[test]
-        fn item_3() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_3), Ok(3));
-        }
-        #[test]
-        fn item_4() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_4), Ok(4));
-        }
-        #[test]
-        fn item_5() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_5), Ok(5));
-        }
-        #[test]
-        fn item_6() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_6), Ok(6));
-        }
-    }
-
-    mod u8s_2d {
-        use crate::SliceExt;
-
-        const ITEM_0: &[u8] = &[9];
-        const ITEM_1: &[u8] = &[5, 4];
-        const ITEM_2: &[u8] = &[7, 1];
-        const ITEM_3: &[u8] = &[3, 5, 1];
-        const ITEM_4: &[u8] = &[3, 5, 3];
-        const ITEM_5: &[u8] = &[1, 0, 9, 9];
-        const ITEM_6: &[u8] = &[1, 7, 0, 0];
-        const ITEM_7: &[u8] = &[0, 0, 1, 9, 9];
-        const ITEM_8: &[u8] = &[0, 2, 0, 5, 5];
-        const ALL: &[&[u8]] = &[
-            ITEM_0, ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7, ITEM_8,
-        ];
-
-        #[test]
-        fn item_0() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_0), Ok(0));
-        }
-        #[test]
-        fn item_1() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_1), Ok(1));
-        }
-        #[test]
-        fn item_2() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_2), Ok(2));
-        }
-        #[test]
-        fn item_3() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_3), Ok(3));
-        }
-        #[test]
-        fn item_4() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_4), Ok(4));
-        }
-        #[test]
-        fn item_5() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_5), Ok(5));
-        }
-        #[test]
-        fn item_6() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_6), Ok(6));
-        }
-        #[test]
-        fn item_7() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_7), Ok(7));
-        }
-        #[test]
-        fn item_8() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_8), Ok(8));
-        }
-    }
-
-    /// Not proving much here, but if you're curious...
-    mod u8s_3d {
-        use crate::SliceExt;
-
-        const ITEM_0_0: &[u8] = &[9];
-        const ITEM_0_1: &[u8] = &[0, 5];
-        const ITEM_0: &[&[u8]] = &[ITEM_0_0, ITEM_0_1];
-
-        const ITEM_1_0: &[u8] = &[7];
-        const ITEM_1_1: &[u8] = &[1, 7];
-        const ITEM_1_2: &[u8] = &[4, 1];
-        const ITEM_1: &[&[u8]] = &[ITEM_1_0, ITEM_1_1, ITEM_1_2];
-
-        const ITEM_2_0: &[u8] = &[5];
-        const ITEM_2_1: &[u8] = &[0, 7];
-        const ITEM_2_2: &[u8] = &[4, 3];
-        const ITEM_2_3: &[u8] = &[0, 1, 0];
-        const ITEM_2: &[&[u8]] = &[ITEM_2_0, ITEM_2_1, ITEM_2_2, ITEM_2_3];
-
-        const ITEM_3_0: &[u8] = &[5];
-        const ITEM_3_1: &[u8] = &[6];
-        const ITEM_3_2: &[u8] = &[0, 9, 9];
-        const ITEM_3_3: &[u8] = &[1, 3, 2];
-        const ITEM_3_4: &[u8] = &[1, 3, 4];
-        const ITEM_3: &[&[u8]] = &[ITEM_3_0, ITEM_3_1, ITEM_3_2, ITEM_3_3, ITEM_3_4];
-
-        const ALL: &[&[&[u8]]] = &[ITEM_0, ITEM_1, ITEM_2, ITEM_3];
-
-        #[test]
-        fn item_0() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_0), Ok(0));
-        }
-        #[test]
-        fn item_1() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_1), Ok(1));
-        }
-        #[test]
-        fn item_2() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_2), Ok(2));
-        }
-        #[test]
-        fn item_3() {
-            assert_eq!(ALL.binary_search_ca(&ITEM_3), Ok(3));
-        }
-    }
-
-    mod strs {
-        use crate::SliceExt;
-
-        const ALL: &[&str] = &["a", "f", "g", "z", "dd", "ccc", "bbbb", "aaaaa"];
-
-        #[test]
-        fn item_0() {
-            assert_eq!(ALL.binary_search_ca(&"a"), Ok(0));
-        }
-        #[test]
-        fn item_1() {
-            assert_eq!(ALL.binary_search_ca(&"f"), Ok(1));
-        }
-        #[test]
-        fn item_2() {
-            assert_eq!(ALL.binary_search_ca(&"g"), Ok(2));
-        }
-        #[test]
-        fn item_3() {
-            assert_eq!(ALL.binary_search_ca(&"z"), Ok(3));
-        }
-        #[test]
-        fn item_4() {
-            assert_eq!(ALL.binary_search_ca(&"dd"), Ok(4));
-        }
-        #[test]
-        fn item_5() {
-            assert_eq!(ALL.binary_search_ca(&"ccc"), Ok(5));
-        }
-        #[test]
-        fn item_6() {
-            assert_eq!(ALL.binary_search_ca(&"bbbb"), Ok(6));
-        }
-        #[test]
-        fn item_7() {
-            assert_eq!(ALL.binary_search_ca(&"aaaaa"), Ok(7));
-        }
     }
 }
