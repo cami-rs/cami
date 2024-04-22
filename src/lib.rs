@@ -158,7 +158,7 @@ pub trait COrd: CPartialEq {
     }
 }
 
-/// NOT a part of public API.
+/// NOT a part of public API. Only for use by macro-generated code. Subject to change.
 ///
 /// The main benefit: With this, we don't need to capture the wrapped type in `c_partial_eq` &
 /// `c_ord when we apply those macros to a (`#[repr(transparent)]`) wrapper struct or tuple. See

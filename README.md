@@ -4,7 +4,7 @@ Zero cost wrappers & related implementation of cache-friendly comparison. `no_st
 
 ## Disambiguation
 
-Are you searching for a UTF-8-friendly alternative to Path? See
+Are you searching for a UTF-8-friendly alternative to `Path`? See
 [Camino](https://crates.io/crates/camino).
 
 ## Non-vector-like items

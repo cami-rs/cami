@@ -377,18 +377,19 @@ macro_rules! c_partial_eq_full_squares {
 
             fn eq_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_local();
-                let this = &self;
+                let this = self;
                 $( let this = &this.$t;
                    let other = &other.$t;
                 )?
                 true
                 $(
-                    // @TODO here and any "..._closure" below: Enclose this in a block {...}.
-                    // Inside, first, store the closure in a local variable. Then yield the value.
                     $(&& $local_eq_closure(&this, &other)
                      )?
 
-                    $(&& $local_get_closure(&this)==$local_get_closure(&other)
+                    $(&& {
+                        let getter = $local_get_closure;
+                        getter(this) == getter(other)
+                      }
                      )?
 
                     $(&& this  $( .
@@ -439,7 +440,10 @@ macro_rules! c_partial_eq_full_squares {
                 )*
                 $(
                 $(
-                    $(&& $camigo_get_closure(&this).eq_local($camigo_get_closure(&other))
+                    $(&& {
+                        let getter = $camigo_get_closure;
+                        getter(this).eq_local( getter(other) )
+                      }
                      )?
 
                     $(&& this  $( .
@@ -495,7 +499,7 @@ macro_rules! c_partial_eq_full_squares {
 
             fn eq_non_local(&self, other: &Self) -> bool {
                 Self::LOCALITY.debug_reachable_for_non_local();
-                let this = &self;
+                let this = self;
                 $( let this = &this.$t;
                    let other = &other.$t;
                 )?
@@ -504,7 +508,10 @@ macro_rules! c_partial_eq_full_squares {
                     $(&& $non_local_eq_closure(&this, &other)
                      )?
 
-                    $(&& $non_local_get_closure(&this)==$non_local_get_closure(&other)
+                    $(&& {
+                        let getter = $non_local_get_closure;
+                        getter(this) == getter(other)
+                      }
                      )?
 
                     $(&& this  $( .
@@ -555,7 +562,10 @@ macro_rules! c_partial_eq_full_squares {
                 )*
                 $(
                 $(
-                    $(&& $camigo_get_closure(&this).eq_non_local($camigo_get_closure(&other))
+                    $(&& {
+                        let getter = $camigo_get_closure;
+                        getter(this).eq_non_local( getter(other) )
+                      }
                      )?
 
                     $(&& this  $( .
