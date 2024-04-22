@@ -1,6 +1,6 @@
 /// NOT for public (for now). Otherwise make [crate::Locality::debug_fail_unreachable_for_non_local] public, too.
 #[macro_export]
-macro_rules! pure_local_cpartial_eq {
+macro_rules! pure_local_c_partial_eq {
     ($T:ident) => {
         impl $crate::CPartialEq for $T {
             const LOCALITY: $crate::Locality = $crate::Locality::PureLocal;
@@ -21,7 +21,7 @@ macro_rules! pure_local_cpartial_eq {
 
 /// NOT for public (for now). Otherwise make [crate::Locality::debug_fail_unreachable_for_non_local] public, too.
 #[macro_export]
-macro_rules! pure_local_cord {
+macro_rules! pure_local_c_ord {
     ($T:ident) => {
         impl $crate::COrd for $T {
             fn cmp_local(&self, other: &Self) -> core::cmp::Ordering {

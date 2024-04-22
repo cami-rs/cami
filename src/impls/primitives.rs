@@ -1,5 +1,5 @@
 use crate::{locality, COrd, CPartialEq, Locality};
-use crate::{pure_local_cord, pure_local_cpartial_eq};
+use crate::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 
 impl CPartialEq for () {
@@ -27,8 +27,8 @@ impl COrd for () {
 }
 //--------
 
-pure_local_cpartial_eq! { bool }
-pure_local_cord! { bool }
+pure_local_c_partial_eq! { bool }
+pure_local_c_ord! { bool }
 
-pure_local_cpartial_eq! { u8 }
-pure_local_cord! { u8 }
+pure_local_c_partial_eq! { u8 }
+pure_local_c_ord! { u8 }
