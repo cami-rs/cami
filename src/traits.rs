@@ -1,17 +1,15 @@
 use crate::Locality;
 use core::cmp::Ordering;
 
+/// Cache-friendly comparing. NOT extending [PartialEq], because the type (that implements
+/// [CPartialEq]) may not implement [PartialEq]. But, if the type does implement [PartialEq], then
+/// [CPartialEq::eq_full] should return same result as [PartialEq::eq].
 pub trait CPartialEq {
     /// Which of "local_*" and "non_local_*" methods apply (which ones have custom logic) here & in
     /// [COrd]. Used to short circuit any unneeded parts in the default implementation of "full_*"
     /// methods here & in [COrd].
     const LOCALITY: Locality;
 
-    // @TODO remove COMPATIBLE_WITH_PARTIAL_EQ
-    //
-    // If unsure, then it's `false`.
-    //
-    //const COMPATIBLE_WITH_PARTIAL_EQ: bool;
     fn eq_local(&self, other: &Self) -> bool;
     fn eq_non_local(&self, other: &Self) -> bool;
     fn eq_full(&self, other: &Self) -> bool {
@@ -28,10 +26,9 @@ pub trait CPartialEq {
     }
 }
 
-/** Cache-friendly ordering.
- *
- *  NOT extending [Ord], because they MAY be INCOMPATIBLE.
- */
+/// Cache-friendly ordering. NOT extending [Ord] (or [PartialOrd]), because they MAY be INCOMPATIBLE
+/// - that's where this crate hopes to be useful. Also because the type (that implements [COrd]) may
+/// not implement [Ord] (and [PartialOrd]).
 pub trait COrd: CPartialEq {
     // If unsure, then it's `false`.
     //
