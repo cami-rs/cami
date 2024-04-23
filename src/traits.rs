@@ -1,9 +1,11 @@
 use crate::Locality;
 use core::cmp::Ordering;
 
-/// Cache-friendly comparing. NOT extending [PartialEq], because the type (that implements
-/// [CPartialEq]) may not implement [PartialEq]. But, if the type does implement [PartialEq], then
-/// [CPartialEq::eq_full] should return same result as [PartialEq::eq].
+/// Cache-friendly comparison.
+///
+/// NOT extending [PartialEq], because the type (that implements [CPartialEq]) may not implement
+/// [PartialEq]. But, if the type does implement [PartialEq], then [CPartialEq::eq_full] should
+/// return same result as [PartialEq::eq].
 pub trait CPartialEq {
     /// Which of "local_*" and "non_local_*" methods apply (which ones have custom logic) here & in
     /// [COrd]. Used to short circuit any unneeded parts in the default implementation of "full_*"
