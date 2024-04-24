@@ -17,7 +17,7 @@ repository = "https://github.com/peter-kehl/camigo"
 # Keep features here sorted alphabetically
 alloc = []
 
-# TODO:
+# TODO See if this comment shows up at docs.rs.
 std = ["alloc"]
 
 deref_pure_trait = ["unsafe", "nightly"]
@@ -27,7 +27,7 @@ nightly = []
 unsafe = []
 
 # TODO:
-default = ["alloc"]
+default = ["std"]
 
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers/camigo-helpers-crate", version = "0.0.1" }

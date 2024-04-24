@@ -39,17 +39,17 @@ impl CamiOrd for &str {
 // ----- TODO inspect & benchmark sort_by() & unstable_sort_by().
 #[cfg(feature = "alloc")]
 cami_partial_eq! {
-    ::alloc::string::String
+    ::rust_alloc::string::String
     { Locality::Both }
     [.len()]
-    [(|this: &::alloc::string::String, other: &::alloc::string::String| this == other)]
+    [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this == other)]
     //[{|instance: &Self| instance}] //@TODO lifetime
     []
 }
 
 #[cfg(feature = "alloc")]
 cami_ord! {
-    ::alloc::string::String
-    [{|v: &::alloc::string::String| v.len()}]
-    [(|this: &::alloc::string::String, other: &::alloc::string::String| this.cmp(&other))]
+    ::rust_alloc::string::String
+    [{|v: &::rust_alloc::string::String| v.len()}]
+    [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this.cmp(&other))]
 }
