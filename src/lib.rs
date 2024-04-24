@@ -12,16 +12,9 @@ const NOT_SUPPORTED: () = {
     panic!("NOT_SUPPORTED")
 };*/
 
-pub use camigo_helpers::Locality;
-pub use impls::*;
-pub use macros::mac_c::always_equal_ref;
 pub use traits::{COrd, CPartialEq};
 
 mod impls;
-#[macro_use]
-mod macros;
-pub mod prelude;
-mod std_wrap;
 mod traits;
 
 #[cfg(feature = "alloc")]

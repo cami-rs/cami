@@ -1,4 +1,5 @@
-use crate::{COrd, CPartialEq, Locality};
+use crate::{COrd, CPartialEq};
+use camigo_helpers::Locality;
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar

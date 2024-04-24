@@ -1,5 +1,6 @@
-use crate::{ca_ord, ca_partial_eq};
-use crate::{COrd, CPartialEq, Locality};
+pub use crate as camigo;
+use crate::{COrd, CPartialEq};
+use camigo_helpers::{ca_ord, ca_partial_eq, Locality};
 use core::cmp::Ordering;
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].

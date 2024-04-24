@@ -1,4 +1,4 @@
-use crate::Locality;
+use camigo_helpers::Locality;
 use core::cmp::Ordering;
 
 /// Cache-friendly comparison.

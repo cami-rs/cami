@@ -1,6 +1,7 @@
-use crate::{pure_local_c_ord, pure_local_c_partial_eq};
+pub use crate as camigo;
 use crate::{COrd, CPartialEq};
 use camigo_helpers::Locality;
+use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 
 impl CPartialEq for () {
