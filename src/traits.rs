@@ -28,9 +28,11 @@ pub trait CamiPartialEq {
     }
 }
 
-/// Cache-friendly ordering. NOT extending [Ord] (or [PartialOrd]), because they MAY be INCOMPATIBLE
-/// - and that's where this crate hopes to be useful. Also because a type that implements [CamiOrd]
-/// may not implement [Ord] (and [PartialOrd]).
+/// Cache-friendly ordering. NOT extending [Ord] (or [PartialOrd]):
+/// 1. because [CamiOrd] MAY be INCOMPATIBLE with those two traits ([CamiOrd::cmp_full] MAY differ
+///    to [Ord::cmp].) And, it's exactly types where those two functions DO differ, where `Camigo`
+///    hopes to be useful. Also
+/// 2. because a type that implements [CamiOrd] may not implement [Ord] (or [PartialOrd]).
 pub trait CamiOrd: CamiPartialEq {
     // If unsure, then it's `false`.
     //

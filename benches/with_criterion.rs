@@ -1,6 +1,6 @@
 //#![allow(warnings, unused)]
 
-use camigo_helpers::ca_wrap_struct;
+use camigo_helpers::cami_wrap_struct;
 use core::{hint, iter, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use fastrand::Rng;
