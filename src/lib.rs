@@ -12,13 +12,12 @@ const NOT_SUPPORTED: () = {
     panic!("NOT_SUPPORTED")
 };*/
 
+pub use camigo_helpers::Locality;
 pub use impls::*;
-pub use locality::Locality;
 pub use macros::mac_c::always_equal_ref;
 pub use traits::{COrd, CPartialEq};
 
 mod impls;
-mod locality;
 #[macro_use]
 mod macros;
 pub mod prelude;

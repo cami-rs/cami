@@ -9,7 +9,7 @@ macro_rules! pure_local_c_partial_eq {
                 self == other
             }
             fn eq_non_local(&self, other: &Self) -> bool {
-                $crate::locality::debug_fail_unreachable_for_non_local();
+                ::camigo_helpers::debug_fail_unreachable_for_non_local();
                 self == other
             }
             fn eq_full(&self, other: &Self) -> bool {
@@ -29,7 +29,7 @@ macro_rules! pure_local_c_ord {
             }
 
             fn cmp_non_local(&self, other: &Self) -> core::cmp::Ordering {
-                $crate::locality::debug_fail_unreachable_for_non_local();
+                ::camigo_helpers::debug_fail_unreachable_for_non_local();
                 self.cmp(other)
             }
 

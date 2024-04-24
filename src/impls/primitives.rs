@@ -1,5 +1,6 @@
-use crate::{locality, COrd, CPartialEq, Locality};
 use crate::{pure_local_c_ord, pure_local_c_partial_eq};
+use crate::{COrd, CPartialEq};
+use camigo_helpers::Locality;
 use core::cmp::Ordering;
 
 impl CPartialEq for () {
@@ -10,7 +11,7 @@ impl CPartialEq for () {
     }
 
     fn eq_non_local(&self, other: &Self) -> bool {
-        locality::debug_fail_unreachable_for_non_local();
+        camigo_helpers::debug_fail_unreachable_for_non_local();
         true
     }
 }
@@ -21,7 +22,7 @@ impl COrd for () {
     }
 
     fn cmp_non_local(&self, other: &Self) -> Ordering {
-        locality::debug_fail_unreachable_for_non_local();
+        camigo_helpers::debug_fail_unreachable_for_non_local();
         Ordering::Equal
     }
 }
