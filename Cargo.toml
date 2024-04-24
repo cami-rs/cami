@@ -30,7 +30,7 @@ unsafe = []
 default = ["alloc"]
 
 [dependencies]
-camigo-helpers = { path = "../camigo-helpers/camigo-helpers-crate", version = "0.1.0" }
+camigo-helpers = { path = "../camigo-helpers/camigo-helpers-crate", version = "0.0.1" }
 
 [dev-dependencies]
 # @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?
