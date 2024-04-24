@@ -1,10 +1,10 @@
 pub use crate as camigo;
-use crate::{COrd, CPartialEq};
+use crate::{CamiOrd, CamiPartialEq};
 use camigo_helpers::Locality;
 use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 
-impl CPartialEq for () {
+impl CamiPartialEq for () {
     const LOCALITY: Locality = Locality::PureLocal;
 
     fn eq_local(&self, other: &Self) -> bool {
@@ -17,7 +17,7 @@ impl CPartialEq for () {
     }
 }
 
-impl COrd for () {
+impl CamiOrd for () {
     fn cmp_local(&self, other: &Self) -> Ordering {
         Ordering::Equal
     }

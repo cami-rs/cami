@@ -3,13 +3,13 @@ use core::cmp::Ordering;
 
 /// Cache-friendly comparison.
 ///
-/// NOT extending [PartialEq], because the type (that implements [CPartialEq]) may not implement
-/// [PartialEq]. But, if the type does implement [PartialEq], then [CPartialEq::eq_full] should
+/// NOT extending [PartialEq], because a type (that implements [CamiPartialEq]) may not implement
+/// [PartialEq]. But, if the type does implement [PartialEq], then [CamiPartialEq::eq_full] should
 /// return same result as [PartialEq::eq].
-pub trait CPartialEq {
+pub trait CamiPartialEq {
     /// Which of "local_*" and "non_local_*" methods apply (which ones have custom logic) here & in
-    /// [COrd]. Used to short circuit any unneeded parts in the default implementation of "full_*"
-    /// methods here & in [COrd].
+    /// [CamiOrd]. Used to short circuit any unneeded parts in the default implementation of
+    /// "full_*" methods here & in [CamiOrd].
     const LOCALITY: Locality;
 
     fn eq_local(&self, other: &Self) -> bool;
@@ -29,9 +29,9 @@ pub trait CPartialEq {
 }
 
 /// Cache-friendly ordering. NOT extending [Ord] (or [PartialOrd]), because they MAY be INCOMPATIBLE
-/// - that's where this crate hopes to be useful. Also because the type (that implements [COrd]) may
-/// not implement [Ord] (and [PartialOrd]).
-pub trait COrd: CPartialEq {
+/// - and that's where this crate hopes to be useful. Also because a type that implements [CamiOrd]
+/// may not implement [Ord] (and [PartialOrd]).
+pub trait CamiOrd: CamiPartialEq {
     // If unsure, then it's `false`.
     //
     //const COMPATIBLE_WITH_ORD: bool;
@@ -51,8 +51,8 @@ pub trait COrd: CPartialEq {
     /// Full comparison.
     ///
     /// Any implementation must be equivalent to the default one. The default implementation
-    /// respects [COrd::LOCALITY] and calls [COrd::cmp_local] and/or [COrd::cmp_non_local] only
-    /// when they're applicable and when they're needed.
+    /// respects [CamiPartialOrd::LOCALITY] and calls [CamiOrd::cmp_local] and/or
+    /// [CamiOrd::cmp_non_local] only when they're applicable and when they're needed.
     fn cmp_full(&self, other: &Self) -> Ordering {
         // @TODO apply https://rust.godbolt.org/z/698eYffTx
         if Self::LOCALITY.has_local() {

@@ -1,10 +1,10 @@
-use crate::{COrd, CPartialEq};
+use crate::{CamiOrd, CamiPartialEq};
 use camigo_helpers::Locality;
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
 /// implementation for `&str` in [crate::string].
-impl<T> CPartialEq for &[T]
+impl<T> CamiPartialEq for &[T]
 where
     T: PartialEq,
 {
@@ -24,7 +24,7 @@ where
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
 /// implementation for `&str` in [crate::string].
-impl<T> COrd for &[T]
+impl<T> CamiOrd for &[T]
 where
     T: Ord,
 {

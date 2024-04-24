@@ -1,10 +1,10 @@
 pub use crate as camigo;
-use crate::{COrd, CPartialEq};
-use camigo_helpers::{ca_ord, ca_partial_eq, Locality};
+use crate::{CamiOrd, CamiPartialEq};
+use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
 use core::cmp::Ordering;
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
-impl CPartialEq for &str {
+impl CamiPartialEq for &str {
     const LOCALITY: Locality = Locality::Both;
 
     fn eq_local(&self, other: &Self) -> bool {
@@ -17,7 +17,7 @@ impl CPartialEq for &str {
 }
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
-impl COrd for &str {
+impl CamiOrd for &str {
     fn cmp_local(&self, other: &Self) -> Ordering {
         self.len().cmp(&other.len())
     }
@@ -38,7 +38,7 @@ impl COrd for &str {
 // --- even if we do have it, it doesn't "auto-magically" apply to core/std's slice::sort(). And we don't want to copy-and-paste sort()
 // ----- TODO inspect & benchmark sort_by() & unstable_sort_by().
 #[cfg(feature = "alloc")]
-ca_partial_eq! {
+cami_partial_eq! {
     ::alloc::string::String
     { Locality::Both }
     [.len()]
@@ -48,7 +48,7 @@ ca_partial_eq! {
 }
 
 #[cfg(feature = "alloc")]
-ca_ord! {
+cami_ord! {
     ::alloc::string::String
     [{|v: &::alloc::string::String| v.len()}]
     [(|this: &::alloc::string::String, other: &::alloc::string::String| this.cmp(&other))]

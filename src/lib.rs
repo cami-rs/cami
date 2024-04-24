@@ -12,7 +12,7 @@ const NOT_SUPPORTED: () = {
     panic!("NOT_SUPPORTED")
 };*/
 
-pub use traits::{COrd, CPartialEq};
+pub use traits::{CamiOrd, CamiPartialEq};
 
 mod impls;
 mod traits;
