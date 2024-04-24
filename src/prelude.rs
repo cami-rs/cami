@@ -1,1 +1,1 @@
-pub use crate::{c_ord, c_partial_eq, Locality};
+pub use crate::{ca_ord, ca_partial_eq, Locality};

@@ -1,10 +1,10 @@
-use crate::{s_eq, s_ord, s_partial_eq, s_partial_ord, s_wrap};
+use crate::{std_eq, std_ord, std_partial_eq, std_partial_ord, std_wrap_struct};
 
-s_wrap! { StdWrap }
-s_wrap! { StdWrap2 <T> T }
-s_wrap! { [Clone, Debug] StdWrap3 <T> t T }
+std_wrap_struct! { StdWrap }
+std_wrap_struct! { StdWrap2 <T> T }
+std_wrap_struct! { [Clone, Debug] StdWrap3 <T> t T }
 
-s_partial_eq! { StdWrap <T> T }
-s_eq! { StdWrap <T> T }
-s_partial_ord! { StdWrap <T> T }
-s_ord! { StdWrap <T> T }
+std_partial_eq! { StdWrap <T> T }
+std_eq! { StdWrap <T> T }
+std_partial_ord! { StdWrap <T> T }
+std_ord! { StdWrap <T> T }

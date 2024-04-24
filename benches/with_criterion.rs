@@ -1,6 +1,6 @@
 //#![allow(warnings, unused)]
 
-use camigo::{c_wrap, SliceExt};
+use camigo::ca_wrap_struct;
 use core::{hint, iter, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use fastrand::Rng;
@@ -109,25 +109,6 @@ pub fn bench_strings_range(
             })
         },
     );
-    purge_cache(&mut rng);
-    group.bench_with_input(
-        BenchmarkId::new("ca  bin search      ", id_string.clone()),
-        hint::black_box(&unsorted_items),
-        |b, unsorted_items| {
-            b.iter(|| {
-                let sorted = hint::black_box(&sorted_lexi); // @TODO sorted_non_lexi?
-                for item in hint::black_box(unsorted_items.into_iter()) {
-                    // !! TODO
-                    //
-                    // Check: Should we FIRST sort the items as per COrd (non-lexi)?
-                    //
-                    // If so, transmute unsorted_items, clone, .sort().
-                    hint::black_box(sorted.binary_search_ca(item)).unwrap();
-                }
-            })
-        },
-    );
-
     group.finish();
 }
 

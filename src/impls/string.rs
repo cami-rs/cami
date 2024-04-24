@@ -1,4 +1,4 @@
-use crate::{c_ord, c_partial_eq};
+use crate::{ca_ord, ca_partial_eq};
 use crate::{COrd, CPartialEq, Locality};
 use core::cmp::Ordering;
 
@@ -37,7 +37,7 @@ impl COrd for &str {
 // --- even if we do have it, it doesn't "auto-magically" apply to core/std's slice::sort(). And we don't want to copy-and-paste sort()
 // ----- TODO inspect & benchmark sort_by() & unstable_sort_by().
 #[cfg(feature = "alloc")]
-c_partial_eq! {
+ca_partial_eq! {
     ::alloc::string::String
     { Locality::Both }
     [.len()]
@@ -47,7 +47,7 @@ c_partial_eq! {
 }
 
 #[cfg(feature = "alloc")]
-c_ord! {
+ca_ord! {
     ::alloc::string::String
     [{|v: &::alloc::string::String| v.len()}]
     [(|this: &::alloc::string::String, other: &::alloc::string::String| this.cmp(&other))]

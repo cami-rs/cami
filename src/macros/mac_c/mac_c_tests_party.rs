@@ -1,9 +1,9 @@
-use crate::c_partial_eq;
+use crate::ca_partial_eq;
 use crate::Locality;
 use alloc::string::String;
 
 struct Empty {}
-c_partial_eq! {
+ca_partial_eq! {
     Empty {
         Locality::Both
     }
@@ -53,7 +53,7 @@ pub struct Table(Food, Food);
 
 pub struct Room(Table, Table);
 
-c_partial_eq! {
+ca_partial_eq! {
     Food {
         Locality::Both
     }
@@ -62,7 +62,7 @@ c_partial_eq! {
     [name]
 }
 
-c_partial_eq! {
+ca_partial_eq! {
     FoodList {
         Locality::Both
     }
@@ -79,7 +79,7 @@ c_partial_eq! {
     ]
     []
 }
-c_partial_eq! {
+ca_partial_eq! {
     Table {
         Locality::Both
     }
@@ -92,7 +92,7 @@ c_partial_eq! {
     ]
     []
 }
-c_partial_eq! {
+ca_partial_eq! {
     Room {
         Locality::Both
     }

@@ -21,14 +21,12 @@ deref_pure_trait = ["unsafe", "nightly"]
 hint_assert_unchecked = ["unsafe"]
 nightly = []
 
-# real_blackbox = [] #TODO?
-unsafe = ["unsafe_from_rust_source"]
-unsafe_from_rust_source = []
+unsafe = []
 
-default = ["alloc"] 
-#default = ["hint_assert_unchecked", "hint_assert_unchecked", "deref_pure_trait"]
-#default = ["fastrand"]
-#default = ["alloc", "unsafe_from_rust_source", "deref_pure_trait"]
+default = ["alloc"]
+
+[dependencies]
+# xxx = { path = "hello_utils", version = "0.1.0" }
 
 [dev-dependencies]
 # @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?

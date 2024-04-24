@@ -1,4 +1,4 @@
-use crate::{c_ord, c_partial_eq, c_wrap, c_wrap_tuple};
+use crate::{ca_ord, ca_partial_eq, ca_wrap_struct, ca_wrap_tuple};
 use alloc::vec::Vec;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -7,7 +7,7 @@ struct A {
     v: Vec<i32>,
 }
 
-c_wrap! {
+ca_wrap_struct! {
     _CaWrap2 <A> {
         pub t : Vec<A>
     }
@@ -15,27 +15,27 @@ c_wrap! {
 
 use crate::Locality;
 
-c_wrap! { CaWrapA1 {t : A }}
-c_partial_eq! {
+ca_wrap_struct! { CaWrapA1 {t : A }}
+ca_partial_eq! {
     CaWrapA1 {
         Locality::Both => t
     }
     [ (|this: &A, other: &A| this.x==other.x) ]
     [.v]
 }
-c_ord! {
+ca_ord! {
     CaWrapA1 { t }
     [ {|a: &A| a.x} ]
     [v]
 }
 
-c_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Clone}
+ca_wrap_tuple! { _CaTupleGen1 <T> (pub T) where T: Clone}
 
-c_wrap_tuple! { CaTupleA2 (A) }
+ca_wrap_tuple! { CaTupleA2 (A) }
 fn get_v<'a>(wrap: &'a A) -> &'a Vec<i32> {
     &wrap.v
 }
-c_partial_eq! {
+ca_partial_eq! {
     <'a>
     CaTupleA2 {
         Locality::Both => 0
@@ -50,7 +50,7 @@ c_partial_eq! {
     [ {get_v} ]
     []
 }
-c_ord! {
+ca_ord! {
     CaTupleA2 { 0 }
     [( |this: &A, other: &A| this.x.cmp(&other.x) )]
     [v]

@@ -9,7 +9,7 @@ mod mac_c_tests_basic;
 mod mac_c_tests_party;
 
 #[macro_export]
-macro_rules! c_wrap {
+macro_rules! ca_wrap_struct {
     // An INTERNAL rule
     (@[$($($derived:path),+)?]
      $struct_vis:vis
@@ -44,7 +44,7 @@ macro_rules! c_wrap {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        c_wrap! {
+        ca_wrap_struct! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -52,7 +52,7 @@ macro_rules! c_wrap {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        c_wrap! {
+        ca_wrap_struct! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -64,7 +64,7 @@ macro_rules! c_wrap {
 }
 
 #[macro_export]
-macro_rules! c_wrap_tuple {
+macro_rules! ca_wrap_tuple {
     // An INTERNAL rule
     (@
      [$($($derived:path),+)?]
@@ -99,7 +99,7 @@ macro_rules! c_wrap_tuple {
     ([$($($derived:path),+)?]
      $($tt:tt)+
     ) => {
-        c_wrap_tuple! {
+        ca_wrap_tuple! {
             @
             [$($($derived),+)?]
             $($tt)+
@@ -107,7 +107,7 @@ macro_rules! c_wrap_tuple {
     };
     // Default the derived trait impls
     ($($tt:tt)+) => {
-        c_wrap_tuple! {
+        ca_wrap_tuple! {
             @
             [
             ::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::Eq, ::core::cmp::Ord,
@@ -135,7 +135,7 @@ pub fn always_equal_ref<T>(_instance: &T) -> &() {
 }
 
 #[macro_export]
-macro_rules! c_partial_eq {
+macro_rules! ca_partial_eq {
     (
      $(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
@@ -184,7 +184,7 @@ macro_rules! c_partial_eq {
     ]
     )?
     ) => {
-        $crate::c_partial_eq_full_squares! {
+        $crate::ca_partial_eq_full_squares! {
             $(<$($generic_left $(: $bound)?),+>)?
             $struct_path
             $(>$($generic_right),+<)?
@@ -236,7 +236,7 @@ macro_rules! c_partial_eq {
     ]
     )?
     ) => {
-        $crate::c_partial_eq_full_squares! {
+        $crate::ca_partial_eq_full_squares! {
             $(<$($generic_left $(: $bound)?),+>)?
             $struct_path
             $(>$($generic_right),+<)?
@@ -264,7 +264,7 @@ macro_rules! c_partial_eq {
 }
 
 #[macro_export]
-macro_rules! c_partial_eq_full_squares {
+macro_rules! ca_partial_eq_full_squares {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
      $(>$($generic_right:tt),+<)?
@@ -640,7 +640,7 @@ macro_rules! c_partial_eq_full_squares {
 
 /// Like [c_partial_eq], but for [COrd].
 #[macro_export]
-macro_rules! c_ord {
+macro_rules! ca_ord {
     ($(<$($generic_left:tt $(: $bound:tt)?),+>)?
      $struct_path:path
      $(>$($generic_right:tt),+<)?
@@ -786,7 +786,7 @@ impl From<&str> for CaWrap {
     }
 }
 
-c_wrap! {
+ca_wrap_struct! {
     pub CaWrap {
         t : u8
     }
@@ -819,13 +819,13 @@ fn _deref(caw: &CaWrap) {
     let _ = caw.len();
 }
 
-c_wrap! { [Clone, Debug] _CaWrap3 <T> {t : T }}
-c_wrap! { [Clone, Debug] _CaWrap4 <T:Sized> {t : T }}
-c_wrap! {
+ca_wrap_struct! { [Clone, Debug] _CaWrap3 <T> {t : T }}
+ca_wrap_struct! { [Clone, Debug] _CaWrap4 <T:Sized> {t : T }}
+ca_wrap_struct! {
     [Clone, Debug]
     _CaWrap5 <T>
     where T: 'static {
         t : T
     }
 }
-c_wrap! { pub CaWrapPub {pub t : u8}}
+ca_wrap_struct! { pub CaWrapPub {pub t : u8}}
