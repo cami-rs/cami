@@ -1,8 +1,7 @@
 [package]
 name = "camigo"
 version = "0.0.1"
-# TODO Could this be 2018 edition?
-edition = "2021"
+edition = "2018"
 
 description = "Cache-friendly comparison, binary & sequential search."
 categories = ["algorithms", "caching", "data-structures", "no-std", "text-processing"]
