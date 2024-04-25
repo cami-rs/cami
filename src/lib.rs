@@ -18,8 +18,13 @@ mod impls;
 pub mod prelude;
 mod traits;
 
-#[cfg(feature = "wraps")]
-pub mod wraps;
+//#[cfg(feature = "wraps")]
+//pub mod wraps;
+#[cfg(all(feature = "wraps", feature = "alloc"))]
+pub mod alloc;
+pub mod core;
+#[cfg(all(feature = "wraps", feature = "std"))]
+pub mod std;
 
 #[cfg(feature = "alloc")]
 extern crate alloc as rust_alloc;
