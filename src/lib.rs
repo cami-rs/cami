@@ -14,16 +14,12 @@ const NOT_SUPPORTED: () = {
 
 pub use traits::{CamiOrd, CamiPartialEq};
 
-#[cfg(feature = "alloc")]
-pub mod alloc;
-pub mod core;
-
 mod impls;
 pub mod prelude;
 mod traits;
 
-#[cfg(feature = "std")]
-pub mod std;
+#[cfg(feature = "wraps")]
+pub mod wraps;
 
 #[cfg(feature = "alloc")]
 extern crate alloc as rust_alloc;
