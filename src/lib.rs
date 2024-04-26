@@ -20,6 +20,7 @@ mod traits;
 
 #[cfg(all(feature = "wrappers", feature = "alloc"))]
 pub mod alloc;
+#[cfg(feature = "wrappers")]
 pub mod core;
 #[cfg(all(feature = "wrappers", feature = "std"))]
 pub mod std;

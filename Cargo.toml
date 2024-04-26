@@ -24,10 +24,10 @@ hint_assert_unchecked = ["unsafe"]
 nightly = []
 
 unsafe = []
-wraps = []
+wrappers = []
 
 # TODO:
-default = ["std", "wraps"]
+default = ["std", "wrappers"]
 
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
