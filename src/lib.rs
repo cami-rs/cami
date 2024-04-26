@@ -18,10 +18,10 @@ mod impls;
 pub mod prelude;
 mod traits;
 
-#[cfg(all(feature = "wraps", feature = "alloc"))]
+#[cfg(all(feature = "wrappers", feature = "alloc"))]
 pub mod alloc;
 pub mod core;
-#[cfg(all(feature = "wraps", feature = "std"))]
+#[cfg(all(feature = "wrappers", feature = "std"))]
 pub mod std;
 
 #[cfg(feature = "alloc")]

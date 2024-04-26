@@ -1,6 +1,6 @@
-#[cfg(all(feature = "wraps", feature = "alloc"))]
+#[cfg(all(feature = "wrappers", feature = "alloc"))]
 pub use crate::alloc;
 pub use crate::core;
 
-#[cfg(all(feature = "wraps", feature = "std"))]
+#[cfg(all(feature = "wrappers", feature = "std"))]
 pub use crate::std;

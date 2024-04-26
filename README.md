@@ -52,6 +52,8 @@ Indeed, the actual items stored in a `BTreeMap/BTreeSet` can use this crate.
 
 ## Actual traits & applicability
 
+TODO rename CPartial etc.
+
 ### CPartialEq & COrd
 
 TODO
