@@ -3,7 +3,7 @@ use camigo_helpers::Locality;
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
-/// implementation for `&str` in [crate::string].
+/// implementation for `&str`.
 impl<T> CamiPartialEq for &[T]
 where
     T: PartialEq,
@@ -23,7 +23,7 @@ where
 // but we do NOT need (full) Ord
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
-/// implementation for `&str` in [crate::string].
+/// implementation for `&str`.
 impl<T> CamiOrd for &[T]
 where
     T: Ord,
