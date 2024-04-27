@@ -53,3 +53,10 @@ cami_ord! {
     [{|v: &::rust_alloc::string::String| v.len()}]
     [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this.cmp(&other))]
 }
+
+//#[cfg(feature = "wrappers")]
+#[cfg(false)]
+const _: () = {
+    type StringWrap = ();
+    type StringCami = ();
+};

@@ -14,15 +14,13 @@ const NOT_SUPPORTED: () = {
 
 pub use traits::{CamiOrd, CamiPartialEq};
 
-mod impls;
 pub mod prelude;
 mod traits;
 
-#[cfg(all(feature = "wrappers", feature = "alloc"))]
+#[cfg(feature = "alloc")]
 pub mod alloc;
-#[cfg(feature = "wrappers")]
 pub mod core;
-#[cfg(all(feature = "wrappers", feature = "std"))]
+#[cfg(feature = "std")]
 pub mod std;
 
 #[cfg(feature = "alloc")]
