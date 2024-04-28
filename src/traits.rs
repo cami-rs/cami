@@ -14,7 +14,17 @@ pub trait CamiPartialEq {
 
     fn eq_local(&self, other: &Self) -> bool;
     fn eq_non_local(&self, other: &Self) -> bool;
+
+    #[inline]
     fn eq_full(&self, other: &Self) -> bool {
+        // @TODO write a test that the following would return the same
+        //
+        // Write them not in this crate, but in Camigo crate - for example, next to the
+        // implementation for `bool`.
+        if false {
+            return (!Self::LOCALITY.has_local() || self.eq_local(&other))
+                && (!Self::LOCALITY.has_non_local() || self.eq_non_local(&other));
+        }
         if Self::LOCALITY.has_local() {
             let local = self.eq_local(other);
             if local {
@@ -55,6 +65,7 @@ pub trait CamiOrd: CamiPartialEq {
     /// Any implementation must be equivalent to the default one. The default implementation
     /// respects [CamiPartialOrd::LOCALITY] and calls [CamiOrd::cmp_local] and/or
     /// [CamiOrd::cmp_non_local] only when they're applicable and when they're needed.
+    #[inline]
     fn cmp_full(&self, other: &Self) -> Ordering {
         // @TODO apply https://rust.godbolt.org/z/698eYffTx
         if Self::LOCALITY.has_local() {

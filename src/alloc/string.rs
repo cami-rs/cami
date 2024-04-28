@@ -1,6 +1,6 @@
 pub use crate as camigo;
 use crate::{CamiOrd, CamiPartialEq};
-use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
+use camigo_helpers::{cami_ord, cami_partial_eq, core_wrap_tuple, Locality};
 use core::cmp::Ordering;
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
@@ -54,9 +54,14 @@ cami_ord! {
     [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this.cmp(&other))]
 }
 
-//#[cfg(feature = "wrappers")]
-#[cfg(false)]
-const _: () = {
-    type StringWrap = ();
-    type StringCami = ();
-};
+core_wrap_tuple! {
+    StringCami
+    (pub String)
+}
+// @TODO
+//
+// core_partial_eq...
+
+// @TODO A macro that implements CamiPartialEq + CamiPartialOrd + CamiOrd for the wrap type, too. Then we can use them in compositions.
+//
+// e.g. cami_??
