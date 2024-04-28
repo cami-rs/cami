@@ -54,6 +54,7 @@ cami_ord! {
     [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this.cmp(&other))]
 }
 
+#[cfg(feature = "wrappers")]
 core_wrap_tuple! {
     StringCami
     (pub String)
