@@ -1,7 +1,9 @@
+//! Not strictly necessary. Mostly needed so that a blanket `impl` works for tuples containing any
+//! types that implement [crate::CamiPartialEq] & [crate::CamiOrd].
 pub use crate as camigo;
 use crate::{CamiOrd, CamiPartialEq};
 use camigo_helpers::Locality;
-use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
+use camigo_helpers::{core_wrap_tuple, pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 
 impl CamiPartialEq for () {
@@ -31,6 +33,18 @@ impl CamiOrd for () {
 
 pure_local_c_partial_eq! { bool }
 pure_local_c_ord! { bool }
+#[cfg(feature = "wrappers")]
+core_wrap_tuple! {
+    BoolCami
+    (pub bool)
+}
 
 pure_local_c_partial_eq! { u8 }
 pure_local_c_ord! { u8 }
+#[cfg(feature = "wrappers")]
+core_wrap_tuple! {
+    [+ ::core::marker::Copy ]
+    U8Cami
+    (pub u8)
+}
+
