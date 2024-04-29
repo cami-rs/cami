@@ -1,5 +1,4 @@
-use crate::{CamiOrd, CamiPartialEq};
-use camigo_helpers::Locality;
+use crate::{traits::CamiPartialOrd, CamiOrd, CamiPartialEq, Locality};
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
@@ -21,6 +20,8 @@ where
 
 // @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd,
 // but we do NOT need (full) Ord
+
+impl<T> CamiPartialOrd for &[T] where T: PartialOrd {}
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
 /// implementation for `&str`.

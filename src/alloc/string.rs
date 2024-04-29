@@ -1,5 +1,5 @@
 pub use crate as camigo;
-use crate::{CamiOrd, CamiPartialEq};
+use crate::{traits::CamiPartialOrd, CamiOrd, CamiPartialEq};
 use camigo_helpers::{cami_ord, cami_partial_eq, core_wrap_tuple, Locality};
 use core::cmp::Ordering;
 
@@ -15,6 +15,8 @@ impl CamiPartialEq for &str {
         self == other
     }
 }
+
+impl CamiPartialOrd for &str {}
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
 impl CamiOrd for &str {

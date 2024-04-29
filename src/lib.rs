@@ -12,13 +12,16 @@ const NOT_SUPPORTED: () = {
     panic!("NOT_SUPPORTED")
 };*/
 
-pub use traits::{CamiOrd, CamiPartialEq};
+pub use cami::Cami;
+pub use camigo_helpers::Locality;
+pub use traits::{CamiOrd, CamiPartialEq, CamiPartialOrd};
 
 pub mod prelude;
 mod traits;
 
 #[cfg(feature = "alloc")]
 pub mod alloc;
+mod cami;
 pub mod core;
 #[cfg(feature = "std")]
 pub mod std;
