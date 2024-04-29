@@ -2,14 +2,61 @@ use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
 use core::fmt::{self, Debug};
 
+// Having an `Rhs` generic would need a phantom data field, so we couldn't easily pattern match this
+// etc.
+//
+// pub struct Cami<T: CamiPartialEq<Rhs>, Rhs: ?Sized = Self>(pub T);
 #[repr(transparent)]
-pub struct Cami<T: crate::CamiPartialEq>(pub T);
+pub struct Cami<T: CamiPartialEq>(pub T);
+
+pub trait IntoCami: CamiPartialEq + Sized {
+    #[inline]
+    fn into_cami(self) -> Cami<Self> {
+        Cami(self)
+    }
+}
+impl<T: CamiPartialEq> IntoCami for T {}
+
+pub trait IntoCamiCopy: CamiPartialEq + Sized + Copy {
+    #[inline]
+    fn into_cami_copy(&self) -> Cami<Self> {
+        Cami(*self)
+    }
+}
+impl<T: CamiPartialEq + Copy> IntoCamiCopy for T {}
+
+pub trait IntoCamiClone: CamiPartialEq + Sized + Clone {
+    #[inline]
+    fn into_cami_clone(&self) -> Cami<Self> {
+        Cami(self.clone())
+    }
+}
+impl<T: CamiPartialEq + Clone> IntoCamiClone for T {}
 
 impl<T: CamiPartialEq> Cami<T> {
-    /// Consume [self], returned the wrapped data. We COULD just use self.0 (or
-    /// variable_holding_the_instance.0) - but, then it can't be easily searched for in source code
+    /// Consume [self], return the wrapped data. We COULD just use `self.0` (or
+    /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
+    /// code.
     pub fn from_cami(self) -> T {
         self.0
+    }
+}
+
+impl<T: CamiPartialEq + Copy> Cami<T> {
+    /// Take [self] by reference, return a copy of the wrapped data. We COULD just use `self.0` (or
+    /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
+    /// code.
+    pub fn from_cami_copy(&self) -> T {
+        self.0
+    }
+}
+
+impl<T: CamiPartialEq + Clone> Cami<T> {
+    /// Take [self] by reference, return a clone of the wrapped data. We COULD just use
+    /// `self.0.clone()` (or `variable_holding_the_instance.0.clone()`) - but, then it can't be
+    /// easily searched for in source code.
+    pub fn from_cami_clone(&self) -> T {
+        self.0.clone()
     }
 }
 

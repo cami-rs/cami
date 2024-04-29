@@ -12,7 +12,7 @@ const NOT_SUPPORTED: () = {
     panic!("NOT_SUPPORTED")
 };*/
 
-pub use cami::Cami;
+pub use cami::{Cami, IntoCami, IntoCamiCopy};
 pub use camigo_helpers::Locality;
 pub use traits::{CamiOrd, CamiPartialEq, CamiPartialOrd};
 

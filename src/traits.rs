@@ -12,18 +12,18 @@ use core::cmp::Ordering;
 ///
 /// If the type does implement/derive [Eq], then its [CamiPartialEq] implementation SHOULD be
 /// compatible with its [Eq] implementation.
-pub trait CamiPartialEq {
+pub trait CamiPartialEq<Rhs: ?Sized = Self> {
     //@TODO GENERIC
     /// Which of "local_*" and "non_local_*" methods apply (which ones have custom logic) here & in
     /// [CamiOrd]. Used to short circuit any unneeded parts in the default implementation of
     /// "full_*" methods here & in [CamiOrd].
     const LOCALITY: Locality;
 
-    fn eq_local(&self, other: &Self) -> bool;
-    fn eq_non_local(&self, other: &Self) -> bool;
+    fn eq_local(&self, other: &Rhs) -> bool;
+    fn eq_non_local(&self, other: &Rhs) -> bool;
 
     #[inline]
-    fn eq_full(&self, other: &Self) -> bool {
+    fn eq_full(&self, other: &Rhs) -> bool {
         // @TODO write a test that the following would return the same
         //
         // Write them not in this crate, but in Camigo crate - for example, next to the
