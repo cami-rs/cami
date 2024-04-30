@@ -1,4 +1,6 @@
-pub use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiCopy, Locality};
+pub use crate::{
+    Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy, Locality,
+};
 
 #[cfg(all(feature = "wrappers", feature = "alloc"))]
 pub use crate::alloc;

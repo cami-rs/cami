@@ -9,29 +9,40 @@ use core::fmt::{self, Debug};
 #[repr(transparent)]
 pub struct Cami<T: CamiPartialEq>(pub T);
 
-pub trait IntoCami: CamiPartialEq + Sized {
-    #[inline]
+pub trait IntoCami {
+    type Wrapped: CamiPartialEq;
+    fn into_cami(self) -> Cami<Self::Wrapped>;
+}
+impl<T: CamiPartialEq> IntoCami for T {
+    type Wrapped = Self;
     fn into_cami(self) -> Cami<Self> {
         Cami(self)
     }
 }
-impl<T: CamiPartialEq> IntoCami for T {}
 
-pub trait IntoCamiCopy: CamiPartialEq + Sized + Copy {
+pub trait IntoCamiCopy {
+    type Wrapped: CamiPartialEq;
+    fn into_cami_copy(&self) -> Cami<Self::Wrapped>;
+}
+impl<T: CamiPartialEq + Copy> IntoCamiCopy for T {
+    type Wrapped = Self;
     #[inline]
     fn into_cami_copy(&self) -> Cami<Self> {
         Cami(*self)
     }
 }
-impl<T: CamiPartialEq + Copy> IntoCamiCopy for T {}
 
-pub trait IntoCamiClone: CamiPartialEq + Sized + Clone {
+pub trait IntoCamiClone {
+    type Wrapped: CamiPartialEq;
+    fn into_cami_clone(&self) -> Cami<Self::Wrapped>;
+}
+impl<T: CamiPartialEq + Clone> IntoCamiClone for T {
+    type Wrapped = Self;
     #[inline]
     fn into_cami_clone(&self) -> Cami<Self> {
         Cami(self.clone())
     }
 }
-impl<T: CamiPartialEq + Clone> IntoCamiClone for T {}
 
 impl<T: CamiPartialEq> Cami<T> {
     /// Consume [self], return the wrapped data. We COULD just use `self.0` (or

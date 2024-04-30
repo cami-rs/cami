@@ -61,10 +61,3 @@ core_wrap_tuple! {
     StringCami
     (pub String)
 }
-// @TODO
-//
-// core_partial_eq...
-
-// @TODO A macro that implements CamiPartialEq + CamiPartialOrd + CamiOrd for the wrap type, too. Then we can use them in compositions.
-//
-// e.g. cami_??
