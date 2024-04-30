@@ -81,7 +81,6 @@ impl<T: CamiPartialEq + Clone> IntoCamiClone for T {
 }
 //----------
 
-/// @TODO?? `&dyn T``
 pub trait IntoCamiRef {
     type Wrapped: CamiPartialEq + ?Sized;
     fn into_cami_ref(&self) -> &Cami<Self::Wrapped>;
@@ -96,7 +95,7 @@ impl<T: CamiPartialEq + ?Sized> IntoCamiRef for T {
 }
 
 /// @TODO Should this rather be called `IntoSliceCami` to indicate that it's not the slice, but the
-/// items, that "become" `Cami`?
+/// items, that get transmuted to `Cami`?
 pub trait IntoCamiSlice {
     type Wrapped: CamiPartialEq;
     fn into_cami_slice(&self) -> &[Cami<Self::Wrapped>];
@@ -136,6 +135,9 @@ impl<T: CamiPartialEq> PartialEq for Cami<T> {
 }
 
 impl<T: Eq + CamiPartialEq> Eq for Cami<T> {}
+//-----
+
+// @TODO Deref + friends
 //-----
 
 // Simple forwarding. Not really necessary: We normally don't need to wrap a `Cami` type inside one

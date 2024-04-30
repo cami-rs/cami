@@ -1,5 +1,6 @@
 pub use crate::{
-    Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy, Locality,
+    Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy,
+    IntoCamiRef, IntoCamiSlice, Locality,
 };
 
 #[cfg(all(feature = "wrappers", feature = "alloc"))]

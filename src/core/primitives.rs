@@ -2,7 +2,8 @@
 //! types that implement [crate::CamiPartialEq] & [crate::CamiOrd].
 pub use crate as camigo; // for macros
 use crate::{
-    Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy, Locality,
+    Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy,
+    IntoCamiRef, IntoCamiSlice, Locality,
 };
 use camigo_helpers::{core_wrap_tuple, pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
@@ -113,6 +114,21 @@ impl IntoCamiClone for f32 {
     #[inline]
     fn into_cami_clone(&self) -> CamiF32Total {
         Cami::new(F32Total(self.clone()))
+    }
+}
+//--------
+impl IntoCamiRef for f32 {
+    type Wrapped = F32Total;
+    #[inline]
+    fn into_cami_ref(&self) -> &CamiF32Total {
+        todo!()
+    }
+}
+impl IntoCamiSlice for [f32] {
+    type Wrapped = F32Total;
+    #[inline]
+    fn into_cami_slice(&self) -> &[CamiF32Total] {
+        todo!()
     }
 }
 //--------
