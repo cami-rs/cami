@@ -1,6 +1,8 @@
 use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
 use core::fmt::{self, Debug};
+#[cfg(feature = "transmute")]
+use core::mem;
 #[cfg(feature = "deref_pure")]
 use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
@@ -99,7 +101,7 @@ impl<T: CamiPartialEq + ?Sized> IntoCamiRef for T {
     type Wrapped = Self;
     #[inline]
     fn into_cami_ref(&self) -> &Cami<Self> {
-        todo!() // transmute
+        unsafe { mem::transmute(self) }
     }
 }
 
@@ -114,7 +116,7 @@ impl<T: CamiPartialEq> IntoCamiSlice for [T] {
     type Wrapped = T;
     #[inline]
     fn into_cami_slice(&self) -> &[Cami<T>] {
-        todo!() // transmute
+        unsafe { mem::transmute(self) }
     }
 }
 //----------

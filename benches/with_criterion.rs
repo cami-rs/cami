@@ -1,6 +1,5 @@
 //#![allow(warnings, unused)]
 
-use camigo_helpers::cami_wrap_struct;
 use core::{hint, iter, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use fastrand::Rng;
@@ -15,7 +14,7 @@ const MAX_ITEM_LEN: usize = 1_000;
 // For purging the L1, L2..., in bytes.
 const MAX_CACHE_SIZE: usize = 2_080_000;
 
-const USIZE_MAX_HALF: usize = usize::MAX / 2;
+//const USIZE_MAX_HALF: usize = usize::MAX / 2;
 
 fn purge_cache(rng: &mut Rng) {
     let mut vec = Vec::<u8>::with_capacity(MAX_CACHE_SIZE);
