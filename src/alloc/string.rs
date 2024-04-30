@@ -49,7 +49,7 @@ cami_partial_eq! {
     {::rust_alloc::string::String}
     (Locality::Both)
     [.len()]
-    [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this == other)]
+    [(|this| this)]
     //[{|instance: &Self| instance}] //@TODO lifetime
     []
 }
