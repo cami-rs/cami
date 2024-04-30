@@ -9,6 +9,7 @@ use core::fmt::{self, Debug};
 #[repr(transparent)]
 pub struct Cami<T: CamiPartialEq>(pub T);
 
+//----------
 pub trait IntoCami {
     type Wrapped: CamiPartialEq;
     fn into_cami(self) -> Cami<Self::Wrapped>;
@@ -43,6 +44,7 @@ impl<T: CamiPartialEq + Clone> IntoCamiClone for T {
         Cami(self.clone())
     }
 }
+//----------
 
 impl<T: CamiPartialEq> Cami<T> {
     /// Consume [self], return the wrapped data. We COULD just use `self.0` (or
@@ -70,6 +72,7 @@ impl<T: CamiPartialEq + Clone> Cami<T> {
         self.0.clone()
     }
 }
+//----------
 
 impl<T: Clone + CamiPartialEq> Clone for Cami<T> {
     fn clone(&self) -> Self {
@@ -100,7 +103,9 @@ impl<T: Eq + PartialEq + CamiPartialEq> Eq for Cami<T> {}
 //impl<T: PartialOrd + CamiOrd> Eq for Cami<T> {}
 //-----
 
-impl<T: PartialEq + CamiPartialEq> CamiPartialEq for Cami<T> {
+// Simple forwarding. Not really necessary: We normally don't need to wrap a `Cami` type inside one
+// more level of `Cami`, but it's possible.
+impl<T: CamiPartialEq> CamiPartialEq for Cami<T> {
     const LOCALITY: Locality = T::LOCALITY;
     #[inline]
     fn eq_local(&self, other: &Self) -> bool {
@@ -113,8 +118,51 @@ impl<T: PartialEq + CamiPartialEq> CamiPartialEq for Cami<T> {
     }
 }
 
-impl<T: PartialOrd + PartialEq + CamiPartialEq> CamiPartialOrd for Cami<T> {}
+// Simple forwarding. Not really necessary: We normally don't need to wrap a `Cami` type inside one
+// more level of `Cami`, but it's possible.
+impl<T: CamiPartialOrd> CamiPartialOrd for Cami<T> {
+    fn partial_cmp_local(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp_local(&other.0)
+    }
+    fn partial_cmp_non_local(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp_non_local(&other.0)
+    }
+    #[inline]
+    fn lt_local(&self, other: &Self) -> bool {
+        self.0.lt_local(&other.0)
+    }
+    #[inline]
+    fn lt_non_local(&self, other: &Self) -> bool {
+        self.0.lt_non_local(&other.0)
+    }
+    #[inline]
+    fn le_local(&self, other: &Self) -> bool {
+        self.0.le_local(&other.0)
+    }
+    #[inline]
+    fn le_non_local(&self, other: &Self) -> bool {
+        self.0.le_non_local(&other.0)
+    }
+    #[inline]
+    fn gt_local(&self, other: &Self) -> bool {
+        self.0.gt_local(&other.0)
+    }
+    #[inline]
+    fn gt_non_local(&self, other: &Self) -> bool {
+        self.0.gt_non_local(&other.0)
+    }
+    #[inline]
+    fn ge_local(&self, other: &Self) -> bool {
+        self.0.ge_local(&other.0)
+    }
+    #[inline]
+    fn ge_non_local(&self, other: &Self) -> bool {
+        self.0.ge_non_local(&other.0)
+    }
+}
 
+// Simple forwarding. Not really necessary: We normally don't need to wrap a `Cami` type inside one
+// more level of `Cami`, but it's possible.
 impl<T: Ord + PartialOrd + PartialEq + CamiPartialEq + CamiOrd> CamiOrd for Cami<T> {
     #[inline]
     fn cmp_local(&self, other: &Self) -> Ordering {
