@@ -1,4 +1,4 @@
-use crate::{traits::CamiPartialOrd, CamiOrd, CamiPartialEq, Locality};
+use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
@@ -41,3 +41,6 @@ where
         self.len().cmp(&other.len()).then(self.cmp(&other))
     }
 }
+
+#[cfg(feature = "wrappers")]
+pub type SliceCami<'a, T: 'a> = Cami<&'a [T]>;

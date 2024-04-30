@@ -4,8 +4,14 @@ pub use crate::{
 };
 
 #[cfg(all(feature = "wrappers", feature = "alloc"))]
-pub use crate::alloc;
-pub use crate::core;
+mod a_prelude;
 
-#[cfg(all(feature = "wrappers", feature = "std"))]
-pub use crate::std;
+#[cfg(all(feature = "wrappers", feature = "alloc"))]
+pub use a_prelude::*;
+
+#[cfg(feature = "wrappers")]
+mod c_prelude;
+#[cfg(feature = "wrappers")]
+pub use c_prelude::*;
+
+// @TODO same two `pub use` for core & std

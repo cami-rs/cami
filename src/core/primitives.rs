@@ -5,7 +5,7 @@ use crate::{
     Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy,
     IntoCamiRef, IntoCamiSlice, Locality,
 };
-use camigo_helpers::{core_wrap_tuple, pure_local_c_ord, pure_local_c_partial_eq};
+use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 
 impl CamiPartialEq for () {
@@ -39,6 +39,7 @@ impl CamiOrd for () {
 /// [PartialEq] based on [pub fn total_cmp(&self, other: &Self) ->
 /// Ordering](https://doc.rust-lang.org/nightly/core/primitive.f32.html#method.total_cmp). Those
 /// implementations do NOT always agree with [PartialEq] (and [PartialOrd]) of [f32].
+#[cfg(feature = "wrappers")]
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct F32Total(f32);
@@ -88,8 +89,9 @@ impl CamiOrd for F32Total {
         Ordering::Equal
     }
 }
-pub type CamiF32Total = Cami<F32Total>;
-impl CamiF32Total {
+#[cfg(feature = "wrappers")]
+pub type F32Cami = Cami<F32Total>;
+impl F32Cami {
     pub fn into_f32(&self) -> f32 {
         self.in_cami().0
     }
@@ -98,21 +100,21 @@ impl CamiF32Total {
 impl IntoCami for f32 {
     type Wrapped = F32Total;
     #[inline]
-    fn into_cami(self) -> CamiF32Total {
+    fn into_cami(self) -> F32Cami {
         Cami::new(F32Total(self))
     }
 }
 impl IntoCamiCopy for f32 {
     type Wrapped = F32Total;
     #[inline]
-    fn into_cami_copy(&self) -> CamiF32Total {
+    fn into_cami_copy(&self) -> F32Cami {
         Cami::new(F32Total(*self))
     }
 }
 impl IntoCamiClone for f32 {
     type Wrapped = F32Total;
     #[inline]
-    fn into_cami_clone(&self) -> CamiF32Total {
+    fn into_cami_clone(&self) -> F32Cami {
         Cami::new(F32Total(self.clone()))
     }
 }
@@ -120,14 +122,14 @@ impl IntoCamiClone for f32 {
 impl IntoCamiRef for f32 {
     type Wrapped = F32Total;
     #[inline]
-    fn into_cami_ref(&self) -> &CamiF32Total {
+    fn into_cami_ref(&self) -> &F32Cami {
         todo!()
     }
 }
 impl IntoCamiSlice for [f32] {
     type Wrapped = F32Total;
     #[inline]
-    fn into_cami_slice(&self) -> &[CamiF32Total] {
+    fn into_cami_slice(&self) -> &[F32Cami] {
         todo!()
     }
 }
@@ -136,16 +138,9 @@ impl IntoCamiSlice for [f32] {
 pure_local_c_partial_eq! { bool }
 pure_local_c_ord! { bool }
 #[cfg(feature = "wrappers")]
-core_wrap_tuple! {
-    BoolCami
-    (pub bool)
-}
+pub type BoolCami = Cami<bool>;
 
 pure_local_c_partial_eq! { u8 }
 pure_local_c_ord! { u8 }
 #[cfg(feature = "wrappers")]
-core_wrap_tuple! {
-    [+ ::core::marker::Copy ]
-    U8Cami
-    (pub u8)
-}
+pub type U8Cami = Cami<u8>;

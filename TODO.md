@@ -1,8 +1,3 @@
-cami_wrap_struct ->
-cami_impl
-- we do NOT need a wrapper
-- we ONLY need impl CamiPartialEq + CamiOrd
-
 core_wrap_tuple ->
 cami_tuple
 cami_struct

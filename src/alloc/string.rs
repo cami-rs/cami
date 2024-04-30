@@ -1,7 +1,12 @@
-pub use crate as camigo;
+use crate as camigo; // For macros
 use crate::{traits::CamiPartialOrd, CamiOrd, CamiPartialEq};
-use camigo_helpers::{cami_ord, cami_partial_eq, core_wrap_tuple, Locality};
+use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
 use core::cmp::Ordering;
+
+#[cfg(feature = "wrappers")]
+pub type StringCami = crate::Cami<rust_alloc::string::String>;
+#[cfg(feature = "wrappers")]
+pub type StrCami<'a> = crate::Cami<&'a str>;
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
 impl CamiPartialEq for &str {
@@ -54,10 +59,4 @@ cami_ord! {
     ::rust_alloc::string::String
     [{|v: &::rust_alloc::string::String| v.len()}]
     [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this.cmp(&other))]
-}
-
-#[cfg(feature = "wrappers")]
-core_wrap_tuple! {
-    StringCami
-    (pub String)
 }
