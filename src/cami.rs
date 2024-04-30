@@ -7,9 +7,44 @@ use core::fmt::{self, Debug};
 //
 // pub struct Cami<T: CamiPartialEq<Rhs>, Rhs: ?Sized = Self>(pub T);
 #[repr(transparent)]
-pub struct Cami<T: CamiPartialEq>(pub T);
-
+pub struct Cami<T: CamiPartialEq + ?Sized>(T);
 //----------
+
+impl<T: CamiPartialEq> Cami<T> {
+    pub fn new(from: T) -> Self {
+        Self(from)
+    }
+
+    pub fn in_cami(&self) -> &T {
+        &self.0
+    }
+    /// Consume [self], return the wrapped data. We COULD just use `self.0` (or
+    /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
+    /// code.
+    pub fn from_cami(self) -> T {
+        self.0
+    }
+}
+
+impl<T: CamiPartialEq + Copy> Cami<T> {
+    /// Take [self] by reference, return a copy of the wrapped data. We COULD just use `self.0` (or
+    /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
+    /// code.
+    pub fn from_cami_copy(&self) -> T {
+        self.0
+    }
+}
+
+impl<T: CamiPartialEq + Clone> Cami<T> {
+    /// Take [self] by reference, return a clone of the wrapped data. We COULD just use
+    /// `self.0.clone()` (or `variable_holding_the_instance.0.clone()`) - but, then it can't be
+    /// easily searched for in source code.
+    pub fn from_cami_clone(&self) -> T {
+        self.0.clone()
+    }
+}
+//----------
+
 pub trait IntoCami {
     type Wrapped: CamiPartialEq;
     fn into_cami(self) -> Cami<Self::Wrapped>;
@@ -46,30 +81,32 @@ impl<T: CamiPartialEq + Clone> IntoCamiClone for T {
 }
 //----------
 
-impl<T: CamiPartialEq> Cami<T> {
-    /// Consume [self], return the wrapped data. We COULD just use `self.0` (or
-    /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
-    /// code.
-    pub fn from_cami(self) -> T {
-        self.0
+/// @TODO?? `&dyn T``
+pub trait IntoCamiRef {
+    type Wrapped: CamiPartialEq + ?Sized;
+    fn into_cami_ref(&self) -> &Cami<Self::Wrapped>;
+}
+#[cfg(feature = "transmute")]
+impl<T: CamiPartialEq + ?Sized> IntoCamiRef for T {
+    type Wrapped = Self;
+    #[inline]
+    fn into_cami_ref(&self) -> &Cami<Self> {
+        todo!() // transmute
     }
 }
 
-impl<T: CamiPartialEq + Copy> Cami<T> {
-    /// Take [self] by reference, return a copy of the wrapped data. We COULD just use `self.0` (or
-    /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
-    /// code.
-    pub fn from_cami_copy(&self) -> T {
-        self.0
-    }
+/// @TODO Should this rather be called `IntoSliceCami` to indicate that it's not the slice, but the
+/// items, that "become" `Cami`?
+pub trait IntoCamiSlice {
+    type Wrapped: CamiPartialEq;
+    fn into_cami_slice(&self) -> &[Cami<Self::Wrapped>];
 }
-
-impl<T: CamiPartialEq + Clone> Cami<T> {
-    /// Take [self] by reference, return a clone of the wrapped data. We COULD just use
-    /// `self.0.clone()` (or `variable_holding_the_instance.0.clone()`) - but, then it can't be
-    /// easily searched for in source code.
-    pub fn from_cami_clone(&self) -> T {
-        self.0.clone()
+#[cfg(feature = "transmute")]
+impl<T: CamiPartialEq> IntoCamiSlice for [T] {
+    type Wrapped = T;
+    #[inline]
+    fn into_cami_slice(&self) -> &[Cami<T>] {
+        todo!() // transmute
     }
 }
 //----------
@@ -91,16 +128,14 @@ impl<T: Debug + CamiPartialEq> Debug for Cami<T> {
     }
 }
 
-impl<T: PartialEq + CamiPartialEq> PartialEq for Cami<T> {
+impl<T: CamiPartialEq> PartialEq for Cami<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.0.eq_full(&other.0)
     }
 }
 
-impl<T: Eq + PartialEq + CamiPartialEq> Eq for Cami<T> {}
-
-//impl<T: PartialOrd + CamiOrd> Eq for Cami<T> {}
+impl<T: Eq + CamiPartialEq> Eq for Cami<T> {}
 //-----
 
 // Simple forwarding. Not really necessary: We normally don't need to wrap a `Cami` type inside one

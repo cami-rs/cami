@@ -40,7 +40,13 @@ impl CamiOrd for () {
 /// implementations do NOT always agree with [PartialEq] (and [PartialOrd]) of [f32].
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
-pub struct F32Total(pub f32);
+pub struct F32Total(f32);
+
+impl F32Total {
+    pub fn new(from: f32) -> Self {
+        Self(from)
+    }
+}
 
 impl PartialEq for F32Total {
     #[inline]
@@ -84,28 +90,29 @@ impl CamiOrd for F32Total {
 pub type CamiF32Total = Cami<F32Total>;
 impl CamiF32Total {
     pub fn into_f32(&self) -> f32 {
-        self.0 .0
+        self.in_cami().0
     }
 }
+//--------
 impl IntoCami for f32 {
     type Wrapped = F32Total;
     #[inline]
     fn into_cami(self) -> CamiF32Total {
-        Cami(F32Total(self))
+        Cami::new(F32Total(self))
     }
 }
 impl IntoCamiCopy for f32 {
     type Wrapped = F32Total;
     #[inline]
     fn into_cami_copy(&self) -> CamiF32Total {
-        Cami(F32Total(*self))
+        Cami::new(F32Total(*self))
     }
 }
 impl IntoCamiClone for f32 {
     type Wrapped = F32Total;
     #[inline]
     fn into_cami_clone(&self) -> CamiF32Total {
-        Cami(F32Total(self.clone()))
+        Cami::new(F32Total(self.clone()))
     }
 }
 //--------

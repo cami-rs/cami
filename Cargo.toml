@@ -23,11 +23,12 @@ deref_pure_trait = ["unsafe", "nightly"]
 hint_assert_unchecked = ["unsafe"]
 nightly = []
 
+transmute = ["unsafe"]
 unsafe = []
 wrappers = []
 
 # TODO:
-default = ["std", "wrappers"]
+default = ["std", "wrappers", "transmute"]
 
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
