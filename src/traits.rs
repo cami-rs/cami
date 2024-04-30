@@ -47,10 +47,10 @@ pub trait CamiPartialEq<Rhs: ?Sized = Self> {
 
 pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
     // Required methods
-    fn partial_cmp_local(&self, other: &Rhs) -> Option<Ordering> {
+    fn partial_cmp_local(&self, _other: &Rhs) -> Option<Ordering> {
         todo!()
     }
-    fn partial_cmp_non_local(&self, other: &Rhs) -> Option<Ordering> {
+    fn partial_cmp_non_local(&self, _other: &Rhs) -> Option<Ordering> {
         todo!()
     }
 

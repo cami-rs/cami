@@ -11,11 +11,11 @@ use core::cmp::Ordering;
 impl CamiPartialEq for () {
     const LOCALITY: Locality = Locality::PureLocal;
 
-    fn eq_local(&self, other: &Self) -> bool {
+    fn eq_local(&self, _other: &Self) -> bool {
         true
     }
 
-    fn eq_non_local(&self, other: &Self) -> bool {
+    fn eq_non_local(&self, _other: &Self) -> bool {
         camigo_helpers::debug_fail_unreachable_for_non_local();
         true
     }
@@ -24,11 +24,11 @@ impl CamiPartialEq for () {
 impl CamiPartialOrd for () {}
 
 impl CamiOrd for () {
-    fn cmp_local(&self, other: &Self) -> Ordering {
+    fn cmp_local(&self, _other: &Self) -> Ordering {
         Ordering::Equal
     }
 
-    fn cmp_non_local(&self, other: &Self) -> Ordering {
+    fn cmp_non_local(&self, _other: &Self) -> Ordering {
         camigo_helpers::debug_fail_unreachable_for_non_local();
         Ordering::Equal
     }
@@ -69,7 +69,7 @@ impl CamiPartialEq for F32Total {
     }
 
     #[inline]
-    fn eq_non_local(&self, other: &Self) -> bool {
+    fn eq_non_local(&self, _other: &Self) -> bool {
         camigo_helpers::debug_fail_unreachable_for_non_local();
         true
     }
@@ -84,7 +84,7 @@ impl CamiOrd for F32Total {
     }
 
     #[inline]
-    fn cmp_non_local(&self, other: &Self) -> Ordering {
+    fn cmp_non_local(&self, _other: &Self) -> Ordering {
         camigo_helpers::debug_fail_unreachable_for_non_local();
         Ordering::Equal
     }

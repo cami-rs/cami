@@ -19,7 +19,7 @@ alloc = []
 # TODO See if this comment shows up at docs.rs.
 std = ["alloc"]
 
-deref_pure_trait = ["unsafe", "nightly"]
+deref_pure = ["unsafe", "nightly"]
 hint_assert_unchecked = ["unsafe"]
 nightly = []
 
@@ -28,7 +28,7 @@ unsafe = []
 wrappers = []
 
 # TODO:
-default = ["std", "wrappers", "transmute"]
+default = ["std", "wrappers", "transmute", "deref_pure"]
 
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
@@ -45,4 +45,4 @@ name = "with_criterion"
 harness = false
 
 [lints.rust]
-warnings = "allow"
+#warnings = "allow"

@@ -43,4 +43,4 @@ where
 }
 
 #[cfg(feature = "wrappers")]
-pub type SliceCami<'a, T: 'a> = Cami<&'a [T]>;
+pub type SliceCami<'a, T> = Cami<&'a [T]>;

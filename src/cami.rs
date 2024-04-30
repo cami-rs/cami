@@ -1,6 +1,9 @@
 use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
 use core::fmt::{self, Debug};
+#[cfg(feature = "deref_pure")]
+use core::ops::DerefPure;
+use core::ops::{Deref, DerefMut};
 
 // Having an `Rhs` generic would need a phantom data field, so we couldn't easily pattern match this
 // etc.
@@ -137,7 +140,21 @@ impl<T: CamiPartialEq> PartialEq for Cami<T> {
 impl<T: Eq + CamiPartialEq> Eq for Cami<T> {}
 //-----
 
-// @TODO Deref + friends
+impl<T: CamiPartialEq + ?Sized> Deref for Cami<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T: CamiPartialEq + ?Sized> DerefMut for Cami<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
+
+#[cfg(feature = "deref_pure")]
+unsafe impl<T: CamiPartialEq + ?Sized> DerefPure for Cami<T> {}
 //-----
 
 // Simple forwarding. Not really necessary: We normally don't need to wrap a `Cami` type inside one
