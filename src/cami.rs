@@ -5,8 +5,10 @@ use core::fmt::{self, Debug};
 use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
 
-// Having an `Rhs` generic would need a phantom data field, so we couldn't easily pattern match this
-// etc.
+// @TODO once agreed & futureproofed, make the `T` field `pub`.
+//
+// Having an `Rhs` generic (for `CamiPartialEq`) would need a phantom data field, so we couldn't
+// easily pattern match this etc.
 //
 // pub struct Cami<T: CamiPartialEq<Rhs>, Rhs: ?Sized = Self>(pub T);
 #[repr(transparent)]
