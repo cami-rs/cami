@@ -40,7 +40,7 @@ pub fn bench_strings_range(
     let mut unsorted_items = Vec::<String>::with_capacity(num_items);
     let mut total_length = 0usize;
 
-    for _ in [0..num_items] {
+    for _ in 0..num_items {
         let item_len = rng.usize(..MAX_ITEM_LEN);
         let mut item = Vec::<char>::with_capacity(item_len);
         item.extend(iter::repeat_with(|| rng.char(..)).take(item_len));
@@ -90,7 +90,7 @@ pub fn bench_strings_range(
             hint::black_box(&unsorted_items),
             |b, unsorted_items| {
                 b.iter(|| {
-                    sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_cami_vec();
+                    sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_vec_cami();
                     sorted_non_lexi.sort();
                 })
             },
@@ -98,13 +98,13 @@ pub fn bench_strings_range(
         purge_cache(&mut rng);
         group.bench_with_input(
             BenchmarkId::new("std bin search (non-lexi)", id_string),
-            hint::black_box(&unsorted_items),
+            hint::black_box(unsorted_items.into_ref_vec_cami()),
             |b, unsorted_items| {
                 b.iter(|| {
                     let sorted = hint::black_box(&sorted_non_lexi);
                     for item in hint::black_box(unsorted_items.into_iter()) {
                         //@TODO wrap/transmute item
-                        hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
+                        hint::black_box(sorted.binary_search(item /*.into_ref_cami()*/)).unwrap();
                     }
                 })
             },

@@ -21,31 +21,33 @@ pub trait CamiPartialEq<Rhs: ?Sized = Self> {
 
     #[must_use]
     fn eq_local(&self, other: &Rhs) -> bool;
+    #[must_use]
     fn eq_non_local(&self, other: &Rhs) -> bool;
 }
 
 pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
     // Required methods
-    fn partial_cmp_local(&self, _other: &Rhs) -> Option<Ordering> {
-        todo!()
-    }
-    fn partial_cmp_non_local(&self, _other: &Rhs) -> Option<Ordering> {
-        todo!()
-    }
+    #[must_use]
+    fn partial_cmp_local(&self, other: &Rhs) -> Option<Ordering>;
+    #[must_use]
+    fn partial_cmp_non_local(&self, other: &Rhs) -> Option<Ordering>;
 
     /// Provided methods. If possible, do implement them, rather than relying on partial_cmp_*.
     /// Implementing them - especially [CamiPartialOrd::lt_local] and [CamiPartialOrd::lt_non_local]
     /// - may speed up [core -> primitive slice
     /// sort_unstable*()](https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.sort_unstable)
     /// and stable sort in std: [std -> primitive slice -> sort() and sort*()].
+    #[must_use]
     #[inline]
     fn lt_local(&self, other: &Rhs) -> bool {
         matches!(self.partial_cmp_local(other), Some(Ordering::Less))
     }
+    #[must_use]
     #[inline]
     fn lt_non_local(&self, other: &Rhs) -> bool {
         matches!(self.partial_cmp_non_local(other), Some(Ordering::Less))
     }
+    #[must_use]
     #[inline]
     fn le_local(&self, other: &Rhs) -> bool {
         matches!(
@@ -53,6 +55,7 @@ pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
             Some(Ordering::Less | Ordering::Equal)
         )
     }
+    #[must_use]
     #[inline]
     fn le_non_local(&self, other: &Rhs) -> bool {
         matches!(
@@ -60,14 +63,17 @@ pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
             Some(Ordering::Less | Ordering::Equal)
         )
     }
+    #[must_use]
     #[inline]
     fn gt_local(&self, other: &Rhs) -> bool {
         matches!(self.partial_cmp_local(other), Some(Ordering::Greater))
     }
+    #[must_use]
     #[inline]
     fn gt_non_local(&self, other: &Rhs) -> bool {
         matches!(self.partial_cmp_non_local(other), Some(Ordering::Greater))
     }
+    #[must_use]
     #[inline]
     fn ge_local(&self, other: &Rhs) -> bool {
         matches!(
@@ -75,6 +81,7 @@ pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
             Some(Ordering::Greater | Ordering::Equal)
         )
     }
+    #[must_use]
     #[inline]
     fn ge_non_local(&self, other: &Rhs) -> bool {
         matches!(
@@ -97,10 +104,12 @@ pub trait CamiOrd: Eq + CamiPartialOrd {
     /// Result must be [Ordering::Equal] or the same as the result of [cmp_full].
     ///
     /// Any implementation must NOT call [cmp_full] (whether directly or indirectly).
+    #[must_use]
     fn cmp_local(&self, other: &Self) -> Ordering;
 
     /// Comparison based on non-local (referenced) field(s) only (if any).
     ///
     /// Any implementation must NOT call [cmp_full] (whether directly or indirectly).
+    #[must_use]
     fn cmp_non_local(&self, other: &Self) -> Ordering;
 }
