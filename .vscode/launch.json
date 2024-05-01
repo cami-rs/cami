@@ -45,16 +45,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug benchmark 'with_criterion'",
+            "name": "Debug benchmark 'vec_strings'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bench=with_criterion",
+                    "--bench=vec_strings",
                     "--package=camigo"
                 ],
                 "filter": {
-                    "name": "with_criterion",
+                    "name": "vec_strings",
                     "kind": "bench"
                 }
             },

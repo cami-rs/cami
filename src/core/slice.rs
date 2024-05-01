@@ -1,9 +1,11 @@
-use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
+#[cfg(feature = "wrappers")]
+use crate::Cami;
+use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
 /// implementation for `&str`.
-impl<T> CamiPartialEq for [T]
+impl<T> CamiPartialEq for &[T]
 where
     T: PartialEq,
 {
@@ -25,18 +27,20 @@ where
 // @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd,
 // but we do NOT need (full) Ord
 
-impl<T> CamiPartialOrd for [T]
+impl<T> CamiPartialOrd for &[T]
 where
     T: PartialOrd,
 {
     #[must_use]
     #[inline]
     fn partial_cmp_local(&self, other: &Self) -> Option<Ordering> {
-        Some(self.len().cmp(&other.len()))
+        // @TODO benchmark if this is faster: Some(self.len().cmp(&other.len()))
+        self.len().partial_cmp(&other.len())
     }
     #[must_use]
     #[inline]
     fn partial_cmp_non_local(&self, other: &Self) -> Option<Ordering> {
+        // @TODO benchmark if this is faster: Some(self.cmp(other))
         self.partial_cmp(other)
     }
 
@@ -87,7 +91,7 @@ where
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
 /// implementation for `&str`.
-impl<T> CamiOrd for [T]
+impl<T> CamiOrd for &[T]
 where
     T: Ord,
 {
@@ -100,7 +104,7 @@ where
     #[must_use]
     #[inline]
     fn cmp_non_local(&self, other: &Self) -> Ordering {
-        self.cmp(&other)
+        self.cmp(other)
     }
 }
 

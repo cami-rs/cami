@@ -1,10 +1,8 @@
-//! Not strictly necessary. Mostly needed so that a blanket `impl` works for tuples containing any
-//! types that implement [crate::CamiPartialEq] & [crate::CamiOrd].
+///! Not strictly necessary. Mostly needed so that a blanket `impl` works for tuples containing any
+///! types that implement [crate::CamiPartialEq] & [crate::CamiOrd].
 pub use crate as camigo; // for macros
-use crate::{
-    Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy,
-    IntoRefCami, IntoSliceCami, Locality,
-};
+use crate::prelude::*;
+use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 #[cfg(feature = "transmute")]
 use core::mem;
@@ -52,7 +50,6 @@ impl CamiOrd for () {
 /// [PartialEq] based on [pub fn total_cmp(&self, other: &Self) ->
 /// Ordering](https://doc.rust-lang.org/nightly/core/primitive.f32.html#method.total_cmp). Those
 /// implementations do NOT always agree with [PartialEq] (and [PartialOrd]) of [f32].
-#[cfg(feature = "wrappers")]
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct F32Total(f32);
@@ -126,6 +123,9 @@ impl CamiOrd for F32Total {
 }
 #[cfg(feature = "wrappers")]
 pub type F32Cami = Cami<F32Total>;
+#[cfg(not(feature = "wrappers"))]
+type F32Cami = Cami<F32Total>;
+
 impl F32Cami {
     #[must_use]
     #[inline]
@@ -188,7 +188,7 @@ impl IntoSliceCami for [f32] {
     }
 }
 //--------
-/*
+
 pure_local_c_partial_eq! { bool }
 pure_local_c_ord! { bool }
 #[cfg(feature = "wrappers")]
@@ -198,4 +198,3 @@ pure_local_c_partial_eq! { u8 }
 pure_local_c_ord! { u8 }
 #[cfg(feature = "wrappers")]
 pub type U8Cami = Cami<u8>;
-*/

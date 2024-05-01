@@ -1,5 +1,7 @@
 use crate as camigo; // For macros
-use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd};
+#[cfg(feature = "wrappers")]
+use crate::Cami;
+use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd};
 use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
 use core::cmp::Ordering;
 use rust_alloc::string::String;
@@ -30,12 +32,14 @@ impl CamiPartialOrd for &str {
     #[must_use]
     #[inline]
     fn partial_cmp_local(&self, other: &Self) -> Option<Ordering> {
-        Some(self.len().cmp(&other.len()))
+        // @TODO benchmark if this is faster: Some(self.len().cmp(&other.len()))
+        self.len().partial_cmp(&other.len())
     }
     #[must_use]
     #[inline]
     fn partial_cmp_non_local(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+        // @TODO benchmark if this is faster: Some(self.cmp(other))
+        self.partial_cmp(other)
     }
 
     #[must_use]
@@ -118,5 +122,5 @@ cami_partial_eq! {
 cami_ord! {
     String
     [{|v: &String| v.len()}]
-    [(|this: &String, other: &String| this.cmp(&other))]
+    [(|this: &String, other: &String| this.cmp(other))]
 }

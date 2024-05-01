@@ -5,11 +5,11 @@ use criterion::{criterion_group, BenchmarkId, Criterion};
 use fastrand::Rng;
 
 // On heap.
-const MIN_ITEMS: usize = 10;
-const MAX_ITEMS: usize = 100_000;
-// On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
-// size may be a few times higher.
-const MAX_ITEM_LEN: usize = 1_000;
+const MIN_ITEMS: usize = 4; //10;
+const MAX_ITEMS: usize = 10; //100_000;
+                             // On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
+                             // size may be a few times higher.
+const MAX_ITEM_LEN: usize = 4; //1_000;
 
 // For purging the L1, L2..., in bytes.
 const MAX_CACHE_SIZE: usize = 2_080_000;
@@ -25,17 +25,13 @@ fn purge_cache(rng: &mut Rng) {
     hint::black_box(vec);
 }
 
-pub fn bench_strings(c: &mut Criterion) {
+pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
 
-    bench_strings_range(c, &mut rng, MIN_ITEMS..MAX_ITEMS);
+    bench_range(c, &mut rng, MIN_ITEMS..MAX_ITEMS);
 }
 
-pub fn bench_strings_range(
-    c: &mut Criterion,
-    mut rng: &mut Rng,
-    num_items: impl RangeBounds<usize>,
-) {
+pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBounds<usize>) {
     let num_items = rng.usize(num_items);
     let mut unsorted_items = Vec::<String>::with_capacity(num_items);
     let mut total_length = 0usize;
@@ -56,8 +52,7 @@ pub fn bench_strings_range(
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
     let id_string =
         format!("{num_items} items, each len max {MAX_ITEM_LEN}. Sum len: {total_length}.");
-    if false
-    {
+    if false {
         let mut sorted_lexi = Vec::new();
         group.bench_with_input(
             BenchmarkId::new("std sort lexi.          ", id_string.clone()),
@@ -99,13 +94,14 @@ pub fn bench_strings_range(
         purge_cache(&mut rng);
         group.bench_with_input(
             BenchmarkId::new("std bin search (non-lexi)", id_string),
-            hint::black_box(unsorted_items.into_ref_vec_cami()),
+            hint::black_box(&unsorted_items),
+            //hint::black_box( unsorted_items.into_ref_vec_cami() ),
             |b, unsorted_items| {
                 b.iter(|| {
                     let sorted = hint::black_box(&sorted_non_lexi);
                     for item in hint::black_box(unsorted_items.into_iter()) {
-                        //@TODO wrap/transmute item
-                        hint::black_box(sorted.binary_search(item /*.into_ref_cami()*/)).unwrap();
+                        hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
+                        //hint::black_box(sorted.binary_search(item)).unwrap();
                     }
                 })
             },
@@ -117,13 +113,11 @@ pub fn bench_strings_range(
 criterion_group! {
     name = benches;
     config = Criterion::default().warm_up_time(Duration::from_millis(200));
-    targets = bench_strings
+    targets = bench_target
 }
 // Based on expansion of `criterion_main!(benches);`
 fn main() {
-            benches();
+    benches();
 
-            Criterion::default()
-                .configure_from_args()
-                .final_summary();
+    Criterion::default().configure_from_args().final_summary();
 }

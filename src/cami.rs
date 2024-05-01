@@ -123,6 +123,7 @@ pub trait IntoRefCami {
     type Wrapped: CamiPartialEq + ?Sized;
     #[must_use]
     fn into_ref_cami(&self) -> &Cami<Self::Wrapped>;
+    /// @TODO should this be called `into_ref_mut_cami` to be consistent with [IntoSliceCami::into_slice_mut_cami]?
     #[must_use]
     fn into_mut_cami(&mut self) -> &mut Cami<Self::Wrapped>;
 }

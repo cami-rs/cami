@@ -28,7 +28,8 @@ unsafe = []
 wrappers = []
 
 # TODO:
-default = ["std", "wrappers", "transmute", "deref_pure"]
+#default = ["std", "wrappers", "transmute", "deref_pure"]
+default = []
 
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
@@ -41,7 +42,11 @@ criterion = { version = "0.5.1" }
 fastrand = { version = "2.0.2"}
 
 [[bench]]
-name = "with_criterion"
+name = "vec_strings"
+harness = false
+
+[[bench]]
+name = "vec_u8"
 harness = false
 
 [lints.rust]
