@@ -1,7 +1,7 @@
 //#![allow(warnings, unused)]
 use camigo::prelude::*;
 use core::{hint, iter, ops::RangeBounds, time::Duration};
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, BenchmarkId, Criterion};
 use fastrand::Rng;
 
 // On heap.
@@ -56,6 +56,7 @@ pub fn bench_strings_range(
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
     let id_string =
         format!("{num_items} items, each len max {MAX_ITEM_LEN}. Sum len: {total_length}.");
+    if false
     {
         let mut sorted_lexi = Vec::new();
         group.bench_with_input(
@@ -118,4 +119,11 @@ criterion_group! {
     config = Criterion::default().warm_up_time(Duration::from_millis(200));
     targets = bench_strings
 }
-criterion_main!(benches);
+// Based on expansion of `criterion_main!(benches);`
+fn main() {
+            benches();
+
+            Criterion::default()
+                .configure_from_args()
+                .final_summary();
+}
