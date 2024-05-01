@@ -104,7 +104,7 @@ pub fn bench_strings_range(
                     let sorted = hint::black_box(&sorted_non_lexi);
                     for item in hint::black_box(unsorted_items.into_iter()) {
                         //@TODO wrap/transmute item
-                        hint::black_box(sorted.binary_search(item.into_cami_ref())).unwrap();
+                        hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
                     }
                 })
             },

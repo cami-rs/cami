@@ -119,34 +119,47 @@ impl<T: CamiPartialEq + Clone> IntoCamiClone for T {
 }
 //----------
 
-pub trait IntoCamiRef {
+pub trait IntoRefCami {
     type Wrapped: CamiPartialEq + ?Sized;
     #[must_use]
-    fn into_cami_ref(&self) -> &Cami<Self::Wrapped>;
+    fn into_ref_cami(&self) -> &Cami<Self::Wrapped>;
+    #[must_use]
+    fn into_mut_cami(&mut self) -> &mut Cami<Self::Wrapped>;
 }
 #[cfg(feature = "transmute")]
-impl<T: CamiPartialEq + ?Sized> IntoCamiRef for T {
+impl<T: CamiPartialEq + ?Sized> IntoRefCami for T {
     type Wrapped = Self;
     #[must_use]
     #[inline]
-    fn into_cami_ref(&self) -> &Cami<Self> {
+    fn into_ref_cami(&self) -> &Cami<Self> {
+        unsafe { mem::transmute(self) }
+    }
+    #[must_use]
+    #[inline]
+    fn into_mut_cami(&mut self) -> &mut Cami<Self> {
         unsafe { mem::transmute(self) }
     }
 }
 
-/// @TODO Should this rather be called `IntoSliceCami` to indicate that it's not the slice, but the
-/// items, that get transmuted to `Cami`?
-pub trait IntoCamiSlice {
+/// Like [crate::alloc::vec::VecCami] and [crate::alloc::vec::IntoVecCami]
+pub trait IntoSliceCami {
     type Wrapped: CamiPartialEq;
     #[must_use]
-    fn into_cami_slice(&self) -> &[Cami<Self::Wrapped>];
+    fn into_slice_cami(&self) -> &[Cami<Self::Wrapped>];
+    #[must_use]
+    fn into_slice_mut_cami(&mut self) -> &mut [Cami<Self::Wrapped>];
 }
 #[cfg(feature = "transmute")]
-impl<T: CamiPartialEq> IntoCamiSlice for [T] {
+impl<T: CamiPartialEq> IntoSliceCami for [T] {
     type Wrapped = T;
     #[must_use]
     #[inline]
-    fn into_cami_slice(&self) -> &[Cami<T>] {
+    fn into_slice_cami(&self) -> &[Cami<T>] {
+        unsafe { mem::transmute(self) }
+    }
+    #[must_use]
+    #[inline]
+    fn into_slice_mut_cami(&mut self) -> &mut [Cami<T>] {
         unsafe { mem::transmute(self) }
     }
 }

@@ -3,10 +3,12 @@
 pub use crate as camigo; // for macros
 use crate::{
     Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, IntoCami, IntoCamiClone, IntoCamiCopy,
-    IntoCamiRef, IntoCamiSlice, Locality,
+    IntoRefCami, IntoSliceCami, Locality,
 };
 use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
+#[cfg(feature = "transmute")]
+use core::mem;
 
 impl CamiPartialEq for () {
     const LOCALITY: Locality = Locality::PureLocal;
@@ -119,18 +121,32 @@ impl IntoCamiClone for f32 {
     }
 }
 //--------
-impl IntoCamiRef for f32 {
+#[cfg(feature = "transmute")]
+impl IntoRefCami for f32 {
     type Wrapped = F32Total;
+    #[must_use]
     #[inline]
-    fn into_cami_ref(&self) -> &F32Cami {
-        todo!()
+    fn into_ref_cami(&self) -> &F32Cami {
+        unsafe { mem::transmute(self) }
+    }
+    #[must_use]
+    #[inline]
+    fn into_mut_cami(&mut self) -> &mut F32Cami {
+        unsafe { mem::transmute(self) }
     }
 }
-impl IntoCamiSlice for [f32] {
+#[cfg(feature = "transmute")]
+impl IntoSliceCami for [f32] {
     type Wrapped = F32Total;
+    #[must_use]
     #[inline]
-    fn into_cami_slice(&self) -> &[F32Cami] {
-        todo!()
+    fn into_slice_cami(&self) -> &[F32Cami] {
+        unsafe { mem::transmute(self) }
+    }
+    #[must_use]
+    #[inline]
+    fn into_slice_mut_cami(&mut self) -> &mut [F32Cami] {
+        unsafe { mem::transmute(self) }
     }
 }
 //--------
