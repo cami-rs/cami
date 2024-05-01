@@ -3,15 +3,13 @@ pub use crate::{
     IntoRefCami, IntoSliceCami, Locality,
 };
 
-#[cfg(all(feature = "wrappers", feature = "alloc"))]
+#[cfg(feature = "alloc")]
 mod a_prelude;
 
-#[cfg(all(feature = "wrappers", feature = "alloc"))]
+#[cfg(feature = "alloc")]
 pub use a_prelude::*;
 
-#[cfg(feature = "wrappers")]
 mod c_prelude;
-#[cfg(feature = "wrappers")]
 pub use c_prelude::*;
 
 // @TODO same two `pub use` for core & std

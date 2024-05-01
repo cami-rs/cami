@@ -1,4 +1,5 @@
 //#![allow(warnings, unused)]
+use crate::*;
 use camigo::prelude::*;
 use core::{hint, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, BenchmarkId, Criterion};
@@ -7,20 +8,6 @@ use fastrand::Rng;
 // On heap.
 const MIN_ITEMS: usize = 4; //10;
 const MAX_ITEMS: usize = 10; //100_000;
-
-// For purging the L1, L2..., in bytes.
-const MAX_CACHE_SIZE: usize = 2_080_000;
-
-//const USIZE_MAX_HALF: usize = usize::MAX / 2;
-
-fn purge_cache(rng: &mut Rng) {
-    let mut vec = Vec::<u8>::with_capacity(MAX_CACHE_SIZE);
-
-    for _ in [0..MAX_CACHE_SIZE] {
-        vec.push(rng.u8(..));
-    }
-    hint::black_box(vec);
-}
 
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
@@ -69,13 +56,26 @@ pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBo
     }
     {
         purge_cache(&mut rng);
+        #[cfg(not(feature = "transmute"))]
+        let unsorted_items = {
+            let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
+            unsorted_items_cami.extend(unsorted_items.iter().map(|v| U8Cami::new(*v)));
+            unsorted_items_cami
+        };
         let mut sorted_non_lexi = Vec::new();
         group.bench_with_input(
             BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
             hint::black_box(&unsorted_items),
             |b, unsorted_items| {
                 b.iter(|| {
-                    sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_vec_cami();
+                    #[cfg(feature = "transmute")]
+                    let _ = {
+                        sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_vec_cami();
+                    };
+                    #[cfg(not(feature = "transmute"))]
+                    let _ = {
+                        sorted_non_lexi = hint::black_box(unsorted_items.clone());
+                    };
                     sorted_non_lexi.sort();
                 })
             },
@@ -89,8 +89,14 @@ pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBo
                 b.iter(|| {
                     let sorted = hint::black_box(&sorted_non_lexi);
                     for item in hint::black_box(unsorted_items.into_iter()) {
-                        hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
-                        //hint::black_box(sorted.binary_search(item)).unwrap();
+                        #[cfg(feature = "transmute")]
+                        let _ = {
+                            hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
+                        };
+                        #[cfg(not(feature = "transmute"))]
+                        let _ = {
+                            hint::black_box(sorted.binary_search(item)).unwrap();
+                        };
                     }
                 })
             },

@@ -121,10 +121,7 @@ impl CamiOrd for F32Total {
         Ordering::Equal
     }
 }
-#[cfg(feature = "wrappers")]
 pub type F32Cami = Cami<F32Total>;
-#[cfg(not(feature = "wrappers"))]
-type F32Cami = Cami<F32Total>;
 
 impl F32Cami {
     #[must_use]
@@ -191,10 +188,8 @@ impl IntoSliceCami for [f32] {
 
 pure_local_c_partial_eq! { bool }
 pure_local_c_ord! { bool }
-#[cfg(feature = "wrappers")]
 pub type BoolCami = Cami<bool>;
 
 pure_local_c_partial_eq! { u8 }
 pure_local_c_ord! { u8 }
-#[cfg(feature = "wrappers")]
 pub type U8Cami = Cami<u8>;

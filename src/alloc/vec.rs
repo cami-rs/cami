@@ -1,7 +1,6 @@
 use crate::{Cami, CamiPartialEq};
 use rust_alloc::vec::Vec;
 
-#[cfg(feature = "wrappers")]
 /// NOT a [Cami] of [Vec], BUT a [Vec] of [Cami]. If you really need [Cami] of [Vec], use
 /// `Cami<Vec<T>>`.
 pub type VecCami<T> = Vec<Cami<T>>;

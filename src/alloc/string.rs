@@ -1,15 +1,10 @@
 use crate as camigo; // For macros
-#[cfg(feature = "wrappers")]
-use crate::Cami;
-use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd};
+use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd};
 use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
 use core::cmp::Ordering;
 use rust_alloc::string::String;
 
-#[cfg(feature = "wrappers")]
 pub type StringCami = Cami<String>;
-#[cfg(feature = "wrappers")]
-pub type StrCami<'a> = Cami<&'a str>;
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
 impl CamiPartialEq for &str {

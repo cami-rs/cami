@@ -1,6 +1,4 @@
-#[cfg(feature = "wrappers")]
-use crate::Cami;
-use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
+use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
 
 /// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
@@ -108,5 +106,4 @@ where
     }
 }
 
-#[cfg(feature = "wrappers")]
 pub type SliceCami<'a, T> = Cami<&'a [T]>;

@@ -25,10 +25,8 @@ nightly = []
 
 transmute = ["unsafe"]
 unsafe = []
-wrappers = []
 
-# TODO:
-#default = ["std", "wrappers", "transmute", "deref_pure"]
+#default = ["std", "transmute", "deref_pure"]
 default = []
 
 [dependencies]
@@ -44,10 +42,12 @@ fastrand = { version = "2.0.2"}
 [[bench]]
 name = "vec_strings"
 harness = false
+required-features = ["std"]
 
 [[bench]]
 name = "vec_u8"
 harness = false
+required-features = ["std"]
 
 [lints.rust]
 #warnings = "allow"
