@@ -9,10 +9,14 @@ where
 {
     const LOCALITY: Locality = Locality::Both;
 
+    #[must_use]
+    #[inline]
     fn eq_local(&self, other: &Self) -> bool {
         self.len() == other.len()
     }
 
+    #[must_use]
+    #[inline]
     fn eq_non_local(&self, other: &Self) -> bool {
         self == other
     }
@@ -29,10 +33,14 @@ impl<T> CamiOrd for &[T]
 where
     T: Ord,
 {
+    #[must_use]
+    #[inline]
     fn cmp_local(&self, other: &Self) -> Ordering {
         self.len().cmp(&other.len())
     }
 
+    #[must_use]
+    #[inline]
     fn cmp_non_local(&self, other: &Self) -> Ordering {
         self.cmp(&other)
     }

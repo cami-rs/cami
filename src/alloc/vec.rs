@@ -10,10 +10,12 @@ pub trait IntoCamiVec<T>
 where
     T: CamiPartialEq,
 {
+    #[must_use]
     fn into_cami_vec(self) -> Vec<Cami<T>>;
 }
 #[cfg(feature = "transmute")]
 impl<T: CamiPartialEq> IntoCamiVec<T> for Vec<T> {
+    #[must_use]
     #[inline]
     fn into_cami_vec(self) -> Vec<Cami<T>> {
         unsafe { core::mem::transmute(self) }

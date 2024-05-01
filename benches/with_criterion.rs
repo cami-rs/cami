@@ -97,7 +97,7 @@ pub fn bench_strings_range(
         );
         purge_cache(&mut rng);
         group.bench_with_input(
-            BenchmarkId::new("std bin search (non-lexi)", id_string.clone()),
+            BenchmarkId::new("std bin search (non-lexi)", id_string),
             hint::black_box(&unsorted_items),
             |b, unsorted_items| {
                 b.iter(|| {

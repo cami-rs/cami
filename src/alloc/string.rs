@@ -13,10 +13,14 @@ pub type StrCami<'a> = Cami<&'a str>;
 impl CamiPartialEq for &str {
     const LOCALITY: Locality = Locality::Both;
 
+    #[must_use]
+    #[inline]
     fn eq_local(&self, other: &Self) -> bool {
         self.len() == other.len()
     }
 
+    #[must_use]
+    #[inline]
     fn eq_non_local(&self, other: &Self) -> bool {
         self == other
     }
@@ -26,10 +30,14 @@ impl CamiPartialOrd for &str {}
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
 impl CamiOrd for &str {
+    #[must_use]
+    #[inline]
     fn cmp_local(&self, other: &Self) -> Ordering {
         self.len().cmp(&other.len())
     }
 
+    #[must_use]
+    #[inline]
     fn cmp_non_local(&self, other: &Self) -> Ordering {
         self.cmp(&other)
     }

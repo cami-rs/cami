@@ -19,6 +19,7 @@ pub trait CamiPartialEq<Rhs: ?Sized = Self> {
     /// "full_*" methods here & in [CamiOrd].
     const LOCALITY: Locality;
 
+    #[must_use]
     fn eq_local(&self, other: &Rhs) -> bool;
     fn eq_non_local(&self, other: &Rhs) -> bool;
 }
