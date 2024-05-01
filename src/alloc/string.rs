@@ -1,12 +1,13 @@
 use crate as camigo; // For macros
-use crate::{traits::CamiPartialOrd, CamiOrd, CamiPartialEq};
+use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd};
 use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
 use core::cmp::Ordering;
+use rust_alloc::string::String;
 
 #[cfg(feature = "wrappers")]
-pub type StringCami = crate::Cami<rust_alloc::string::String>;
+pub type StringCami = Cami<String>;
 #[cfg(feature = "wrappers")]
-pub type StrCami<'a> = crate::Cami<&'a str>;
+pub type StrCami<'a> = Cami<&'a str>;
 
 /// We need this, even though we have a generic impl for slices in [crate::slices_impls].
 impl CamiPartialEq for &str {
@@ -32,10 +33,6 @@ impl CamiOrd for &str {
     fn cmp_non_local(&self, other: &Self) -> Ordering {
         self.cmp(&other)
     }
-
-    fn cmp_full(&self, other: &Self) -> Ordering {
-        self.len().cmp(&other.len()).then(self.cmp(&other))
-    }
 }
 // @TODO special wrapper for &[char]?
 
@@ -46,7 +43,7 @@ impl CamiOrd for &str {
 // ----- TODO inspect & benchmark sort_by() & unstable_sort_by().
 #[cfg(feature = "alloc")]
 cami_partial_eq! {
-    {::rust_alloc::string::String}
+    {String}
     (Locality::Both)
     [.len()]
     [(|this| this)]
@@ -56,7 +53,7 @@ cami_partial_eq! {
 
 #[cfg(feature = "alloc")]
 cami_ord! {
-    ::rust_alloc::string::String
-    [{|v: &::rust_alloc::string::String| v.len()}]
-    [(|this: &::rust_alloc::string::String, other: &::rust_alloc::string::String| this.cmp(&other))]
+    String
+    [{|v: &String| v.len()}]
+    [(|this: &String, other: &String| this.cmp(&other))]
 }

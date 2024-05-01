@@ -21,28 +21,6 @@ pub trait CamiPartialEq<Rhs: ?Sized = Self> {
 
     fn eq_local(&self, other: &Rhs) -> bool;
     fn eq_non_local(&self, other: &Rhs) -> bool;
-
-    #[inline]
-    fn eq_full(&self, other: &Rhs) -> bool {
-        // @TODO write a test that the following would return the same
-        //
-        // Write them not in this crate, but in Camigo crate - for example, next to the
-        // implementation for `bool`.
-        if false {
-            return (!Self::LOCALITY.has_local() || self.eq_local(&other))
-                && (!Self::LOCALITY.has_non_local() || self.eq_non_local(&other));
-        }
-        if Self::LOCALITY.has_local() {
-            let local = self.eq_local(other);
-            if local {
-                Self::LOCALITY.has_non_local() || self.eq_non_local(other)
-            } else {
-                false
-            }
-        } else {
-            self.eq_non_local(other)
-        }
-    }
 }
 
 pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
@@ -54,12 +32,11 @@ pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
         todo!()
     }
 
-    // Provided methods. If possible, do implement them, rather than relying on partial_cmp_*.
-    // Implementing them may speed up [core -> primitive slice
-    // sort_unstable*()](https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.sort_unstable)
-    // and its
-    // [binary_search*()](https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.binary_search),
-    // and stable sort in std: [std -> primitive slice -> sort() and sort*()].
+    /// Provided methods. If possible, do implement them, rather than relying on partial_cmp_*.
+    /// Implementing them - especially [CamiPartialOrd::lt_local] and [CamiPartialOrd::lt_non_local]
+    /// - may speed up [core -> primitive slice
+    /// sort_unstable*()](https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.sort_unstable)
+    /// and stable sort in std: [std -> primitive slice -> sort() and sort*()].
     #[inline]
     fn lt_local(&self, other: &Rhs) -> bool {
         matches!(self.partial_cmp_local(other), Some(Ordering::Less))
@@ -125,28 +102,4 @@ pub trait CamiOrd: Eq + CamiPartialOrd {
     ///
     /// Any implementation must NOT call [cmp_full] (whether directly or indirectly).
     fn cmp_non_local(&self, other: &Self) -> Ordering;
-
-    /// Full comparison.
-    ///
-    /// Any implementation must be equivalent to the default one. The default implementation
-    /// respects [CamiPartialOrd::LOCALITY] and calls [CamiOrd::cmp_local] and/or
-    /// [CamiOrd::cmp_non_local] only when they're applicable and when they're needed.
-    #[inline]
-    fn cmp_full(&self, other: &Self) -> Ordering {
-        // @TODO apply https://rust.godbolt.org/z/698eYffTx
-        if Self::LOCALITY.has_local() {
-            let local = self.cmp_local(other);
-            if local == Ordering::Equal {
-                if Self::LOCALITY.has_non_local() {
-                    self.cmp_non_local(other)
-                } else {
-                    Ordering::Equal
-                }
-            } else {
-                local
-            }
-        } else {
-            self.cmp_non_local(other)
-        }
-    }
 }

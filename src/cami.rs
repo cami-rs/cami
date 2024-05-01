@@ -147,16 +147,135 @@ impl<T: Debug + CamiPartialEq> Debug for Cami<T> {
             .finish()
     }
 }
+//-----
 
+/// Simple forwarding
+///
+/// NO "Rhs" (right hand side) generic parameter, because then [Cami] would have to contain phantom
+/// data, which would make pattern matching etc. difficult.
 impl<T: CamiPartialEq> PartialEq for Cami<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        #![allow(deprecated)]
-        self.0.eq_full(&other.0)
+        let this = self.in_cami();
+        let other = other.in_cami();
+        // @TODO write a test that the following would return the same
+        //
+        // Write them not in this crate, but in Camigo crate - for example, next to the
+        // implementation for `bool`.
+        if false {
+            return (!Self::LOCALITY.has_local() || this.eq_local(&other))
+                && (!Self::LOCALITY.has_non_local() || this.eq_non_local(&other));
+        }
+        if Self::LOCALITY.has_local() {
+            let local = this.eq_local(other);
+            if local {
+                Self::LOCALITY.has_non_local() || this.eq_non_local(other)
+            } else {
+                false
+            }
+        } else {
+            this.eq_non_local(other)
+        }
     }
 }
 
 impl<T: Eq + CamiPartialEq> Eq for Cami<T> {}
+
+impl<T: CamiPartialOrd> PartialOrd for Cami<T> {
+    /// This returns [Some] only if BOTH of [CamiPartialOrd::partial_cmp_local] and
+    /// [CamiPartialOrd::partial_cmp_local] (as applicable - depending on [CamiPartialEq::LOCALITY])
+    /// return [Some].
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        let this = self.in_cami();
+        let other = other.in_cami();
+        if Self::LOCALITY.has_local() {
+            let local = this.partial_cmp_local(other);
+            if local == None {
+                return None;
+            }
+            if local == Some(Ordering::Equal) {
+                if Self::LOCALITY.has_non_local() {
+                    this.partial_cmp_non_local(other)
+                } else {
+                    Some(Ordering::Equal)
+                }
+            } else {
+                local
+            }
+        } else {
+            this.partial_cmp_non_local(other)
+        }
+    }
+
+    // Provided methods
+    #[inline]
+    fn lt(&self, other: &Self) -> bool {
+        let this = self.in_cami();
+        let other = other.in_cami();
+        if Self::LOCALITY.has_local() {
+            this.lt_local(other) || Self::LOCALITY.has_non_local() && this.lt_non_local(other)
+        } else {
+            this.lt_non_local(other)
+        }
+    }
+    #[inline]
+    fn le(&self, other: &Self) -> bool {
+        let this = self.in_cami();
+        let other = other.in_cami();
+        if Self::LOCALITY.has_local() {
+            this.le_local(other) || Self::LOCALITY.has_non_local() && this.le_non_local(other)
+        } else {
+            this.le_non_local(other)
+        }
+    }
+    #[inline]
+    fn gt(&self, other: &Self) -> bool {
+        let this = self.in_cami();
+        let other = other.in_cami();
+        if Self::LOCALITY.has_local() {
+            this.gt_local(other) || Self::LOCALITY.has_non_local() && this.gt_non_local(other)
+        } else {
+            this.gt_non_local(other)
+        }
+    }
+    #[inline]
+    fn ge(&self, other: &Self) -> bool {
+        let this = self.in_cami();
+        let other = other.in_cami();
+        if Self::LOCALITY.has_local() {
+            this.ge_local(other) || Self::LOCALITY.has_non_local() && this.ge_non_local(other)
+        } else {
+            this.ge_non_local(other)
+        }
+    }
+}
+
+impl<T: CamiOrd> Ord for Cami<T> {
+    /// Full comparison.
+    ///
+    /// It respects [CamiPartialOrd::LOCALITY] and calls [CamiOrd::cmp_local] and/or
+    /// [CamiOrd::cmp_non_local] only when they're applicable and when they're needed.
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        let this = self.in_cami();
+        let other = other.in_cami();
+        if Self::LOCALITY.has_local() {
+            let local = this.cmp_local(other);
+            if local == Ordering::Equal {
+                if Self::LOCALITY.has_non_local() {
+                    this.cmp_non_local(other)
+                } else {
+                    Ordering::Equal
+                }
+            } else {
+                local
+            }
+        } else {
+            this.cmp_non_local(other)
+        }
+    }
+}
 //-----
 
 impl<T: CamiPartialEq + ?Sized> Deref for Cami<T> {

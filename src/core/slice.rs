@@ -36,10 +36,6 @@ where
     fn cmp_non_local(&self, other: &Self) -> Ordering {
         self.cmp(&other)
     }
-
-    fn cmp_full(&self, other: &Self) -> Ordering {
-        self.len().cmp(&other.len()).then(self.cmp(&other))
-    }
 }
 
 #[cfg(feature = "wrappers")]

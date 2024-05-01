@@ -1,5 +1,5 @@
 //#![allow(warnings, unused)]
-
+use camigo::prelude::*;
 use core::{hint, iter, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use fastrand::Rng;
@@ -56,58 +56,60 @@ pub fn bench_strings_range(
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
     let id_string =
         format!("{num_items} items, each len max {MAX_ITEM_LEN}. Sum len: {total_length}.");
-
-    let mut sorted_lexi = Vec::new();
-    group.bench_with_input(
-        BenchmarkId::new("std sort lexi.          ", id_string.clone()),
-        hint::black_box(&unsorted_items),
-        |b, unsorted_items| {
-            b.iter(|| {
-                sorted_lexi = hint::black_box(unsorted_items.clone());
-                sorted_lexi.sort();
-            })
-        },
-    );
-    purge_cache(&mut rng);
-    group.bench_with_input(
-        BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
-        hint::black_box(&unsorted_items),
-        |b, unsorted_items| {
-            b.iter(|| {
-                let sorted = hint::black_box(&sorted_lexi);
-                for item in hint::black_box(unsorted_items.into_iter()) {
-                    hint::black_box(sorted.binary_search(item)).unwrap();
-                }
-            })
-        },
-    );
-
-    purge_cache(&mut rng);
-    let mut sorted_non_lexi = Vec::new();
-    group.bench_with_input(
-        BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
-        hint::black_box(&unsorted_items),
-        |b, unsorted_items| {
-            b.iter(|| {
-                sorted_non_lexi = hint::black_box(unsorted_items.clone()); // @TODO Transmute
-                sorted_non_lexi.sort();
-            })
-        },
-    );
-    purge_cache(&mut rng);
-    group.bench_with_input(
-        BenchmarkId::new("std bin search (non-lexi)", id_string.clone()),
-        hint::black_box(&unsorted_items),
-        |b, unsorted_items| {
-            b.iter(|| {
-                let sorted = hint::black_box(&sorted_non_lexi);
-                for item in hint::black_box(unsorted_items.into_iter()) {
-                    //@TODO wrap/transmute item
-                    hint::black_box(sorted.binary_search(item)).unwrap();
-                }
-            })
-        },
-    );
+    {
+        let mut sorted_lexi = Vec::new();
+        group.bench_with_input(
+            BenchmarkId::new("std sort lexi.          ", id_string.clone()),
+            hint::black_box(&unsorted_items),
+            |b, unsorted_items| {
+                b.iter(|| {
+                    sorted_lexi = hint::black_box(unsorted_items.clone());
+                    sorted_lexi.sort();
+                })
+            },
+        );
+        purge_cache(&mut rng);
+        group.bench_with_input(
+            BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
+            hint::black_box(&unsorted_items),
+            |b, unsorted_items| {
+                b.iter(|| {
+                    let sorted = hint::black_box(&sorted_lexi);
+                    for item in hint::black_box(unsorted_items.into_iter()) {
+                        hint::black_box(sorted.binary_search(item)).unwrap();
+                    }
+                })
+            },
+        );
+    }
+    {
+        purge_cache(&mut rng);
+        let mut sorted_non_lexi = Vec::new();
+        group.bench_with_input(
+            BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
+            hint::black_box(&unsorted_items),
+            |b, unsorted_items| {
+                b.iter(|| {
+                    sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_cami_vec();
+                    sorted_non_lexi.sort();
+                })
+            },
+        );
+        purge_cache(&mut rng);
+        group.bench_with_input(
+            BenchmarkId::new("std bin search (non-lexi)", id_string.clone()),
+            hint::black_box(&unsorted_items),
+            |b, unsorted_items| {
+                b.iter(|| {
+                    let sorted = hint::black_box(&sorted_non_lexi);
+                    for item in hint::black_box(unsorted_items.into_iter()) {
+                        //@TODO wrap/transmute item
+                        hint::black_box(sorted.binary_search(item.into_cami_ref())).unwrap();
+                    }
+                })
+            },
+        );
+    }
     group.finish();
 }
 
