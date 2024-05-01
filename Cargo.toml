@@ -49,5 +49,9 @@ name = "vec_u8"
 harness = false
 required-features = ["std"]
 
+[[bench]]
+name = "shared"
+harness = false
+
 [lints.rust]
 #warnings = "allow"

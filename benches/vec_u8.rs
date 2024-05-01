@@ -1,13 +1,12 @@
 //#![allow(warnings, unused)]
-use crate::*;
 use camigo::prelude::*;
 use core::{hint, ops::RangeBounds, time::Duration};
 use criterion::{criterion_group, BenchmarkId, Criterion};
 use fastrand::Rng;
+use lib_benches::*;
 
-// On heap.
-const MIN_ITEMS: usize = 4; //10;
-const MAX_ITEMS: usize = 10; //100_000;
+#[path = "shared/lib_benches.rs"]
+mod lib_benches;
 
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();

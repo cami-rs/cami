@@ -1,25 +1,17 @@
 //#![allow(warnings, unused)]
-use crate::*;
 use camigo::prelude::*;
-use core::{hint, iter, ops::RangeBounds, time::Duration};
+use core::{hint, iter, time::Duration};
 use criterion::{criterion_group, BenchmarkId, Criterion};
 use fastrand::Rng;
+use lib_benches::*;
 
-// On heap.
-const MIN_ITEMS: usize = 4; //10;
-const MAX_ITEMS: usize = 10; //100_000;
-                             // On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
-                             // size may be a few times higher.
-const MAX_ITEM_LEN: usize = 4; //1_000;
+#[path = "shared/lib_benches.rs"]
+mod lib_benches;
 
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
 
-    bench_range(c, &mut rng, MIN_ITEMS..MAX_ITEMS);
-}
-
-pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBounds<usize>) {
-    let num_items = rng.usize(num_items);
+    let num_items = rng.usize(MIN_ITEMS..MAX_ITEMS);
     let mut unsorted_items = Vec::<String>::with_capacity(num_items);
     let mut total_length = 0usize;
 
