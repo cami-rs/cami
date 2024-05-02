@@ -45,13 +45,13 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
     hint::black_box(vec);
 }
 
-pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, ID>(
+pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, IDSTATE>(
     c: &mut Criterion,
     rng: &mut RND,
     group_name: impl Into<String>,
-    id: &mut ID,
-    id_postfix: fn(&ID) -> String,
-    generate_item: fn(&mut RND, &mut ID) -> T,
+    id_state: &mut IDSTATE,
+    id_postfix: fn(&IDSTATE) -> String,
+    generate_item: fn(&mut RND, &mut IDSTATE) -> T,
 )
 //GEN: FnMut() -> T,
 //ID: Fn() -> String,
@@ -60,7 +60,7 @@ pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, ID>(
     let mut unsorted_items = Vec::<T>::with_capacity(num_items);
 
     for _ in 0..num_items {
-        let item = generate_item(rng, id);
+        let item = generate_item(rng, id_state);
         unsorted_items.push(item);
     }
 
@@ -69,7 +69,7 @@ pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, ID>(
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
     let id_string = format!(
         "{num_items} items, each len max {MAX_ITEM_LEN}.{}",
-        id_postfix(id)
+        id_postfix(id_state)
     );
     if false {
         let mut sorted_lexi = Vec::new();

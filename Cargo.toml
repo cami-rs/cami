@@ -40,7 +40,7 @@ criterion = { version = "0.5.1" }
 fastrand = { version = "2.0.2"}
 
 [[bench]]
-name = "vec_strings"
+name = "vec_string"
 harness = false
 required-features = ["std"]
 

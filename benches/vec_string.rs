@@ -11,9 +11,9 @@ mod lib_benches;
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
 
-    type ID = usize;
+    type IdState = usize;
 
-    fn generate_item(rng: &mut Rng, total_length: &mut ID) -> String {
+    fn generate_item(rng: &mut Rng, total_length: &mut IdState) -> String {
         let item_len = rng.usize(..MAX_ITEM_LEN);
         let mut item = Vec::<char>::with_capacity(item_len);
         item.extend(iter::repeat_with(|| rng.char(..)).take(item_len));
@@ -24,16 +24,16 @@ pub fn bench_target(c: &mut Criterion) {
         string
     }
 
-    fn id_postfix(total_length: &ID) -> String {
+    fn id_postfix(total_length: &IdState) -> String {
         format!("Sum len: {total_length}.")
     }
 
-    let mut total_length: ID = 0; // NOT in chars, but in bytes.
+    let mut total_length: IdState = 0; // NOT in chars, but in bytes.
 
     bench_vec_sort_bin_search(
         c,
         &mut rng,
-        "strings",
+        "string",
         &mut total_length,
         id_postfix,
         generate_item,
