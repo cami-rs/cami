@@ -4,7 +4,7 @@ use camigo::prelude::*;
 use core::{hint, time::Duration};
 use criterion::{BenchmarkId, Criterion};
 use fastrand::Rng;
-use std::ops::RangeBounds;
+use std::{marker::PhantomData, ops::RangeBounds};
 
 pub fn criterion_config() -> Criterion {
     Criterion::default().warm_up_time(Duration::from_millis(200))
@@ -45,22 +45,95 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
     hint::black_box(vec);
 }
 
-pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, IDSTATE>(
+pub trait TransRef<T> {
+    type IN;
+    type OWN;
+    type OUT<'t>
+    where
+        T: 't;
+
+    /// This initializes `REFS`, for example, if it's a
+    /// vector (of references/slices) this initializes it with [Vec::with_capacity] based on
+    /// capacity of given `own`.
+    fn ini_own_and_out<'t>(input: Self::OWN) -> (Self::OWN, Self::OUT<'t>);
+
+    fn set_out<'t>(own: &'t Self::OWN, refs: &'t mut Self::OUT<'t>);
+}
+
+pub struct VecVecToVecSlice<T>(PhantomData<T>);
+
+impl<T> TransRef<T> for VecVecToVecSlice<T> {
+    type IN = Vec<Vec<T>>;
+    type OWN = Vec<Vec<T>>;
+    type OUT<'t> = Vec<&'t [T]> where T: 't;
+
+    fn ini_own_and_out<'t>(input: Self::OWN) -> (Self::OWN, Self::OUT<'t>) {
+        let out = Vec::with_capacity(input.len());
+        (input, out)
+    }
+    fn set_out<'t>(own: &'t Self::OWN, refs: &'t mut Self::OUT<'t>) {
+        refs.extend(own.iter().map(|v| &v[..]));
+    }
+}
+
+pub struct VecToVecCloned<T>(PhantomData<T>);
+
+impl<T: Clone> TransRef<T> for VecToVecCloned<T> {
+    type IN = Vec<T>;
+    type OWN = Vec<T>;
+    type OUT<'t> = Vec<T> where T: 't;
+
+    fn ini_own_and_out<'t>(input: Self::OWN) -> (Self::OWN, Self::OUT<'t>)
+    where
+        T: 't,
+    {
+        let out = Vec::with_capacity(input.len());
+        (input, out)
+    }
+    fn set_out<'t>(own: &'t Self::OWN, refs: &'t mut Self::OUT<'t>) {
+        refs.extend(own.iter().cloned());
+    }
+}
+
+pub struct VecToVecMoved<T>(PhantomData<T>);
+
+impl<T> TransRef<T> for VecToVecMoved<T> {
+    type IN = Vec<T>;
+    type OWN = Vec<T>;
+    type OUT<'t> = Vec<T> where T: 't;
+
+    fn ini_own_and_out<'t>(input: Self::OWN) -> (Self::OWN, Self::OUT<'t>)
+    where
+        T: 't,
+    {
+        (Vec::new(), input)
+    }
+    fn set_out<'t>(_own: &'t Self::OWN, _refs: &'t mut Self::OUT<'t>) {}
+}
+
+fn _apply_transref() {
+    let own = vec![vec![1i32, 2], vec![1, 2, 3], vec![4], vec![5, 6]];
+    let (own, mut refs) = VecVecToVecSlice::<i32>::ini_own_and_out(own);
+    VecVecToVecSlice::<i32>::set_out(&own, &mut refs);
+}
+
+pub fn bench_vec_sort_bin_search<GEN, TO, TRANSF, RND, IDSTATE>(
     c: &mut Criterion,
-    rng: &mut RND,
+    rnd: &mut RND,
     group_name: impl Into<String>,
     id_state: &mut IDSTATE,
     id_postfix: fn(&IDSTATE) -> String,
-    generate_item: fn(&mut RND, &mut IDSTATE) -> T,
-)
-//GEN: FnMut() -> T,
-//ID: Fn() -> String,
+    generate: fn(&mut RND, &mut IDSTATE) -> TO,
+    _transform: TRANSF,
+) where
+    TO: CamiOrd + Ord + Clone,
+    TRANSF: Fn(GEN) -> TO,
+    RND: Random,
 {
-    let num_items = rng.usize(MIN_ITEMS..MAX_ITEMS);
-    let mut unsorted_items = Vec::<T>::with_capacity(num_items);
-
+    let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
+    let mut unsorted_items = Vec::<TO>::with_capacity(num_items);
     for _ in 0..num_items {
-        let item = generate_item(rng, id_state);
+        let item = generate(rnd, id_state);
         unsorted_items.push(item);
     }
 
@@ -83,7 +156,7 @@ pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, IDSTATE>
                 })
             },
         );
-        purge_cache(rng);
+        purge_cache(rnd);
         group.bench_with_input(
             BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
             hint::black_box(&unsorted_items),
@@ -98,11 +171,11 @@ pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, IDSTATE>
         );
     }
     {
-        purge_cache(rng);
+        purge_cache(rnd);
         #[cfg(not(feature = "transmute"))]
         let unsorted_items = {
             let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
-            unsorted_items_cami.extend(unsorted_items.iter().map(|v| Cami::<T>::new(v.clone())));
+            unsorted_items_cami.extend(unsorted_items.iter().map(|v| Cami::<TO>::new(v.clone())));
             unsorted_items_cami
         };
 
@@ -124,7 +197,7 @@ pub fn bench_vec_sort_bin_search<T: CamiOrd + Ord + Clone, RND: Random, IDSTATE>
                 })
             },
         );
-        purge_cache(rng);
+        purge_cache(rnd);
         group.bench_with_input(
             BenchmarkId::new("std bin search (non-lexi)", id_string),
             hint::black_box(&unsorted_items),

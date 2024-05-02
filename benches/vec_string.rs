@@ -1,6 +1,6 @@
 //#![allow(warnings, unused)]
 use camigo::prelude::*;
-use core::iter;
+use core::{convert, iter};
 use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
@@ -37,6 +37,7 @@ pub fn bench_target(c: &mut Criterion) {
         &mut total_length,
         id_postfix,
         generate_item,
+        convert::identity,
     );
 }
 

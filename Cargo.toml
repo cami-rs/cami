@@ -50,6 +50,11 @@ harness = false
 required-features = ["std"]
 
 [[bench]]
+name = "vec_u8slice"
+harness = false
+required-features = ["std"]
+
+[[bench]]
 name = "shared"
 harness = false
 

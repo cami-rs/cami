@@ -1,9 +1,6 @@
-#![feature(anonymous_lifetime_in_impl_trait)]
-//#![feature(type_alias_impl_trait)]
-
 //#![allow(warnings, unused)]
 use camigo::prelude::*;
-use core::convert;
+use core::iter;
 use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
@@ -11,39 +8,33 @@ use lib_benches::*;
 #[path = "shared/lib_benches.rs"]
 mod lib_benches;
 
-/*struct S<'a> {
-    i: u8,
-    rf: Option<&'a u8>,
-}
-fn f() -> S<'static> {
-    let mut s = S { i: 0, rf: None };
-    s.rf = Some(&s.i);
-    s
-}*/
-
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
 
-    type IdState = ();
+    type IdState = usize;
 
-    fn generate_item(rng: &mut Rng, _: &mut IdState) -> u8 {
-        rng.u8(..)
+    fn generate_item(rng: &mut Rng, total_length: &mut IdState) -> Vec<u8> {
+        let item_len = rng.usize(..MAX_ITEM_LEN);
+        let mut item = Vec::<u8>::with_capacity(item_len);
+        item.extend(iter::repeat_with(|| rng.u8(..)).take(item_len));
+
+        *total_length += item.len();
+        item
     }
 
-    fn id_postfix(_: &IdState) -> String {
-        String::new()
+    fn id_postfix(total_length: &IdState) -> String {
+        format!("Sum len: {total_length}.")
     }
 
-    let mut id_state: IdState = ();
+    let mut total_length: IdState = 0;
 
     bench_vec_sort_bin_search(
         c,
         &mut rng,
-        "u8",
-        &mut id_state,
+        "u8slice",
+        &mut total_length,
         id_postfix,
         generate_item,
-        convert::identity,
     );
 }
 
