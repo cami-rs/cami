@@ -3,7 +3,6 @@
 
 //#![allow(warnings, unused)]
 use camigo::prelude::*;
-use core::convert;
 use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
@@ -36,14 +35,13 @@ pub fn bench_target(c: &mut Criterion) {
 
     let mut id_state: IdState = ();
 
-    bench_vec_sort_bin_search(
+    bench_vec_sort_bin_search::<u8, u8, VecToVecMovedOuterHolder, Rng, ()>(
         c,
         &mut rng,
         "u8",
         &mut id_state,
         id_postfix,
         generate_item,
-        convert::identity,
     );
 }
 
