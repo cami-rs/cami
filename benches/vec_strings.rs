@@ -1,7 +1,7 @@
 //#![allow(warnings, unused)]
 use camigo::prelude::*;
-use core::{hint, iter, time::Duration};
-use criterion::{criterion_group, BenchmarkId, Criterion};
+use core::iter;
+use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
 
@@ -11,107 +11,38 @@ mod lib_benches;
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
 
-    let num_items = rng.usize(MIN_ITEMS..MAX_ITEMS);
-    let mut unsorted_items = Vec::<String>::with_capacity(num_items);
-    let mut total_length = 0usize;
+    type ID = usize;
 
-    for _ in 0..num_items {
+    fn generate_item(rng: &mut Rng, total_length: &mut ID) -> String {
         let item_len = rng.usize(..MAX_ITEM_LEN);
         let mut item = Vec::<char>::with_capacity(item_len);
         item.extend(iter::repeat_with(|| rng.char(..)).take(item_len));
 
         let mut string = String::with_capacity(4 * item_len);
         string.extend(item.into_iter());
-        total_length += string.len();
-        unsorted_items.push(string);
+        *total_length += string.len();
+        string
     }
 
-    let mut group = c.benchmark_group("strings");
-
-    //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
-    let id_string =
-        format!("{num_items} items, each len max {MAX_ITEM_LEN}. Sum len: {total_length}.");
-    if false {
-        let mut sorted_lexi = Vec::new();
-        group.bench_with_input(
-            BenchmarkId::new("std sort lexi.          ", id_string.clone()),
-            hint::black_box(&unsorted_items),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    sorted_lexi = hint::black_box(unsorted_items.clone());
-                    sorted_lexi.sort();
-                })
-            },
-        );
-        purge_cache(&mut rng);
-        group.bench_with_input(
-            BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
-            hint::black_box(&unsorted_items),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    let sorted = hint::black_box(&sorted_lexi);
-                    for item in hint::black_box(unsorted_items.into_iter()) {
-                        hint::black_box(sorted.binary_search(item)).unwrap();
-                    }
-                })
-            },
-        );
+    fn id_postfix(total_length: &ID) -> String {
+        format!("Sum len: {total_length}.")
     }
-    {
-        purge_cache(&mut rng);
-        #[cfg(not(feature = "transmute"))]
-        let unsorted_items = {
-            let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
-            unsorted_items_cami.extend(unsorted_items.iter().map(|v| StringCami::new(v.clone())));
-            unsorted_items_cami
-        };
 
-        let mut sorted_non_lexi = Vec::new();
-        group.bench_with_input(
-            BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
-            hint::black_box(&unsorted_items),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    #[cfg(feature = "transmute")]
-                    let _ = {
-                        sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_vec_cami();
-                    };
-                    #[cfg(not(feature = "transmute"))]
-                    let _ = {
-                        sorted_non_lexi = hint::black_box(unsorted_items.clone());
-                    };
-                    sorted_non_lexi.sort();
-                })
-            },
-        );
-        purge_cache(&mut rng);
-        group.bench_with_input(
-            BenchmarkId::new("std bin search (non-lexi)", id_string),
-            hint::black_box(&unsorted_items),
-            //hint::black_box( unsorted_items.into_ref_vec_cami() ),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    let sorted = hint::black_box(&sorted_non_lexi);
-                    for item in hint::black_box(unsorted_items.into_iter()) {
-                        #[cfg(feature = "transmute")]
-                        let _ = {
-                            hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
-                        };
-                        #[cfg(not(feature = "transmute"))]
-                        let _ = {
-                            hint::black_box(sorted.binary_search(item)).unwrap();
-                        };
-                    }
-                })
-            },
-        );
-    }
-    group.finish();
+    let mut total_length: ID = 0; // NOT in chars, but in bytes.
+
+    bench_vec_sort_bin_search(
+        c,
+        &mut rng,
+        "strings",
+        &mut total_length,
+        id_postfix,
+        generate_item,
+    );
 }
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().warm_up_time(Duration::from_millis(200));
+    config = criterion_config();
     targets = bench_target
 }
 // Based on expansion of `criterion_main!(benches);`

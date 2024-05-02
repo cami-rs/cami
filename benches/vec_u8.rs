@@ -1,6 +1,6 @@
 //#![allow(warnings, unused)]
 use camigo::prelude::*;
-use core::{hint, ops::RangeBounds, time::Duration};
+use core::{hint, ops::RangeBounds};
 use criterion::{criterion_group, BenchmarkId, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
@@ -39,7 +39,7 @@ pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBo
                 })
             },
         );
-        purge_cache(&mut rng);
+        purge_cache(rng);
         group.bench_with_input(
             BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
             hint::black_box(&unsorted_items),
@@ -54,7 +54,7 @@ pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBo
         );
     }
     {
-        purge_cache(&mut rng);
+        purge_cache(rng);
         #[cfg(not(feature = "transmute"))]
         let unsorted_items = {
             let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
@@ -79,7 +79,7 @@ pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBo
                 })
             },
         );
-        purge_cache(&mut rng);
+        purge_cache(rng);
         group.bench_with_input(
             BenchmarkId::new("std bin search (non-lexi)", id_string),
             hint::black_box(&unsorted_items),
@@ -106,7 +106,7 @@ pub fn bench_range(c: &mut Criterion, mut rng: &mut Rng, num_items: impl RangeBo
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().warm_up_time(Duration::from_millis(200));
+    config = criterion_config();
     targets = bench_target
 }
 // Based on expansion of `criterion_main!(benches);`
