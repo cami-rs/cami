@@ -46,7 +46,6 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
     hint::black_box(vec);
 }
 
-//pub trait TransRef<'t, T: 't> where Self: 't {
 pub trait TransRef<T> {
     type IN; // todo bound here?
     type OWN; //;: 't;
@@ -54,8 +53,8 @@ pub trait TransRef<T> {
     type OUT_SEED;
     type OUT<'out>
     where
-        T: 'out,
-        Self: 'out;
+        T: 'out;
+        //Self: 'out;
     /// This initializes `REFS`, for example, if it's a
     /// vector (of references/slices) this initializes it with [Vec::with_capacity] based on
     /// capacity of given `own`.
@@ -116,8 +115,9 @@ impl<T> TransRef<T> for VecVecToVecSlice
         }*/
         let len = own.len();
         for i in 0..len {
-            out.push(&own[i][..]);
+            //out.push(&own[i][..]);
         }
+        todo!(); // ^^^
     }
 }
 
@@ -172,7 +172,7 @@ impl<T> TransRef<T> for VecToVecMoved {
     }
     fn set_out<'own, 'out: 'own>(own: &'own Self::OWN, refs: &'out mut Self::OUT<'out>) {}
 }
-
+/*
 pub struct VecToVecMovedInnerHolder();
 impl<'out, #[allow(non_camel_case_types)] IN_ITEM, T> TransRefInnerHolder<'out, IN_ITEM, T>
     for VecToVecMovedInnerHolder
@@ -181,20 +181,12 @@ where
 {
     type TRANS_REF = VecToVecMoved;
 }
-
-pub struct VecToVecMovedOuterHolder();
+*/
+/*pub struct VecToVecMovedOuterHolder();
 impl<#[allow(non_camel_case_types)] IN_ITEM, T> TransRefOuterHolder<IN_ITEM, T>
     for VecToVecMovedOuterHolder
 {
     type TRANS_REF_INNER_HOLDER<'out> = VecToVecMovedInnerHolder where T: 'out;
-}
-
-/*fn _apply_transref() {
-    let own = vec![vec![1i32, 2], vec![1, 2, 3], vec![4], vec![5, 6]];
-    //let (own, mut refs) = VecVecToVecSlice::<i32>::ini_own_and_out(own);let (own, mut refs) = VecVecToVecSlice::<i32>::ini_own_and_out(own);
-    let (own, mut refs) = VecVecToVecSlice::ini_own_and_out(own);
-    //VecVecToVecSlice::<i32>::set_out(&own, &mut refs);
-    VecVecToVecSlice::set_out(&own, &mut refs);
 }*/
 
 pub fn bench_vec_sort_bin_search<
@@ -213,11 +205,6 @@ pub fn bench_vec_sort_bin_search<
     generate: fn(&mut RND, &mut ID_STATE) -> IN_ITEM,
 ) where
     T: CamiOrd + Ord + Clone,
-    //T: 't + CamiOrd + Ord + Clone,
-    //TRANS_REF: TransRef<T, IN = Vec<IN_ITEM>, OUT = Vec<T>>,
-    //TRANS_REF_OUTER_HOLDER: TransRefOuterHolder<IN_ITEM, T>,
-    //TRANS_REF_VEC_HOLDER: TransRefVecHolder<IN_ITEM, T>,
-    //TRANS_REF_HOLDER::TRANS_REF : TransRef<T, IN = Vec<IN_ITEM>, OUT = Vec<T>>,
     TRANS_REF_OUTER_HOLDER: for<'t> TransRefOuterHolder<
         IN_ITEM,
         T,
@@ -271,7 +258,7 @@ pub fn bench_vec_sort_bin_search<
         &own_items,
         &mut unsorted_items,
     );
-    let unsorted_items = unsorted_items; // Prevent mutation by mistake.
+    // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
     //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
     let id_string = format!(

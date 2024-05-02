@@ -35,14 +35,14 @@ pub fn bench_target(c: &mut Criterion) {
 
     let mut id_state: IdState = ();
 
-    bench_vec_sort_bin_search::<u8, u8, VecToVecMovedOuterHolder, Rng, ()>(
+    /*bench_vec_sort_bin_search::<u8, u8, VecToVecMovedOuterHolder, Rng, ()>(
         c,
         &mut rng,
         "u8",
         &mut id_state,
         id_postfix,
         generate_item,
-    );
+    );*/
 }
 
 criterion_group! {
