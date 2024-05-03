@@ -68,7 +68,8 @@ pub trait TransRef<T> {
     fn ini_out<'out>(out: &mut Self::OUT<'out>, out_seed: Self::OUT_SEED)
     where
         T: 'out;
-    fn set_out<'own, 'out: 'own>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    //fn set_out<'out>(out: &mut Self::OUT<'out>, own: & Self::OWN)
     where
         T: 'out;
 }
@@ -125,19 +126,12 @@ impl<T> TransRef<T> for VecVecToVecSlice
     {
         out.reserve(out_seed);
     }
-    fn set_out<'own, 'out: 'own>(out: &mut Self::OUT<'out>, _own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    //fn set_out<'out>(out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
         T: 'out,
     {
-        //out.extend(own.iter().map(|v| &v[..]));
-        /*for rf in own.iter() {
-            out.push(&rf[..]);
-        }*/
-        /*let len = own.len();
-        for i in 0..len {
-            out.push(&own[i][..]);
-        }*/
-        todo!(); // ^^^
+        out.extend(own.iter().map(|v| &v[..]));
     }
 }
 
@@ -168,7 +162,8 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
         T: 'out,
     {
     }
-    fn set_out<'own, 'out: 'own>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    //fn set_out<'out>(out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
         T: 'out,
     {
@@ -204,7 +199,8 @@ impl<T> TransRef<T> for VecToVecMoved {
     {
         mem::swap(out, &mut out_seed);
     }
-    fn set_out<'own, 'out: 'own>(_out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out>(_out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    //fn set_out<'out>(_out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
         T: 'out,
     {
