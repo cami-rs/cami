@@ -49,7 +49,9 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
 
 pub trait TransRef<T> {
     type IN; // todo bound here?
-    type OWN; //;: 't;
+    type OWN<'own>
+    where
+        T: 'own; //;: 't;
     #[allow(non_camel_case_types)]
     type OUT_SEED;
     type OUT<'out>
@@ -59,7 +61,9 @@ pub trait TransRef<T> {
     /// This initializes `REFS`, for example, if it's a
     /// vector (of references/slices) this initializes it with [Vec::with_capacity] based on
     /// capacity of given `own`.
-    fn ini_own_and_seed(input: Self::IN) -> (Self::OWN, Self::OUT_SEED);
+    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    where
+        T: 'own;
 
     fn reserve_out<'out>() -> Self::OUT<'out>
     where
@@ -68,10 +72,15 @@ pub trait TransRef<T> {
     fn ini_out<'out>(out: &mut Self::OUT<'out>, out_seed: Self::OUT_SEED)
     where
         T: 'out;
-    fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
+        out: &'outref mut Self::OUT<'out>,
+        own: &'ownref Self::OWN<'own>,
+    )
+    //fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &Self::OWN<'own>)
     //fn set_out<'out>(out: &mut Self::OUT<'out>, own: & Self::OWN)
     where
-        T: 'out;
+        T: 'out,
+        T: 'own;
 }
 
 pub trait TransRefInnerHolder<'out, #[allow(non_camel_case_types)] IN_ITEM, T>
@@ -104,11 +113,14 @@ impl<T> TransRef<T> for VecVecToVecSlice
 {
     //impl<T> TransRef<T> for VecVecToVecSlice<T> {
     type IN = Vec<Vec<T>>;
-    type OWN = Vec<Vec<T>>;
+    type OWN<'own> = Vec<Vec<T>> where T: 'own;
     type OUT_SEED = usize;
     type OUT<'out> = Vec<&'out [T]> where T: 'out, Self: 'out;
 
-    fn ini_own_and_seed(input: Self::IN) -> (Self::OWN, Self::OUT_SEED) {
+    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    where
+        T: 'own,
+    {
         let len = input.len();
         (input, len)
     }
@@ -126,10 +138,14 @@ impl<T> TransRef<T> for VecVecToVecSlice
     {
         out.reserve(out_seed);
     }
-    fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
+        out: &'outref mut Self::OUT<'out>,
+        own: &'ownref Self::OWN<'own>,
+    )
     //fn set_out<'out>(out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
         T: 'out,
+        T: 'own,
     {
         out.extend(own.iter().map(|v| &v[..]));
     }
@@ -141,12 +157,13 @@ pub struct VecToVecCloned();
 //impl<'t, T: 't + Clone /*'t, T: 't + Clone*/> TransRef<'t, T> for VecToVecCloned<T> where Self : 't{
 impl<T: Clone> TransRef<T> for VecToVecCloned {
     type IN = Vec<T>;
-    type OWN = Vec<T>;
+    type OWN<'own> = Vec<T> where T: 'own;
     type OUT_SEED = ();
     type OUT<'out> = Vec<T> where T: 'out, Self: 'out; // where T: 't;
 
-    fn ini_own_and_seed(input: Self::IN) -> (Self::OWN, Self::OUT_SEED)
-//where T: 't,
+    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    where
+        T: 'own, //where T: 't,
     {
         (input, ())
     }
@@ -162,10 +179,14 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
         T: 'out,
     {
     }
-    fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
+        out: &'outref mut Self::OUT<'out>,
+        own: &'ownref Self::OWN<'own>,
+    )
     //fn set_out<'out>(out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
         T: 'out,
+        T: 'own,
     {
         out.reserve(own.len());
         out.extend_from_slice(&own[..]);
@@ -178,12 +199,13 @@ pub struct VecToVecMoved();
 //impl<'t, T: 't> TransRef<'t, T> for VecToVecMoved<T> where Self: 't{
 impl<T> TransRef<T> for VecToVecMoved {
     type IN = Vec<T>;
-    type OWN = Vec<T>;
+    type OWN<'own> = Vec<T> where T: 'own;
     type OUT_SEED = Vec<T>;
     type OUT<'out> = Vec<T> where T: 'out; // where SelT: 't;
 
-    fn ini_own_and_seed(input: Self::IN) -> (Self::OWN, Self::OUT_SEED)
-//where T: 't,
+    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    where
+        T: 'own, //where T: 't,
     {
         (Vec::new(), input)
     }
@@ -199,10 +221,14 @@ impl<T> TransRef<T> for VecToVecMoved {
     {
         mem::swap(out, &mut out_seed);
     }
-    fn set_out<'own: 'out, 'out>(_out: &mut Self::OUT<'out>, own: &'own Self::OWN)
+    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
+        _out: &'outref mut Self::OUT<'out>,
+        own: &'ownref Self::OWN<'own>,
+    )
     //fn set_out<'out>(_out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
         T: 'out,
+        T: 'own,
     {
     }
 }

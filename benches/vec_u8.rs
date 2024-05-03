@@ -1,4 +1,7 @@
-#![feature(anonymous_lifetime_in_impl_trait)]
+//#![cfg_attr(all(feature = "unsafe", feature = "nightly"), feature(anonymous_lifetime_in_impl_trait))]
+// https://github.com/rust-lang/rust/issues/52662
+//
+//#![cfg_attr(all(feature = "unsafe", feature = "nightly"), feature(associated_type_bounds))]
 //#![feature(type_alias_impl_trait)]
 
 //#![allow(warnings, unused)]
