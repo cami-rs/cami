@@ -69,9 +69,18 @@ pub trait TransRef<T> {
     where
         T: 'out;
 
-    fn ini_out<'out>(out: &mut Self::OUT<'out>, out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(out: &mut Self::OUT<'out>, mut out_seed: Self::OUT_SEED)
     where
+        T: 'out,
+    {
+        Self::ini_out_mut_seed(out, &mut out_seed);
+    }
+    fn ini_out_mut_seed<'out, 'outref>(
+        out: &'outref mut Self::OUT<'out>,
+        out_seed: &'outref mut Self::OUT_SEED,
+    ) where
         T: 'out;
+
     fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
         out: &'outref mut Self::OUT<'out>,
         own: &'ownref Self::OWN<'own>,
@@ -131,13 +140,23 @@ impl<T> TransRef<T> for VecVecToVecSlice
     {
         Vec::new()
     }
+
     // @TODO Delay reservation?
-    fn ini_out<'out>(out: &mut Self::OUT<'out>, out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(out: &mut Self::OUT<'out>, out_seed: Self::OUT_SEED)
     where
         T: 'out,
     {
         out.reserve(out_seed);
     }
+    fn ini_out_mut_seed<'out, 'outref>(
+        out: &'outref mut Self::OUT<'out>,
+        out_seed: &'outref mut Self::OUT_SEED,
+    ) where
+        T: 'out,
+    {
+        out.reserve(*out_seed);
+    }
+
     fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
         out: &'outref mut Self::OUT<'out>,
         own: &'ownref Self::OWN<'own>,
@@ -173,12 +192,21 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
     {
         Vec::new()
     }
+
     /// Delay allocation a.s.a.p. - lazy.
-    fn ini_out<'out>(_out: &mut Self::OUT<'out>, _out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(_out: &mut Self::OUT<'out>, _out_seed: Self::OUT_SEED)
     where
         T: 'out,
     {
     }
+    fn ini_out_mut_seed<'out, 'outref>(
+        out: &'outref mut Self::OUT<'out>,
+        out_seed: &'outref mut Self::OUT_SEED,
+    ) where
+        T: 'out,
+    {
+    }
+
     fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
         out: &'outref mut Self::OUT<'out>,
         own: &'ownref Self::OWN<'own>,
@@ -215,12 +243,22 @@ impl<T> TransRef<T> for VecToVecMoved {
     {
         Vec::new()
     }
-    fn ini_out<'out>(out: &mut Self::OUT<'out>, mut out_seed: Self::OUT_SEED)
+
+    fn ini_out_move_seed<'out>(out: &mut Self::OUT<'out>, mut out_seed: Self::OUT_SEED)
     where
         T: 'out,
     {
         mem::swap(out, &mut out_seed);
     }
+    fn ini_out_mut_seed<'out, 'outref>(
+        out: &'outref mut Self::OUT<'out>,
+        out_seed: &'outref mut Self::OUT_SEED,
+    ) where
+        T: 'out,
+    {
+        mem::swap(out, out_seed);
+    }
+
     fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
         _out: &'outref mut Self::OUT<'out>,
         own: &'ownref Self::OWN<'own>,
@@ -313,7 +351,7 @@ pub fn bench_vec_sort_bin_search<
         >
         ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
        >::TRANS_REF as TransRef<T>
-    >::ini_out(&mut unsorted_items, out_seed);
+    >::ini_out_move_seed(&mut unsorted_items, out_seed);
 
     <
        <
