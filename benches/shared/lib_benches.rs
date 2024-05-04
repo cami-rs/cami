@@ -87,19 +87,19 @@ pub trait TransRef<T>: Sized {
         T: 'out;
 }
 
-pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItems, T>
+pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItem, OutItem>
 where
-    T: 'out,
+    OutItem: 'out,
 {
-    type TransRefImpl: TransRef<T, In = Vec<InItems>, Own<'own> = Vec<InItems>, Out<'out> = Vec<T>>
+    type TransRefImpl: TransRef<OutItem, In = Vec<InItem>, Own<'own> = Vec<InItem>, Out<'out> = Vec<OutItem>>
     where
-        T: 'out,
-        <Self as TransRefVecInnerHolder<'out, 'own, InItems, T>>::TransRefImpl: 'out;
+        OutItem: 'out,
+        <Self as TransRefVecInnerHolder<'out, 'own, InItem, OutItem>>::TransRefImpl: 'out;
 }
-pub trait TransRefVecOuterHolder<InItems, T> {
-    type TransRefInnerHolder<'out, 'own: 'out>: TransRefVecInnerHolder<'out, 'own, InItems, T>
+pub trait TransRefVecOuterHolder<InItem, OutItem> {
+    type TransRefInnerHolder<'out, 'own: 'out>: TransRefVecInnerHolder<'out, 'own, InItem, OutItem>
     where
-        T: 'out;
+        OutItem: 'out;
 }
 
 pub struct VecVecToVecSlice();
@@ -244,19 +244,19 @@ impl<T> TransRef<T> for VecToVecMoved {
 //pub struct VecToVecMovedInnerHolder<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
 pub struct VecToVecMovedInnerHolder();
 
-impl<'out, 'own: 'out, InItems, T> TransRefVecInnerHolder<'out, 'own, InItems, T>
+impl<'out, 'own: 'out, InItem, OutItem> TransRefVecInnerHolder<'out, 'own, InItem, OutItem>
     for VecToVecMovedInnerHolder
 /*<'out, 'own>*/
 where
-    T: 'out,
+    OutItem: 'out,
 {
     type TransRefImpl = VecToVecMoved;
 }
 
 pub struct VecToVecMovedOuterHolder();
-impl<InItems, T> TransRefVecOuterHolder<InItems, T> for VecToVecMovedOuterHolder {
+impl<InItem, OutItem> TransRefVecOuterHolder<InItem, OutItem> for VecToVecMovedOuterHolder {
     //type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder<'out, 'own> where T: 'out;
-    type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder where T: 'out;
+    type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder where OutItem: 'out;
 }
 
 pub fn bench_vec_sort_bin_search<
