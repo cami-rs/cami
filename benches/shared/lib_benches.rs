@@ -48,68 +48,64 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
 }
 
 pub trait TransRef<T>: Sized {
-    type IN; // todo bound here?
-    type OWN<'own>
+    type In; // todo bound here?
+    type Own<'own>
     where
         T: 'own; //;: 't;
-    #[allow(non_camel_case_types)]
-    type OUT_SEED;
-    type OUT<'out>
+    type OutSeed;
+    type Out<'out>
     where
         T: 'out;
     //Self: 'out;
     /// This initializes `REFS`, for example, if it's a
     /// vector (of references/slices) this initializes it with [Vec::with_capacity] based on
     /// capacity of given `own`.
-    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed)
     where
         T: 'own;
-    fn reserve_own<'own>() -> Self::OWN<'own>
+    fn reserve_own<'own>() -> Self::Own<'own>
     where
         T: 'own,
     {
         loop {}
     }
 
-    fn reserve_out<'out>() -> Self::OUT<'out>
+    fn reserve_out<'out>() -> Self::Out<'out>
     where
         T: 'out;
 
-    fn ini_out_move_seed<'out>(out: &mut Self::OUT<'out>, mut out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, mut out_seed: Self::OutSeed)
     where
         T: 'out,
     {
         Self::ini_out_mut_seed(out, &mut out_seed);
     }
     fn ini_out_mut_seed<'out, 'outref>(
-        out: &'outref mut Self::OUT<'out>,
-        out_seed: &'outref mut Self::OUT_SEED,
+        out: &'outref mut Self::Out<'out>,
+        out_seed: &'outref mut Self::OutSeed,
     ) where
         T: 'out;
 
     //fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &Self::OWN<'own>)
     //fn set_out<'out>(out: &mut Self::OUT<'out>, own: & Self::OWN)
-    fn set_out<'own: 'out, 'out>(
-        out: &mut Self::OUT<'out>,
-        own: &Self::OWN<'own>,
-    )
+    fn set_out<'own: 'out, 'out>(out: &mut Self::Out<'out>, own: &Self::Own<'own>)
     where
         T: 'own;
 }
 
-pub trait TransRefInnerHolder<'out, #[allow(non_camel_case_types)] IN_ITEMS, T>
+pub trait TransRefInnerHolder<'out, #[allow(non_camel_case_types)] InItems, T>
 where
     T: 'out,
 {
     #[allow(non_camel_case_types)]
-    type TRANS_REF: TransRef<T, IN = Vec<IN_ITEMS>, OUT<'out> = Vec<T>>
+    type TransRefImpl: TransRef<T, In = Vec<InItems>, Out<'out> = Vec<T>>
     where
         T: 'out,
-        <Self as TransRefInnerHolder<'out, IN_ITEMS, T>>::TRANS_REF: 'out;
+        <Self as TransRefInnerHolder<'out, InItems, T>>::TransRefImpl: 'out;
 }
-pub trait TransRefOuterHolder<#[allow(non_camel_case_types)] IN_ITEMS, T> {
+pub trait TransRefOuterHolder<#[allow(non_camel_case_types)] InItems, T> {
     #[allow(non_camel_case_types)]
-    type TRANS_REF_INNER_HOLDER<'out>: TransRefInnerHolder<'out, IN_ITEMS, T>
+    type TransRefInnerHolder<'out>: TransRefInnerHolder<'out, InItems, T>
     where
         T: 'out;
 }
@@ -126,12 +122,12 @@ impl<T> TransRef<T> for VecVecToVecSlice
 // where Self: 't,
 {
     //impl<T> TransRef<T> for VecVecToVecSlice<T> {
-    type IN = Vec<Vec<T>>;
-    type OWN<'own> = Vec<Vec<T>> where T: 'own;
-    type OUT_SEED = usize;
-    type OUT<'out> = Vec<&'out [T]> where T: 'out, Self: 'out;
+    type In = Vec<Vec<T>>;
+    type Own<'own> = Vec<Vec<T>> where T: 'own;
+    type OutSeed = usize;
+    type Out<'out> = Vec<&'out [T]> where T: 'out, Self: 'out;
 
-    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed)
     where
         T: 'own,
     {
@@ -139,7 +135,7 @@ impl<T> TransRef<T> for VecVecToVecSlice
         (input, len)
     }
     //fn reserve_out<'out>() -> <Self as TransRef<T>>::OUT<'out> {Vec::new()}
-    fn reserve_out<'out>() -> Self::OUT<'out>
+    fn reserve_out<'out>() -> Self::Out<'out>
     where
         T: 'out,
     {
@@ -147,27 +143,24 @@ impl<T> TransRef<T> for VecVecToVecSlice
     }
 
     // @TODO Delay reservation?
-    fn ini_out_move_seed<'out>(out: &mut Self::OUT<'out>, out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, out_seed: Self::OutSeed)
     where
         T: 'out,
     {
         out.reserve(out_seed);
     }
     fn ini_out_mut_seed<'out, 'outref>(
-        out: &'outref mut Self::OUT<'out>,
-        out_seed: &'outref mut Self::OUT_SEED,
+        out: &'outref mut Self::Out<'out>,
+        out_seed: &'outref mut Self::OutSeed,
     ) where
         T: 'out,
     {
         out.reserve(*out_seed);
     }
 
-        fn set_out<'own: 'out, 'out>(
-        out: &mut Self::OUT<'out>,
-        own: &Self::OWN<'own>,
-    )
+    fn set_out<'own: 'out, 'out>(out: &mut Self::Out<'out>, own: &Self::Own<'own>)
     where
-        T: 'own
+        T: 'own,
     {
         out.extend(own.iter().map(|v| &v[..]));
     }
@@ -178,18 +171,18 @@ pub struct VecToVecCloned();
 
 //impl<'t, T: 't + Clone /*'t, T: 't + Clone*/> TransRef<'t, T> for VecToVecCloned<T> where Self : 't{
 impl<T: Clone> TransRef<T> for VecToVecCloned {
-    type IN = Vec<T>;
-    type OWN<'own> = Vec<T> where T: 'own;
-    type OUT_SEED = ();
-    type OUT<'out> = Vec<T> where T: 'out, Self: 'out; // where T: 't;
+    type In = Vec<T>;
+    type Own<'own> = Vec<T> where T: 'own;
+    type OutSeed = ();
+    type Out<'out> = Vec<T> where T: 'out, Self: 'out; // where T: 't;
 
-    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed)
     where
         T: 'own, //where T: 't,
     {
         (input, ())
     }
-    fn reserve_out<'out>() -> Self::OUT<'out>
+    fn reserve_out<'out>() -> Self::Out<'out>
     where
         T: 'out,
     {
@@ -197,25 +190,22 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
     }
 
     /// Delay allocation a.s.a.p. - lazy.
-    fn ini_out_move_seed<'out>(_out: &mut Self::OUT<'out>, _out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(_out: &mut Self::Out<'out>, _out_seed: Self::OutSeed)
     where
         T: 'out,
     {
     }
     fn ini_out_mut_seed<'out, 'outref>(
-        out: &'outref mut Self::OUT<'out>,
-        out_seed: &'outref mut Self::OUT_SEED,
+        out: &'outref mut Self::Out<'out>,
+        out_seed: &'outref mut Self::OutSeed,
     ) where
         T: 'out,
     {
     }
 
-        fn set_out<'own: 'out, 'out>(
-        out: &mut Self::OUT<'out>,
-        own: &Self::OWN<'own>,
-    )
+    fn set_out<'own: 'out, 'out>(out: &mut Self::Out<'out>, own: &Self::Own<'own>)
     where
-        T: 'own
+        T: 'own,
     {
         out.reserve(own.len());
         out.extend_from_slice(&own[..]);
@@ -227,45 +217,42 @@ pub struct VecToVecMoved();
 
 //impl<'t, T: 't> TransRef<'t, T> for VecToVecMoved<T> where Self: 't{
 impl<T> TransRef<T> for VecToVecMoved {
-    type IN = Vec<T>;
-    type OWN<'own> = Vec<T> where T: 'own;
-    type OUT_SEED = Vec<T>;
-    type OUT<'out> = Vec<T> where T: 'out; // where SelT: 't;
+    type In = Vec<T>;
+    type Own<'own> = Vec<T> where T: 'own;
+    type OutSeed = Vec<T>;
+    type Out<'out> = Vec<T> where T: 'out; // where SelT: 't;
 
-    fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
+    fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed)
     where
         T: 'own, //where T: 't,
     {
         (Vec::new(), input)
     }
-    fn reserve_out<'out>() -> Self::OUT<'out>
+    fn reserve_out<'out>() -> Self::Out<'out>
     where
         T: 'out,
     {
         Vec::new()
     }
 
-    fn ini_out_move_seed<'out>(out: &mut Self::OUT<'out>, mut out_seed: Self::OUT_SEED)
+    fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, mut out_seed: Self::OutSeed)
     where
         T: 'out,
     {
         mem::swap(out, &mut out_seed);
     }
     fn ini_out_mut_seed<'out, 'outref>(
-        out: &'outref mut Self::OUT<'out>,
-        out_seed: &'outref mut Self::OUT_SEED,
+        out: &'outref mut Self::Out<'out>,
+        out_seed: &'outref mut Self::OutSeed,
     ) where
         T: 'out,
     {
         mem::swap(out, out_seed);
     }
 
-    fn set_out<'own: 'out, 'out>(
-        _out: &mut Self::OUT<'out>,
-        _own: &Self::OWN<'own>,
-    )
+    fn set_out<'own: 'out, 'out>(_out: &mut Self::Out<'out>, _own: &Self::Own<'own>)
     where
-        T: 'own
+        T: 'own,
     {
     }
 }
@@ -305,10 +292,10 @@ pub fn bench_vec_sort_bin_search<
     TRANS_REF_OUTER_HOLDER: for<'t> TransRefOuterHolder<
         IN_ITEM,
         T,
-        TRANS_REF_INNER_HOLDER<'t>: TransRefInnerHolder<'t, IN_ITEM, T>,
+        TransRefInnerHolder<'t>: TransRefInnerHolder<'t, IN_ITEM, T>,
     >,
 
-    for<'t> <TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TRANS_REF_INNER_HOLDER<'t>:
+    for<'t> <TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<'t>:
         TransRef<T>,
     RND: Random,
 {
@@ -331,14 +318,14 @@ pub fn bench_vec_sort_bin_search<
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
         >
-        ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
-       >::TRANS_REF as TransRef<T>
+        ::TransRefInnerHolder<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
+       >::TransRefImpl as TransRef<T>
     >::ini_own_and_seed(in_items);
 
     //#[cfg(off)]
-    let own_items = <<<TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TRANS_REF_INNER_HOLDER<
+    let own_items = <<<TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
         '_,
-    > as TransRefInnerHolder<'_, IN_ITEM, T>>::TRANS_REF as TransRef<T>>::reserve_own(
+    > as TransRefInnerHolder<'_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>::reserve_own(
     );
 
     {
@@ -349,16 +336,16 @@ pub fn bench_vec_sort_bin_search<
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
         >
-        ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
-       >::TRANS_REF as TransRef<T>
+        ::TransRefInnerHolder<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
+       >::TransRefImpl as TransRef<T>
     >::reserve_out();
         <
        <
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
         >
-        ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
-       >::TRANS_REF as TransRef<T>
+        ::TransRefInnerHolder<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
+       >::TransRefImpl as TransRef<T>
     >::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
 
         <
@@ -366,8 +353,8 @@ pub fn bench_vec_sort_bin_search<
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
         >
-        ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
-       >::TRANS_REF as TransRef<T>
+        ::TransRefInnerHolder<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
+       >::TransRefImpl as TransRef<T>
     >::set_out(
         &mut unsorted_items,
         &own_items //own_items_ref
