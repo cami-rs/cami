@@ -87,17 +87,17 @@ pub trait TransRef<T>: Sized {
         T: 'out;
 }
 
-pub trait TransRefInnerHolder<'out, 'own: 'out, InItems, T>
+pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItems, T>
 where
     T: 'out,
 {
     type TransRefImpl: TransRef<T, In = Vec<InItems>, Own<'own> = Vec<InItems>, Out<'out> = Vec<T>>
     where
         T: 'out,
-        <Self as TransRefInnerHolder<'out, 'own, InItems, T>>::TransRefImpl: 'out;
+        <Self as TransRefVecInnerHolder<'out, 'own, InItems, T>>::TransRefImpl: 'out;
 }
-pub trait TransRefOuterHolder<InItems, T> {
-    type TransRefInnerHolder<'out, 'own: 'out>: TransRefInnerHolder<'out, 'own, InItems, T>
+pub trait TransRefVecOuterHolder<InItems, T> {
+    type TransRefInnerHolder<'out, 'own: 'out>: TransRefVecInnerHolder<'out, 'own, InItems, T>
     where
         T: 'out;
 }
@@ -244,7 +244,7 @@ impl<T> TransRef<T> for VecToVecMoved {
 //pub struct VecToVecMovedInnerHolder<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
 pub struct VecToVecMovedInnerHolder();
 
-impl<'out, 'own: 'out, InItems, T> TransRefInnerHolder<'out, 'own, InItems, T>
+impl<'out, 'own: 'out, InItems, T> TransRefVecInnerHolder<'out, 'own, InItems, T>
     for VecToVecMovedInnerHolder
 /*<'out, 'own>*/
 where
@@ -254,7 +254,7 @@ where
 }
 
 pub struct VecToVecMovedOuterHolder();
-impl<InItems, T> TransRefOuterHolder<InItems, T> for VecToVecMovedOuterHolder {
+impl<InItems, T> TransRefVecOuterHolder<InItems, T> for VecToVecMovedOuterHolder {
     //type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder<'out, 'own> where T: 'out;
     type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder where T: 'out;
 }
@@ -275,13 +275,13 @@ pub fn bench_vec_sort_bin_search<
     generate: fn(&mut RND, &mut ID_STATE) -> IN_ITEM,
 ) where
     T: CamiOrd + Ord + Clone,
-    TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefOuterHolder<
+    TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
         IN_ITEM,
         T,
-        TransRefInnerHolder<'out, 'own>: TransRefInnerHolder<'out, 'own, IN_ITEM, T>,
+        TransRefInnerHolder<'out, 'own>: TransRefVecInnerHolder<'out, 'own, IN_ITEM, T>,
     >,
 
-    for<'out, 'own> <TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<'out, 'own>:
+    for<'out, 'own> <TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<'out, 'own>:
         TransRef<T>,
     RND: Random,
 {
@@ -298,42 +298,42 @@ pub fn bench_vec_sort_bin_search<
     <
        <
         <
-            TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
+            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
         >
-        ::TransRefInnerHolder<'_, '_> as TransRefInnerHolder<'_, '_, IN_ITEM, T>
+        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
     >::ini_own_and_seed(in_items);
 
     //#[cfg(off)]
-    let own_items = <<<TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
+    let own_items = <<<TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
         '_, '_,
-    > as TransRefInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>::reserve_own(
+    > as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>::reserve_own(
     );
 
     {
         let mut unsorted_items = <
        <
         <
-            TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
+            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
         >
-        ::TransRefInnerHolder<'_, '_> as TransRefInnerHolder<'_, '_,IN_ITEM, T>
+        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
     >::reserve_out();
         <
        <
         <
-            TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
+            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
         >
-        ::TransRefInnerHolder<'_, '_> as TransRefInnerHolder<'_, '_,IN_ITEM, T>
+        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
     >::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
 
         <
        <
         <
-            TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
+            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
         >
-        ::TransRefInnerHolder<'_, '_> as TransRefInnerHolder<'_, '_,IN_ITEM, T>
+        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
     >::set_out(
         &mut unsorted_items,
