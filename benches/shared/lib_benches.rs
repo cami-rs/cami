@@ -47,7 +47,7 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
     hint::black_box(vec);
 }
 
-pub trait TransRef<T> {
+pub trait TransRef<T>: Sized {
     type IN; // todo bound here?
     type OWN<'own>
     where
@@ -64,6 +64,12 @@ pub trait TransRef<T> {
     fn ini_own_and_seed<'own>(input: Self::IN) -> (Self::OWN<'own>, Self::OUT_SEED)
     where
         T: 'own;
+    fn reserve_own<'own>() -> Self::OWN<'own>
+    where
+        T: 'own,
+    {
+        loop {}
+    }
 
     fn reserve_out<'out>() -> Self::OUT<'out>
     where
@@ -92,19 +98,19 @@ pub trait TransRef<T> {
         T: 'own;
 }
 
-pub trait TransRefInnerHolder<'out, #[allow(non_camel_case_types)] IN_ITEM, T>
+pub trait TransRefInnerHolder<'out, #[allow(non_camel_case_types)] IN_ITEMS, T>
 where
     T: 'out,
 {
     #[allow(non_camel_case_types)]
-    type TRANS_REF: TransRef<T, IN = Vec<IN_ITEM>, OUT<'out> = Vec<T>>
+    type TRANS_REF: TransRef<T, IN = Vec<IN_ITEMS>, OUT<'out> = Vec<T>>
     where
         T: 'out,
-        <Self as TransRefInnerHolder<'out, IN_ITEM, T>>::TRANS_REF: 'out;
+        <Self as TransRefInnerHolder<'out, IN_ITEMS, T>>::TRANS_REF: 'out;
 }
-pub trait TransRefOuterHolder<#[allow(non_camel_case_types)] IN_ITEM, T> {
+pub trait TransRefOuterHolder<#[allow(non_camel_case_types)] IN_ITEMS, T> {
     #[allow(non_camel_case_types)]
-    type TRANS_REF_INNER_HOLDER<'out>: TransRefInnerHolder<'out, IN_ITEM, T>
+    type TRANS_REF_INNER_HOLDER<'out>: TransRefInnerHolder<'out, IN_ITEMS, T>
     where
         T: 'out;
 }
@@ -261,7 +267,7 @@ impl<T> TransRef<T> for VecToVecMoved {
 
     fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
         _out: &'outref mut Self::OUT<'out>,
-        own: &'ownref Self::OWN<'own>,
+        _own: &'ownref Self::OWN<'own>,
     )
     //fn set_out<'out>(_out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
@@ -326,7 +332,7 @@ pub fn bench_vec_sort_bin_search<
     //type TRANS_REF = TRANS_REF_OUTER_HOLDER<IN_ITEM, T>::TRANS_REF_INNER_HOLDER::TRANS_REF;
     //(unsorted_items, own_items) = <TRANS_REF_OUTER_HOLDER<IN_ITEM, T>>::TRANS_REF_INNER_HOLDER::TRANS_REF::ini_own_and_seed(in_items);
 
-    let (own_items, out_seed) =
+    let (own_items, mut out_seed) =
     <
        <
         <
@@ -336,7 +342,16 @@ pub fn bench_vec_sort_bin_search<
        >::TRANS_REF as TransRef<T>
     >::ini_own_and_seed(in_items);
 
-    let mut unsorted_items = <
+    //#[cfg(off)]
+    let own_items = <<<TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>>::TRANS_REF_INNER_HOLDER<
+        '_,
+    > as TransRefInnerHolder<'_, IN_ITEM, T>>::TRANS_REF as TransRef<T>>::reserve_own(
+    );
+
+    {
+        //let own_items_ref = hint::black_box(&own_items);
+
+        let mut unsorted_items = <
        <
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
@@ -344,16 +359,16 @@ pub fn bench_vec_sort_bin_search<
         ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
        >::TRANS_REF as TransRef<T>
     >::reserve_out();
-    <
+        <
        <
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
         >
         ::TRANS_REF_INNER_HOLDER<'_> as TransRefInnerHolder<'_, IN_ITEM, T>
        >::TRANS_REF as TransRef<T>
-    >::ini_out_move_seed(&mut unsorted_items, out_seed);
+    >::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
 
-    <
+        <
        <
         <
             TRANS_REF_OUTER_HOLDER as TransRefOuterHolder<IN_ITEM, T>
@@ -362,91 +377,98 @@ pub fn bench_vec_sort_bin_search<
        >::TRANS_REF as TransRef<T>
     >::set_out(
         &mut unsorted_items,
-        &own_items,
+        &own_items //own_items_ref
     );
-    // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
+        // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
-    //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
-    let id_string = format!(
-        "{num_items} items, each len max {MAX_ITEM_LEN}.{}",
-        id_postfix(id_state)
-    );
-    #[cfg(do_later)]
-    if false {
-        let mut sorted_lexi = Vec::new();
-        group.bench_with_input(
-            BenchmarkId::new("std sort lexi.          ", id_string.clone()),
-            hint::black_box(&unsorted_items),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    sorted_lexi = hint::black_box(unsorted_items.clone());
-                    sorted_lexi.sort();
-                })
-            },
+        //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
+        let id_string = format!(
+            "{num_items} items, each len max {MAX_ITEM_LEN}.{}",
+            id_postfix(id_state)
         );
-        purge_cache(rnd);
-        group.bench_with_input(
-            BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
-            hint::black_box(&unsorted_items),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    let sorted = hint::black_box(&sorted_lexi);
-                    for item in hint::black_box(unsorted_items.into_iter()) {
-                        hint::black_box(sorted.binary_search(item)).unwrap();
-                    }
-                })
-            },
-        );
-    }
-    #[cfg(do_later)]
-    {
-        purge_cache(rnd);
-        #[cfg(not(feature = "transmute"))]
-        let unsorted_items = {
-            let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
-            unsorted_items_cami.extend(unsorted_items.iter().map(|v| Cami::<TO>::new(v.clone())));
-            unsorted_items_cami
-        };
+        #[cfg(do_later)]
+        if false {
+            let mut sorted_lexi = Vec::new();
+            group.bench_with_input(
+                BenchmarkId::new("std sort lexi.          ", id_string.clone()),
+                hint::black_box(&unsorted_items),
+                |b, unsorted_items| {
+                    b.iter(|| {
+                        sorted_lexi = hint::black_box(unsorted_items.clone());
+                        sorted_lexi.sort();
+                    })
+                },
+            );
+            purge_cache(rnd);
+            group.bench_with_input(
+                BenchmarkId::new("std bin search (lexi)   ", id_string.clone()),
+                hint::black_box(&unsorted_items),
+                |b, unsorted_items| {
+                    b.iter(|| {
+                        let sorted = hint::black_box(&sorted_lexi);
+                        for item in hint::black_box(unsorted_items.into_iter()) {
+                            hint::black_box(sorted.binary_search(item)).unwrap();
+                        }
+                    })
+                },
+            );
+        }
+        #[cfg(do_later)]
+        {
+            purge_cache(rnd);
+            #[cfg(not(feature = "transmute"))]
+            let unsorted_items = {
+                let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
+                unsorted_items_cami
+                    .extend(unsorted_items.iter().map(|v| Cami::<TO>::new(v.clone())));
+                unsorted_items_cami
+            };
 
-        let mut sorted_non_lexi = Vec::new();
-        group.bench_with_input(
-            BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
-            hint::black_box(&unsorted_items),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    #[cfg(feature = "transmute")]
-                    let _ = {
-                        sorted_non_lexi = hint::black_box(unsorted_items.clone()).into_vec_cami();
-                    };
-                    #[cfg(not(feature = "transmute"))]
-                    let _ = {
-                        sorted_non_lexi = hint::black_box(unsorted_items.clone());
-                    };
-                    sorted_non_lexi.sort();
-                })
-            },
-        );
-        purge_cache(rnd);
-        group.bench_with_input(
-            BenchmarkId::new("std bin search (non-lexi)", id_string),
-            hint::black_box(&unsorted_items),
-            //hint::black_box( unsorted_items.into_ref_vec_cami() ),
-            |b, unsorted_items| {
-                b.iter(|| {
-                    let sorted = hint::black_box(&sorted_non_lexi);
-                    for item in hint::black_box(unsorted_items.into_iter()) {
+            let mut sorted_non_lexi = Vec::new();
+            group.bench_with_input(
+                BenchmarkId::new("std sort non-lexi.      ", id_string.clone()),
+                hint::black_box(&unsorted_items),
+                |b, unsorted_items| {
+                    b.iter(|| {
                         #[cfg(feature = "transmute")]
                         let _ = {
-                            hint::black_box(sorted.binary_search(item.into_ref_cami())).unwrap();
+                            sorted_non_lexi =
+                                hint::black_box(unsorted_items.clone()).into_vec_cami();
                         };
                         #[cfg(not(feature = "transmute"))]
                         let _ = {
-                            hint::black_box(sorted.binary_search(item)).unwrap();
+                            sorted_non_lexi = hint::black_box(unsorted_items.clone());
                         };
-                    }
-                })
-            },
-        );
+                        sorted_non_lexi.sort();
+                    })
+                },
+            );
+            purge_cache(rnd);
+            group.bench_with_input(
+                BenchmarkId::new("std bin search (non-lexi)", id_string),
+                hint::black_box(&unsorted_items),
+                //hint::black_box( unsorted_items.into_ref_vec_cami() ),
+                |b, unsorted_items| {
+                    b.iter(|| {
+                        let sorted = hint::black_box(&sorted_non_lexi);
+                        for item in hint::black_box(unsorted_items.into_iter()) {
+                            #[cfg(feature = "transmute")]
+                            let _ = {
+                                hint::black_box(sorted.binary_search(item.into_ref_cami()))
+                                    .unwrap();
+                            };
+                            #[cfg(not(feature = "transmute"))]
+                            let _ = {
+                                hint::black_box(sorted.binary_search(item)).unwrap();
+                            };
+                        }
+                    })
+                },
+            );
+        }
+        mem::drop(out_seed);
+        mem::drop(unsorted_items);
     }
+    //mem::drop(own_items);
     group.finish();
 }
