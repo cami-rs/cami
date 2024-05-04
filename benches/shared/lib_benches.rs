@@ -339,7 +339,7 @@ impl<InItem, OutItem> TransRefVecOuterHolder<InItem, OutItem> for VecToVecMovedO
 
 pub fn bench_vec_sort_bin_search<
     InItem,
-    T,
+    OutItem,
     //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
     #[allow(non_camel_case_types)] TRANS_REF,
     RND,
@@ -352,8 +352,8 @@ pub fn bench_vec_sort_bin_search<
     id_postfix: fn(&ID_STATE) -> String,
     generate: fn(&mut RND, &mut ID_STATE) -> InItem,
 ) where
-    T: CamiOrd + Ord + Clone,
-    TRANS_REF: TransRef<InItem, T>,
+    OutItem: CamiOrd + Ord + Clone,
+    TRANS_REF: TransRef<InItem, OutItem>,
     /*TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
         IN_ITEM,
         T,
