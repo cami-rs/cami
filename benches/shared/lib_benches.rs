@@ -46,16 +46,77 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
     hint::black_box(vec);
 }
 
-pub trait TransRef<T>: Sized {
-    type In;
+pub trait InCollection<InItem> {
+    fn with_capacity(capacity: usize) -> Self;
+    fn push(&mut self, item: InItem);
+}
+impl<InItem> InCollection<InItem> for Vec<InItem> {
+    fn with_capacity(capacity: usize) -> Self {
+        //<Self as Vec<InItem>>::with_capacity(capacity)
+        Vec::<InItem>::with_capacity(capacity)
+    }
+    fn push(&mut self, item: InItem) {
+        Vec::push(self, item)
+    }
+}
+
+pub trait OutCollection<OutItem> {
+    fn it<'a>(&'a self) -> impl Iterator<Item = &'a OutItem>
+    where
+        OutItem: 'a;
+    fn into_it(self) -> impl Iterator<Item = OutItem>; // where OutItem: 'a;
+                                                       //fn as_slice(&self) -> &[OutItem];
+}
+
+impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
+    fn it<'a>(&'a self) -> impl Iterator<Item = &'a OutItem>
+    where
+        OutItem: 'a,
+    {
+        //Vec::iter(self as &Vec<OutItem>)
+        <[_]>::iter(self)
+        //Vec::<OutItem>::iter(self)
+    }
+    fn into_it(self) -> impl Iterator<Item = OutItem> {
+        //IntoIterator::into_iter(self)
+        <Vec<OutItem>>::into_iter(self)
+    }
+    /*fn as_slice(&self) -> &[OutItem] {
+        Vec::as_slice(self)
+    }*/
+}
+
+impl<'o, OutItem> OutCollection<OutItem> for Vec<&'o OutItem> {
+    fn it<'a>(&'a self) -> impl Iterator<Item = &'a OutItem>
+    where
+        OutItem: 'a,
+        'o: 'a,
+    {
+        <[_]>::iter(self).map(|ref_ref| *ref_ref)
+    }
+    fn into_it(self) -> impl Iterator<Item = OutItem> {
+        #[cfg(off)]
+        if true {
+            unimplemented!("Unsupported. We could implement it for Clone only. But instead, use a seed that is Clone, clone the seed, and get a new collection.");
+        }
+        // without this, rustc complained that "() is not an interator" - even though
+        // `unimplemented!(...)` does panic!, so it should return never type `!`
+        let empty_vec = Vec::<OutItem>::new();
+        empty_vec.into_iter()
+    }
+}
+
+pub trait TransRef<InItem, OutItem> {
+    type In: InCollection<InItem>;
     // NOT needed: where T: 'own
     type Own<'own>;
 
     type OutSeed;
     // Out<> DOES need: where T: 'out
-    type Out<'out>
+    type Out<'out>: OutCollection<OutItem> + 'out
     where
-        T: 'out;
+        OutItem: 'out;
+    //where        Self::Out: 'out;
 
     fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed);
     fn reserve_own<'own>() -> Self::Own<'own> {
@@ -64,11 +125,11 @@ pub trait TransRef<T>: Sized {
 
     fn reserve_out<'out>() -> Self::Out<'out>
     where
-        T: 'out;
+        Self::Out<'out>: 'out;
 
     fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, mut out_seed: Self::OutSeed)
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
     {
         Self::ini_out_mut_seed(out, &mut out_seed);
     }
@@ -76,7 +137,7 @@ pub trait TransRef<T>: Sized {
         out: &'outref mut Self::Out<'out>,
         out_seed: &'outref mut Self::OutSeed,
     ) where
-        T: 'out;
+        Self::Out<'out>: 'out;
 
     //fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &Self::OWN<'own>)
     //fn set_out<'out>(out: &mut Self::OUT<'out>, own: & Self::OWN)
@@ -84,10 +145,10 @@ pub trait TransRef<T>: Sized {
         out: &mut Self::Out<'out>,
         own: &'ownref Self::Own<'own>,
     ) where
-        T: 'out;
+        Self::Out<'out>: 'out;
 }
 
-pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItem, OutItem>
+/*pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItem, OutItem>
 where
     OutItem: 'out,
 {
@@ -100,19 +161,22 @@ pub trait TransRefVecOuterHolder<InItem, OutItem> {
     type TransRefInnerHolder<'out, 'own: 'out>: TransRefVecInnerHolder<'out, 'own, InItem, OutItem>
     where
         OutItem: 'out;
-}
+}*/
 
 pub struct VecVecToVecSlice();
 //
-impl<T> TransRef<T> for VecVecToVecSlice
+impl<'slice, Item> TransRef<Vec<Item>, &'slice [Item]> for VecVecToVecSlice
 //impl<'t, T: 't> TransRef<'t, T> for VecVecToVecSlice<'t>
 // where Self: 't,
 {
     //impl<T> TransRef<T> for VecVecToVecSlice<T> {
-    type In = Vec<Vec<T>>;
-    type Own<'own> = Vec<Vec<T>>;
+    type In = Vec<Vec<Item>>;
+    type Own<'own> = Vec<Vec<Item>>;
     type OutSeed = usize;
-    type Out<'out> = Vec<&'out [T]> where T: 'out;
+    // Surprisingly, no lifetime here - no Vec<&'out
+    //
+    type Out<'out> = Vec<&'slice [Item]> where Self::Out<'out>: 'out, 'slice: 'out, Item: 'out;
+    //type Out<'out> = Vec<&[Item]> where Item: 'out;
 
     fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed) {
         let len = input.len();
@@ -120,7 +184,9 @@ impl<T> TransRef<T> for VecVecToVecSlice
     }
     fn reserve_out<'out>() -> Self::Out<'out>
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        'slice: 'out,
+        Item: 'out,
     {
         Vec::new()
     }
@@ -128,7 +194,9 @@ impl<T> TransRef<T> for VecVecToVecSlice
     // @TODO Delay reservation?
     fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, out_seed: Self::OutSeed)
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        'slice: 'out,
+        Item: 'out,
     {
         out.reserve(out_seed);
     }
@@ -136,7 +204,9 @@ impl<T> TransRef<T> for VecVecToVecSlice
         out: &'outref mut Self::Out<'out>,
         out_seed: &'outref mut Self::OutSeed,
     ) where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        'slice: 'out,
+        Item: 'out,
     {
         out.reserve(*out_seed);
     }
@@ -145,9 +215,11 @@ impl<T> TransRef<T> for VecVecToVecSlice
         out: &mut Self::Out<'out>,
         own: &'ownref Self::Own<'own>,
     ) where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        'slice: 'out,
+        Item: 'out,
     {
-        out.extend(own.iter().map(|v| &v[..]));
+        out.extend(own.it().map(|v| &v[..]));
     }
 }
 
@@ -155,18 +227,19 @@ impl<T> TransRef<T> for VecVecToVecSlice
 pub struct VecToVecCloned();
 
 //impl<'t, T: 't + Clone /*'t, T: 't + Clone*/> TransRef<'t, T> for VecToVecCloned<T> where Self : 't{
-impl<T: Clone> TransRef<T> for VecToVecCloned {
-    type In = Vec<T>;
-    type Own<'own> = Vec<T>;
+impl<Item: Clone> TransRef<Item, Item> for VecToVecCloned {
+    type In = Vec<Item>;
+    type Own<'own> = Vec<Item>;
     type OutSeed = ();
-    type Out<'out> = Vec<T> where T: 'out;
+    type Out<'out> = Vec<Item> where Self::Out<'out>: 'out, Item: 'out;
 
     fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed) {
         (input, ())
     }
     fn reserve_out<'out>() -> Self::Out<'out>
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
         Vec::new()
     }
@@ -174,14 +247,16 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
     /// Delay allocation a.s.a.p. - lazy.
     fn ini_out_move_seed<'out>(_out: &mut Self::Out<'out>, _out_seed: Self::OutSeed)
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
     }
     fn ini_out_mut_seed<'out, 'outref>(
         out: &'outref mut Self::Out<'out>,
         out_seed: &'outref mut Self::OutSeed,
     ) where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
     }
 
@@ -189,7 +264,8 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
         out: &mut Self::Out<'out>,
         own: &'ownref Self::Own<'own>,
     ) where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
         out.reserve(own.len());
         out.extend_from_slice(&own[..]);
@@ -201,25 +277,27 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
 pub struct VecToVecMoved();
 //impl<'t, T: 't> TransRef<'t, T> for VecToVecMoved<T> where Self: 't{
 //impl<'out, 'own: 'out, T> TransRef<T> for VecToVecMoved<'out, 'own> {
-impl<T> TransRef<T> for VecToVecMoved {
-    type In = Vec<T>;
-    type Own<'own> = Vec<T>;
-    type OutSeed = Vec<T>;
-    type Out<'out> = Vec<T> where T: 'out;
+impl<Item> TransRef<Item, Item> for VecToVecMoved {
+    type In = Vec<Item>;
+    type Own<'own> = Vec<Item>;
+    type OutSeed = Vec<Item>;
+    type Out<'out> = Vec<Item> where Self::Out<'out>: 'out, Item: 'out;
 
     fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed) {
         (Vec::new(), input)
     }
     fn reserve_out<'out>() -> Self::Out<'out>
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
         Vec::new()
     }
 
     fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, mut out_seed: Self::OutSeed)
     where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
         mem::swap(out, &mut out_seed);
     }
@@ -227,7 +305,8 @@ impl<T> TransRef<T> for VecToVecMoved {
         out: &'outref mut Self::Out<'out>,
         out_seed: &'outref mut Self::OutSeed,
     ) where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
         mem::swap(out, out_seed);
     }
@@ -236,13 +315,14 @@ impl<T> TransRef<T> for VecToVecMoved {
         _out: &mut Self::Out<'out>,
         _own: &'ownref Self::Own<'own>,
     ) where
-        T: 'out,
+        Self::Out<'out>: 'out,
+        Item: 'out,
     {
     }
 }
 
 //pub struct VecToVecMovedInnerHolder<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
-pub struct VecToVecMovedInnerHolder();
+/*pub struct VecToVecMovedInnerHolder();
 
 impl<'out, 'own: 'out, InItem, OutItem> TransRefVecInnerHolder<'out, 'own, InItem, OutItem>
     for VecToVecMovedInnerHolder
@@ -257,13 +337,13 @@ pub struct VecToVecMovedOuterHolder();
 impl<InItem, OutItem> TransRefVecOuterHolder<InItem, OutItem> for VecToVecMovedOuterHolder {
     //type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder<'out, 'own> where T: 'out;
     type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder where OutItem: 'out;
-}
+}*/
 
 pub fn bench_vec_sort_bin_search<
+    InItem,
     T,
-    #[allow(non_camel_case_types)] IN_ITEM,
-    #[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
-    //#[allow(non_camel_case_types)] TRANS_REF,
+    //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
+    #[allow(non_camel_case_types)] TRANS_REF,
     RND,
     #[allow(non_camel_case_types)] ID_STATE,
 >(
@@ -272,73 +352,73 @@ pub fn bench_vec_sort_bin_search<
     group_name: impl Into<String>,
     id_state: &mut ID_STATE,
     id_postfix: fn(&ID_STATE) -> String,
-    generate: fn(&mut RND, &mut ID_STATE) -> IN_ITEM,
+    generate: fn(&mut RND, &mut ID_STATE) -> InItem,
 ) where
     T: CamiOrd + Ord + Clone,
-    TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
+    TRANS_REF: TransRef<InItem, T>,
+    /*TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
         IN_ITEM,
         T,
         TransRefInnerHolder<'out, 'own>: TransRefVecInnerHolder<'out, 'own, IN_ITEM, T>,
     >,
 
     for<'out, 'own> <TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<'out, 'own>:
-        TransRef<T>,
+        TransRef<T>,*/
     RND: Random,
 {
     let mut group = c.benchmark_group(group_name);
 
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
-    let mut in_items = Vec::<IN_ITEM>::with_capacity(num_items);
+    let mut in_items = TRANS_REF::In::with_capacity(num_items);
     for _ in 0..num_items {
         let item = generate(rnd, id_state);
         in_items.push(item);
     }
 
     let (own_items, mut out_seed) =
-    <
+    /*<
        <
         <
             TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
         >
         ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
-    >::ini_own_and_seed(in_items);
+    >*/TRANS_REF::ini_own_and_seed(in_items);
 
     //#[cfg(off)]
-    let own_items = <<<TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
+    let own_items = /*<<<TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
         '_, '_,
-    > as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>::reserve_own(
+    > as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>*/TRANS_REF::reserve_own(
     );
 
     {
-        let mut unsorted_items = <
+        let mut unsorted_items = /*<
        <
         <
             TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
         >
         ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
-    >::reserve_out();
-        <
-       <
-        <
-            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
-        >
-        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
-       >::TransRefImpl as TransRef<T>
-    >::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
+    >*/TRANS_REF::reserve_out();
+        /*<
+           <
+            <
+                TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
+            >
+            ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
+           >::TransRefImpl as TransRef<T>
+        >*/
+        TRANS_REF::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
 
-        <
-       <
-        <
-            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
-        >
-        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
-       >::TransRefImpl as TransRef<T>
-    >::set_out(
-        &mut unsorted_items,
-        &own_items
-    );
+        /*<
+           <
+            <
+                TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
+            >
+            ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
+           >::TransRefImpl as TransRef<T>
+        >*/
+        TRANS_REF::set_out(&mut unsorted_items, &own_items);
         // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
         //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
@@ -366,7 +446,7 @@ pub fn bench_vec_sort_bin_search<
                 |b, unsorted_items| {
                     b.iter(|| {
                         let sorted = hint::black_box(&sorted_lexi);
-                        for item in hint::black_box(unsorted_items.into_iter()) {
+                        for item in hint::black_box(unsorted_items.into_it()) {
                             hint::black_box(sorted.binary_search(item)).unwrap();
                         }
                     })
@@ -379,8 +459,7 @@ pub fn bench_vec_sort_bin_search<
             #[cfg(not(feature = "transmute"))]
             let unsorted_items = {
                 let mut unsorted_items_cami = Vec::with_capacity(unsorted_items.len());
-                unsorted_items_cami
-                    .extend(unsorted_items.iter().map(|v| Cami::<TO>::new(v.clone())));
+                unsorted_items_cami.extend(unsorted_items.it().map(|v| Cami::<TO>::new(v.clone())));
                 unsorted_items_cami
             };
 
