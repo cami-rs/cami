@@ -106,7 +106,7 @@ impl<'o, OutItem> OutCollection<OutItem> for Vec<&'o OutItem> {
     }
 }
 
-pub trait TransRef<InItem, OutItem> {
+pub trait TransRef<'slice, InItem, OutItem> {
     type In: InCollection<InItem>;
     // NOT needed: where T: 'own
     type Own<'own>;
@@ -143,7 +143,7 @@ pub trait TransRef<InItem, OutItem> {
         out: &mut Self::Out<'out>,
         own: &'ownref Self::Own<'own>,
     ) where
-        Self::Out<'out>: 'out;
+        Self::Out<'out>: 'out, 'ownref: 'slice;
 }
 
 /*pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItem, OutItem>
@@ -163,7 +163,7 @@ pub trait TransRefVecOuterHolder<InItem, OutItem> {
 
 pub struct VecVecToVecSlice();
 //
-impl<'slice, Item> TransRef<Vec<Item>, &'slice [Item]> for VecVecToVecSlice
+impl<'slice, Item> TransRef<'slice, Vec<Item>, &'slice [Item]> for VecVecToVecSlice
 //impl<'t, T: 't> TransRef<'t, T> for VecVecToVecSlice<'t>
 // where Self: 't,
 {
@@ -226,7 +226,7 @@ impl<'slice, Item> TransRef<Vec<Item>, &'slice [Item]> for VecVecToVecSlice
 pub struct VecToVecCloned();
 
 //impl<'t, T: 't + Clone /*'t, T: 't + Clone*/> TransRef<'t, T> for VecToVecCloned<T> where Self : 't{
-impl<Item: Clone> TransRef<Item, Item> for VecToVecCloned {
+impl<'slice, Item: Clone> TransRef<'slice, Item, Item> for VecToVecCloned {
     type In = Vec<Item>;
     type Own<'own> = Vec<Item>;
     type OutSeed = ();
@@ -265,6 +265,7 @@ impl<Item: Clone> TransRef<Item, Item> for VecToVecCloned {
     ) where
         Self::Out<'out>: 'out,
         Item: 'out,
+        'ownref: 'slice
     {
         out.reserve(own.len());
         out.extend_from_slice(&own[..]);
@@ -272,23 +273,24 @@ impl<Item: Clone> TransRef<Item, Item> for VecToVecCloned {
 }
 
 //pub struct VecToVecMoved<T>(PhantomData<T>);
-//pub struct VecToVecMoved<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
-pub struct VecToVecMoved();
+pub struct VecToVecMoved<'slice, InItem, OutItem>(PhantomData<(&'slice (), InItem,  OutItem)>);
+//pub struct VecToVecMoved();
 //impl<'t, T: 't> TransRef<'t, T> for VecToVecMoved<T> where Self: 't{
 //impl<'out, 'own: 'out, T> TransRef<T> for VecToVecMoved<'out, 'own> {
-impl<Item> TransRef<Item, Item> for VecToVecMoved {
-    type In = Vec<Item>;
-    type Own<'own> = Vec<Item>;
-    type OutSeed = Vec<Item>;
-    type Out<'out> = Vec<Item> where Self::Out<'out>: 'out, Item: 'out;
+impl<'slice, InItem, OutItem> TransRef<'slice, InItem, OutItem> for VecToVecMoved<'slice, InItem, OutItem> {
+    type In = Vec<InItem>;
+    type Own<'own> = Vec<InItem>;
+    type OutSeed = Vec<OutItem>;
+    type Out<'out> = Vec<OutItem> where Self::Out<'out>: 'out, OutItem: 'out;
 
     fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed) {
-        (Vec::new(), input)
+        todo!("transmute")
+        //(Vec::new(), input)
     }
     fn reserve_out<'out>() -> Self::Out<'out>
     where
         Self::Out<'out>: 'out,
-        Item: 'out,
+        OutItem: 'out,
     {
         Vec::new()
     }
@@ -296,7 +298,7 @@ impl<Item> TransRef<Item, Item> for VecToVecMoved {
     fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, mut out_seed: Self::OutSeed)
     where
         Self::Out<'out>: 'out,
-        Item: 'out,
+        OutItem: 'out,
     {
         mem::swap(out, &mut out_seed);
     }
@@ -305,7 +307,7 @@ impl<Item> TransRef<Item, Item> for VecToVecMoved {
         out_seed: &'outref mut Self::OutSeed,
     ) where
         Self::Out<'out>: 'out,
-        Item: 'out,
+        OutItem: 'out,
     {
         mem::swap(out, out_seed);
     }
@@ -315,9 +317,14 @@ impl<Item> TransRef<Item, Item> for VecToVecMoved {
         _own: &'ownref Self::Own<'own>,
     ) where
         Self::Out<'out>: 'out,
-        Item: 'out,
+        OutItem: 'out, 'ownref: 'slice
     {
     }
+}
+
+pub struct VecToVecMovedHolder();
+impl<InItem, OutItem> TransRefHolder<InItem, OutItem> for VecToVecMovedHolder {
+    type TransRefImpl<'slice> = VecToVecMoved<'slice, InItem, OutItem>;
 }
 
 //pub struct VecToVecMovedInnerHolder<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
@@ -338,6 +345,11 @@ impl<InItem, OutItem> TransRefVecOuterHolder<InItem, OutItem> for VecToVecMovedO
     type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder where OutItem: 'out;
 }*/
 
+pub trait TransRefHolder<InItem, OutItem> {
+    type TransRefImpl<'slice>: TransRef<'slice, InItem, OutItem>;
+    //where OutItem: 'out;
+}
+
 pub fn bench_vec_sort_bin_search<
     InItem,
     OutItem,
@@ -354,7 +366,7 @@ pub fn bench_vec_sort_bin_search<
     generate: fn(&mut RND, &mut ID_STATE) -> InItem,
 ) where
     OutItem: CamiOrd + Ord + Clone,
-    TRANS_REF: TransRef<InItem, OutItem>,
+    TRANS_REF: TransRefHolder<InItem, OutItem>,
     /*TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
         IN_ITEM,
         T,
@@ -368,7 +380,7 @@ pub fn bench_vec_sort_bin_search<
     let mut group = c.benchmark_group(group_name);
 
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
-    let mut in_items = TRANS_REF::In::with_capacity(num_items);
+    let mut in_items = TRANS_REF::TransRefImpl::In::with_capacity(num_items);
     for _ in 0..num_items {
         let item = generate(rnd, id_state);
         in_items.push(item);
