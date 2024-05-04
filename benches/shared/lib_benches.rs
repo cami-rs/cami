@@ -299,10 +299,6 @@ pub fn bench_vec_sort_bin_search<
         in_items.push(item);
     }
 
-    // @TODO: back to: `(mut unsorted_items, own_items) = ...`, if possible
-    //type TRANS_REF = TRANS_REF_OUTER_HOLDER<IN_ITEM, T>::TRANS_REF_INNER_HOLDER::TRANS_REF;
-    //(unsorted_items, own_items) = <TRANS_REF_OUTER_HOLDER<IN_ITEM, T>>::TRANS_REF_INNER_HOLDER::TRANS_REF::ini_own_and_seed(in_items);
-
     let (own_items, mut out_seed) =
     <
        <
@@ -320,8 +316,6 @@ pub fn bench_vec_sort_bin_search<
     );
 
     {
-        //let own_items_ref = hint::black_box(&own_items);
-
         let mut unsorted_items = <
        <
         <
@@ -348,7 +342,7 @@ pub fn bench_vec_sort_bin_search<
        >::TransRefImpl as TransRef<T>
     >::set_out(
         &mut unsorted_items,
-        &own_items //own_items_ref
+        &own_items
     );
         // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
@@ -357,7 +351,7 @@ pub fn bench_vec_sort_bin_search<
             "{num_items} items, each len max {MAX_ITEM_LEN}.{}",
             id_postfix(id_state)
         );
-        #[cfg(do_later)]
+        //#[cfg(do_later)]
         if false {
             let mut sorted_lexi = Vec::new();
             group.bench_with_input(
@@ -384,7 +378,7 @@ pub fn bench_vec_sort_bin_search<
                 },
             );
         }
-        #[cfg(do_later)]
+        //#[cfg(do_later)]
         {
             purge_cache(rnd);
             #[cfg(not(feature = "transmute"))]
@@ -437,9 +431,6 @@ pub fn bench_vec_sort_bin_search<
                 },
             );
         }
-        mem::drop(out_seed);
-        mem::drop(unsorted_items);
     }
-    //mem::drop(own_items);
     group.finish();
 }
