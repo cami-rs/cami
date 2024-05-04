@@ -64,9 +64,8 @@ pub trait OutCollection<OutItem> {
     fn it<'a>(&'a self) -> impl Iterator<Item = &'a OutItem>
     where
         OutItem: 'a;
-    fn into_it(self) -> impl Iterator<Item = OutItem>; // where OutItem: 'a;
-                                                       //
-                                                       // @TODO fn shuffle(&mut self, rnd: &mut impl Random);
+    fn into_it(self) -> impl Iterator<Item = OutItem>;
+    fn len(&self) -> usize;
 }
 
 impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
@@ -74,13 +73,13 @@ impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
     where
         OutItem: 'a,
     {
-        //Vec::iter(self as &Vec<OutItem>)
         <[_]>::iter(self)
-        //Vec::<OutItem>::iter(self)
     }
     fn into_it(self) -> impl Iterator<Item = OutItem> {
-        //IntoIterator::into_iter(self)
         <Vec<OutItem>>::into_iter(self)
+    }
+    fn len(&self) -> usize {
+        <[_]>::len(self)
     }
 }
 
@@ -101,6 +100,9 @@ impl<'o, OutItem> OutCollection<OutItem> for Vec<&'o OutItem> {
         // `unimplemented!(...)` does panic!, so it should return never type `!`
         let empty_vec = Vec::<OutItem>::new();
         empty_vec.into_iter()
+    }
+    fn len(&self) -> usize {
+        <[_]>::len(self)
     }
 }
 
@@ -137,8 +139,6 @@ pub trait TransRef<InItem, OutItem> {
     ) where
         Self::Out<'out>: 'out;
 
-    //fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &Self::OWN<'own>)
-    //fn set_out<'out>(out: &mut Self::OUT<'out>, own: & Self::OWN)
     fn set_out<'own: 'out, 'out, 'ownref: 'out>(
         out: &mut Self::Out<'out>,
         own: &'ownref Self::Own<'own>,
@@ -216,6 +216,7 @@ impl<'slice, Item> TransRef<Vec<Item>, &'slice [Item]> for VecVecToVecSlice
         Self::Out<'out>: 'out,
         'slice: 'out,
         Item: 'out,
+        'ownref: 'slice //////
     {
         out.extend(own.it().map(|v| &v[..]));
     }
@@ -433,6 +434,9 @@ pub fn bench_vec_sort_bin_search<
                 |b, unsorted_items| {
                     b.iter(|| {
                         sorted_lexi = hint::black_box(unsorted_items.clone());
+                        // @TODO ^^^--> .clone()  \----> change to:
+                        //
+                        // .sorted_lexi.extend( it().map(|it_ref| it_ref.clone()))
                         sorted_lexi.sort();
                     })
                 },
@@ -444,7 +448,9 @@ pub fn bench_vec_sort_bin_search<
                 |b, unsorted_items| {
                     b.iter(|| {
                         let sorted = hint::black_box(&sorted_lexi);
+                        // @TODO We don't need .into_it() here \\\ - only .it() so we get references
                         for item in hint::black_box(unsorted_items.into_it()) {
+                            // ^^^^ @TODO bin search = by reference
                             hint::black_box(sorted.binary_search(item)).unwrap();
                         }
                     })
@@ -469,6 +475,7 @@ pub fn bench_vec_sort_bin_search<
                     b.iter(|| {
                         #[cfg(feature = "transmute")]
                         let _ = {
+                            // @TODO replace .clone() by: Vec::with_capacity(), .iter() -> extend -> .into_vec_cami()
                             sorted_non_lexi =
                                 hint::black_box(unsorted_items.clone()).into_vec_cami();
                         };
@@ -488,6 +495,7 @@ pub fn bench_vec_sort_bin_search<
                 |b, unsorted_items| {
                     b.iter(|| {
                         let sorted = hint::black_box(&sorted_non_lexi);
+                        // The following `unsorted_items.into_iter()` is cheap (no consuming of any `Vec`), because `unsorted_items`` is a reference to a Vec.
                         for item in hint::black_box(unsorted_items.into_iter()) {
                             #[cfg(feature = "transmute")]
                             let _ = {
