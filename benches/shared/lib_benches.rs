@@ -65,8 +65,8 @@ pub trait OutCollection<OutItem> {
     where
         OutItem: 'a;
     fn into_it(self) -> impl Iterator<Item = OutItem>; // where OutItem: 'a;
-    //
-    // @TODO fn shuffle(&mut self, rnd: &mut impl Random);
+                                                       //
+                                                       // @TODO fn shuffle(&mut self, rnd: &mut impl Random);
 }
 
 impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
