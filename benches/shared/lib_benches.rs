@@ -87,14 +87,13 @@ pub trait TransRef<T>: Sized {
     ) where
         T: 'out;
 
-    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
-        out: &'outref mut Self::OUT<'out>,
-        own: &'ownref Self::OWN<'own>,
-    )
     //fn set_out<'own: 'out, 'out>(out: &mut Self::OUT<'out>, own: &Self::OWN<'own>)
     //fn set_out<'out>(out: &mut Self::OUT<'out>, own: & Self::OWN)
+    fn set_out<'own: 'out, 'out>(
+        out: &mut Self::OUT<'out>,
+        own: &Self::OWN<'own>,
+    )
     where
-        T: 'out,
         T: 'own;
 }
 
@@ -163,14 +162,12 @@ impl<T> TransRef<T> for VecVecToVecSlice
         out.reserve(*out_seed);
     }
 
-    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
-        out: &'outref mut Self::OUT<'out>,
-        own: &'ownref Self::OWN<'own>,
+        fn set_out<'own: 'out, 'out>(
+        out: &mut Self::OUT<'out>,
+        own: &Self::OWN<'own>,
     )
-    //fn set_out<'out>(out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
-        T: 'out,
-        T: 'own,
+        T: 'own
     {
         out.extend(own.iter().map(|v| &v[..]));
     }
@@ -213,14 +210,12 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
     {
     }
 
-    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
-        out: &'outref mut Self::OUT<'out>,
-        own: &'ownref Self::OWN<'own>,
+        fn set_out<'own: 'out, 'out>(
+        out: &mut Self::OUT<'out>,
+        own: &Self::OWN<'own>,
     )
-    //fn set_out<'out>(out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
-        T: 'out,
-        T: 'own,
+        T: 'own
     {
         out.reserve(own.len());
         out.extend_from_slice(&own[..]);
@@ -265,14 +260,12 @@ impl<T> TransRef<T> for VecToVecMoved {
         mem::swap(out, out_seed);
     }
 
-    fn set_out<'own: 'out, 'out, 'outref, 'ownref: 'out>(
-        _out: &'outref mut Self::OUT<'out>,
-        _own: &'ownref Self::OWN<'own>,
+    fn set_out<'own: 'out, 'out>(
+        _out: &mut Self::OUT<'out>,
+        _own: &Self::OWN<'own>,
     )
-    //fn set_out<'out>(_out: &mut Self::OUT<'out>, own: &Self::OWN)
     where
-        T: 'out,
-        T: 'own,
+        T: 'own
     {
     }
 }
