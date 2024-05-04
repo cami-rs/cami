@@ -65,7 +65,8 @@ pub trait OutCollection<OutItem> {
     where
         OutItem: 'a;
     fn into_it(self) -> impl Iterator<Item = OutItem>; // where OutItem: 'a;
-                                                       //fn as_slice(&self) -> &[OutItem];
+    //
+    // @TODO fn shuffle(&mut self, rnd: &mut impl Random);
 }
 
 impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
@@ -81,9 +82,6 @@ impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
         //IntoIterator::into_iter(self)
         <Vec<OutItem>>::into_iter(self)
     }
-    /*fn as_slice(&self) -> &[OutItem] {
-        Vec::as_slice(self)
-    }*/
 }
 
 impl<'o, OutItem> OutCollection<OutItem> for Vec<&'o OutItem> {
