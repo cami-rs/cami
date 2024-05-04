@@ -24,7 +24,7 @@ fn f() -> S<'static> {
 }*/
 
 pub fn bench_target(c: &mut Criterion) {
-    /*let mut rng = Rng::new();
+    let mut rng = Rng::new();
 
     type IdState = ();
 
@@ -45,7 +45,7 @@ pub fn bench_target(c: &mut Criterion) {
         &mut id_state,
         id_postfix,
         generate_item,
-    );*/
+    );
 }
 
 criterion_group! {

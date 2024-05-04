@@ -1,12 +1,11 @@
 // This file is used from various benches, and not all of them use all functionality from here. So,
 // some items have `#[allow(unused)]`.
 use camigo::prelude::*;
+use core::mem;
 use core::{hint, time::Duration};
 use criterion::{BenchmarkId, Criterion};
 use fastrand::Rng;
-//use std::{marker::PhantomData, ops::RangeBounds};
-use core::mem;
-use core::ops::RangeBounds;
+use std::{marker::PhantomData, ops::RangeBounds};
 
 pub fn criterion_config() -> Criterion {
     Criterion::default().warm_up_time(Duration::from_millis(200))
@@ -88,28 +87,21 @@ pub trait TransRef<T>: Sized {
         T: 'out;
 }
 
-pub trait TransRefInnerHolder<'out, 'own: 'out, #[allow(non_camel_case_types)] InItems, T>
+pub trait TransRefInnerHolder<'out, 'own: 'out, InItems, T>
 where
     T: 'out,
 {
-    #[allow(non_camel_case_types)]
     type TransRefImpl: TransRef<T, In = Vec<InItems>, Own<'own> = Vec<InItems>, Out<'out> = Vec<T>>
     where
         T: 'out,
         <Self as TransRefInnerHolder<'out, 'own, InItems, T>>::TransRefImpl: 'out;
 }
-pub trait TransRefOuterHolder<#[allow(non_camel_case_types)] InItems, T> {
-    #[allow(non_camel_case_types)]
+pub trait TransRefOuterHolder<InItems, T> {
     type TransRefInnerHolder<'out, 'own: 'out>: TransRefInnerHolder<'out, 'own, InItems, T>
     where
         T: 'out;
 }
 
-//pub struct VecVecToVecSlice<T>(PhantomData<T>);
-//pub struct VecVecToVecSlice<'t>(PhantomData<&'t ()>);
-
-// @TODO how avbout removing <T> from VecVecToVecSlice:
-//
 pub struct VecVecToVecSlice();
 //
 impl<T> TransRef<T> for VecVecToVecSlice
@@ -205,9 +197,10 @@ impl<T: Clone> TransRef<T> for VecToVecCloned {
 }
 
 //pub struct VecToVecMoved<T>(PhantomData<T>);
+//pub struct VecToVecMoved<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
 pub struct VecToVecMoved();
-
 //impl<'t, T: 't> TransRef<'t, T> for VecToVecMoved<T> where Self: 't{
+//impl<'out, 'own: 'out, T> TransRef<T> for VecToVecMoved<'out, 'own> {
 impl<T> TransRef<T> for VecToVecMoved {
     type In = Vec<T>;
     type Own<'own> = Vec<T>;
@@ -247,22 +240,24 @@ impl<T> TransRef<T> for VecToVecMoved {
     {
     }
 }
-/*
+
+//pub struct VecToVecMovedInnerHolder<'out, 'own: 'out>(PhantomData<(&'out (), &'own ())>);
 pub struct VecToVecMovedInnerHolder();
-impl<'out, #[allow(non_camel_case_types)] IN_ITEM, T> TransRefInnerHolder<'out, IN_ITEM, T>
+
+impl<'out, 'own: 'out, InItems, T> TransRefInnerHolder<'out, 'own, InItems, T>
     for VecToVecMovedInnerHolder
+/*<'out, 'own>*/
 where
     T: 'out,
 {
-    type TRANS_REF = VecToVecMoved;
+    type TransRefImpl = VecToVecMoved;
 }
-*/
-/*pub struct VecToVecMovedOuterHolder();
-impl<#[allow(non_camel_case_types)] IN_ITEM, T> TransRefOuterHolder<IN_ITEM, T>
-    for VecToVecMovedOuterHolder
-{
-    type TRANS_REF_INNER_HOLDER<'out> = VecToVecMovedInnerHolder where T: 'out;
-}*/
+
+pub struct VecToVecMovedOuterHolder();
+impl<InItems, T> TransRefOuterHolder<InItems, T> for VecToVecMovedOuterHolder {
+    //type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder<'out, 'own> where T: 'out;
+    type TransRefInnerHolder<'out, 'own: 'out> = VecToVecMovedInnerHolder where T: 'out;
+}
 
 pub fn bench_vec_sort_bin_search<
     T,
