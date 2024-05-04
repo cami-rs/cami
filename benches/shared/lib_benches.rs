@@ -354,7 +354,7 @@ pub fn bench_vec_sort_bin_search<
     InItem,
     OutItem,
     //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
-    #[allow(non_camel_case_types)] TRANS_REF,
+    #[allow(non_camel_case_types)] TRANS_REF_HOLDER,
     RND,
     #[allow(non_camel_case_types)] ID_STATE,
 >(
@@ -366,7 +366,7 @@ pub fn bench_vec_sort_bin_search<
     generate: fn(&mut RND, &mut ID_STATE) -> InItem,
 ) where
     OutItem: CamiOrd + Ord + Clone,
-    TRANS_REF: TransRefHolder<InItem, OutItem>,
+    TRANS_REF_HOLDER: TransRefHolder<InItem, OutItem>,
     /*TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
         IN_ITEM,
         T,
@@ -380,7 +380,14 @@ pub fn bench_vec_sort_bin_search<
     let mut group = c.benchmark_group(group_name);
 
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
-    let mut in_items = TRANS_REF::TransRefImpl::In::with_capacity(num_items);
+    
+    let mut in_items =
+    <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::In::with_capacity(1);
+    //let mut in_items = TRANS_REF::TransRefImpl::In::with_capacity(num_items);
     for _ in 0..num_items {
         let item = generate(rnd, id_state);
         in_items.push(item);
@@ -394,12 +401,21 @@ pub fn bench_vec_sort_bin_search<
         >
         ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
-    >*/TRANS_REF::ini_own_and_seed(in_items);
+    >*/
+     <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::ini_own_and_seed(in_items);
 
     //#[cfg(off)]
     let own_items = /*<<<TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
         '_, '_,
-    > as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>*/TRANS_REF::reserve_own(
+    > as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>*/ <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::reserve_own(
     );
 
     {
@@ -410,7 +426,12 @@ pub fn bench_vec_sort_bin_search<
         >
         ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
        >::TransRefImpl as TransRef<T>
-    >*/TRANS_REF::reserve_out();
+    >*/
+     <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::reserve_out();
         /*<
            <
             <
@@ -419,7 +440,11 @@ pub fn bench_vec_sort_bin_search<
             ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
            >::TransRefImpl as TransRef<T>
         >*/
-        TRANS_REF::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
+         <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
 
         /*<
            <
@@ -429,7 +454,11 @@ pub fn bench_vec_sort_bin_search<
             ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
            >::TransRefImpl as TransRef<T>
         >*/
-        TRANS_REF::set_out(&mut unsorted_items, &own_items);
+         <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::set_out(&mut unsorted_items, &own_items);
         // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
         //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
