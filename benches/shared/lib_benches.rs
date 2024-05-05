@@ -49,6 +49,7 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
 pub trait InCollection<InItem> {
     fn with_capacity(capacity: usize) -> Self;
     fn push(&mut self, item: InItem);
+    // @TODO extend
 }
 impl<InItem> InCollection<InItem> for Vec<InItem> {
     fn with_capacity(capacity: usize) -> Self {
@@ -66,6 +67,8 @@ pub trait OutCollection<OutItem> {
         OutItem: 'a;
     fn into_it(self) -> impl Iterator<Item = OutItem>;
     fn len(&self) -> usize;
+    fn push(&mut self, item: OutItem);
+    // @TODO extend
 }
 
 impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
@@ -80,6 +83,9 @@ impl<OutItem> OutCollection<OutItem> for Vec<OutItem> {
     }
     fn len(&self) -> usize {
         <[_]>::len(self)
+    }
+    fn push(&mut self, item: OutItem) {
+        Vec::push(self, item)
     }
 }
 
@@ -104,7 +110,13 @@ impl<'o, OutItem> OutCollection<OutItem> for Vec<&'o OutItem> {
     fn len(&self) -> usize {
         <[_]>::len(self)
     }
+    fn push(&mut self, _item: OutItem) {
+        unimplemented!()
+    }
 }
+
+
+pub trait OutRefCollection<'a, OutItem: 'a> : OutCollection<&'a OutItem> {}
 
 pub trait TransRef<'slice, InItem, OutItem> {
     type In: InCollection<InItem>;
@@ -468,16 +480,22 @@ pub fn bench_vec_sort_bin_search<
         );
         //#[cfg(do_later)]
         if false {
-            let mut sorted_lexi = Vec::new();
+            let mut sorted_lexi = <
+        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
+        >::TransRefImpl<'_>
+           as TransRef<'_, InItem, OutItem>
+    >::reserve_out();
             group.bench_with_input(
                 BenchmarkId::new("std sort lexi.          ", id_string.clone()),
                 hint::black_box(&unsorted_items),
                 |b, unsorted_items| {
                     b.iter(|| {
-                        sorted_lexi = hint::black_box(unsorted_items.clone());
+                        //sorted_lexi = hint::black_box(unsorted_items.clone());
                         // @TODO ^^^--> .clone()  \----> change to:
                         //
                         // .sorted_lexi.extend( it().map(|it_ref| it_ref.clone()))
+                        sorted_lexi.push();
+
                         sorted_lexi.sort();
                     })
                 },
