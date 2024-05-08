@@ -26,8 +26,8 @@ nightly = []
 transmute = ["unsafe"]
 unsafe = []
 
-#default = ["std", "transmute", "deref_pure"]
-default = []
+default = ["std", "transmute", "deref_pure"]
+#default = []
 
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
@@ -38,6 +38,9 @@ camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
 criterion = { version = "0.5.1" }
 
 fastrand = { version = "2.0.2"}
+
+# For benches:
+ref-cast = "1.0"
 
 [[bench]]
 name = "vec_string"
