@@ -6,7 +6,7 @@ use core::{hint, time::Duration};
 use core::{marker::PhantomData, ops::RangeBounds};
 use criterion::{BenchmarkId, Criterion};
 use fastrand::Rng;
-use ref_cast::RefCast;
+//use ref_cast::RefCast;
 
 pub fn criterion_config() -> Criterion {
     Criterion::default().warm_up_time(Duration::from_millis(200))
@@ -102,7 +102,7 @@ pub trait InOut<T>: Sized + Clone {
 pub trait In<T>: InOut<T> {}
 pub trait Out<T>: InOut<T> {}
 
-#[derive(Clone, RefCast)]
+#[derive(Clone/*, RefCast*/)]
 #[repr(transparent)]
 pub struct InOutVec<T: Clone>(pub Vec<T>);
 
@@ -128,7 +128,7 @@ impl<T: Clone> In<T> for InOutVec<T> {}
 impl<T: Clone> Out<T> for InOutVec<T> {}
 
 /// Intended for [TransRef::Out] referencing to [TransRef::In].
-#[derive(Clone, RefCast)]
+#[derive(Clone/*, RefCast*/)]
 #[repr(transparent)]
 pub struct OutVecItemRef<'o, T: Clone>(pub Vec<&'o T>);
 
