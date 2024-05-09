@@ -1,9 +1,6 @@
-## Macros
-
 ## Names & Naming Conventions
 
 ### Macros: no prefix/postfix
-c_wrap! -> wrap!
 
 cpartial_eq ? partial_eq eq! ???
 
@@ -13,13 +10,13 @@ c_ord! -> cord -> impl COrd ord = impl core::cmp::Ord
 CPartialEq, CPartialOrd, COrd
 
 ### Functions: postfix
-Names like in std, with a "local" or other postfix.
+Names like in core/std, with a "local" or other postfix.
 - eq_local, eq_non_local, eq_full
 - cmp_local
 
-- binary_search &
-- binary_search_ca
-- binary_search_c
+- binary_search_cami
+- sort_cami
+- is_sorted_cami
 
 ## Benchmarking - Criterion or otherwise
 

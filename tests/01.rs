@@ -1,1 +1,1 @@
-//use camigo::{COrd, CPartialEq, Locality};
+//use cami::{COrd, CPartialEq, Locality};

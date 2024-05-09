@@ -1,5 +1,5 @@
 [package]
-name = "camigo"
+name = "cami"
 version = "0.0.1"
 edition = "2018"
 
@@ -8,7 +8,7 @@ categories = ["algorithms", "caching", "data-structures", "no-std", "text-proces
 
 authors = ["Peter Kehl <peter.kehl@gmail.com>"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/peter-kehl/camigo"
+repository = "https://github.com/cami-rs/cami"
 
 # TODO MSRV
 
@@ -37,11 +37,12 @@ default = ["std", "transmute", "deref_pure", "debug", "hash"]
 # TODO See if this comment shows up at docs.rs.
 std = ["alloc"]
 
+# TODO consider renaming to 
 transmute = ["unsafe"]
 unsafe = []
 
 [dependencies]
-camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
+cami-helpers = { path = "../cami-helpers", version = "0.0.1" }
 serde = { version = "1.0", optional = true, features=['derive'] }
 
 [dev-dependencies]

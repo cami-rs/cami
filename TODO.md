@@ -8,6 +8,4 @@ Then core/alloc/std + for 3rd party:
 - Usually we want the second one, so we can apply `Cami` ordering to the items.
 
 
-feature??: casts (transmutes)
-
 #[cfg_attr(doc_cfg, doc(cfg(any(feature = "full", feature = "derive"))))]

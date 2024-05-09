@@ -1,5 +1,5 @@
 //#![allow(warnings, unused)]
-use camigo::prelude::*;
+use cami::prelude::*;
 use core::iter;
 use criterion::{criterion_group, Criterion};
 use fastrand::Rng;

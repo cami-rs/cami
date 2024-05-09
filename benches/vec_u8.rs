@@ -5,7 +5,7 @@
 //#![feature(type_alias_impl_trait)]
 
 //#![allow(warnings, unused)]
-use camigo::prelude::*;
+use cami::prelude::*;
 use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;

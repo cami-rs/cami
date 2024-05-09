@@ -18,5 +18,5 @@ Invoke `cargo bench` or `cargo check --benches` like:
 - `cargo bench                          --features std`
 - `cargo bench                          --features std,transmute`
 
-`std` is required by the benches. But, because `std` is not a default feature in `camigo`, those
+`std` is required by the benches. But, because `std` is not a default feature in `cami`, those
 benches won't be run until you specify it.

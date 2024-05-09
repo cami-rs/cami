@@ -1,11 +1,6 @@
-# Camigo = Cache Friendly
+# Cami = Cache Friendly
 
 Zero cost wrappers & related implementation of cache-friendly comparison. `no_std`-friendly.
-
-## Disambiguation
-
-Are you searching for a UTF-8-friendly alternative to `Path`? See
-[Camino](https://crates.io/crates/camino).
 
 ## Non-vector-like items
 
@@ -33,14 +28,14 @@ This DIFFERS to their [`Ord` > Lexicographical
 comparison](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#lexicographical-comparison).
 
 Beneficial only if the items being compared/stored in the same container are not of the same size.
-Hence not suitable for items, or their fields, of fixed size, like `sha256/other` hashes, UUID's,
-fixed-length usernames...
+Hence NOT suitable for items, or their fields, of fixed size, like `sha256/other` hashes, UUID's,
+fixed-length usernames, condensed dates/timestamps...
 
 ## HashMap/HashSet items
 
 This comparison doesn't give as much benefit for `HashMap` & `HashSet` (because those use `Hash` for
 determining the buckets). But it can speed up comparison of keys in the same bucket (with the same
-hash). And, since `HashMap` & `HashSet` don't keep/guarantee any order, using `camigo` makes
+hash). And, since `HashMap` & `HashSet` don't keep/guarantee any order, using `cami` makes
 transition/backwards compatibility easier.
 
 ## BTreeMap/BTreeSet items
@@ -66,7 +61,7 @@ lexicographic ordering.
 
 TODO
 
-Suitable if you can't change some existing (3rd party) code to use camigo's binary search methods.
+Suitable if you can't change some existing (3rd party) code to use `cami`'s binary search methods.
 Possible only if no existing code depends on `derive`'s default ordering and
 Vec/slice/array/String/&str's lexicographic ordering.
 

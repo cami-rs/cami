@@ -223,7 +223,7 @@ impl<T: CamiPartialEq> PartialEq for Cami<T> {
         let other = other.in_cami();
         // @TODO write a test that the following would return the same
         //
-        // Write them not in this crate, but in Camigo crate - for example, next to the
+        // Write them not in this crate, but in `Cami`` crate - for example, next to the
         // implementation for `bool`.
         if false {
             return (!Self::LOCALITY.has_local() || this.eq_local(&other))

@@ -1,6 +1,6 @@
-use crate as camigo; // For macros
+use crate as cami; // For macros
 use crate::{Cami, CamiOrd, CamiPartialEq, CamiPartialOrd};
-use camigo_helpers::{cami_ord, cami_partial_eq, Locality};
+use cami_helpers::{cami_ord, cami_partial_eq, Locality};
 use core::cmp::Ordering;
 use rust_alloc::string::String;
 

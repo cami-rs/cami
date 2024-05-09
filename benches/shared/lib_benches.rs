@@ -1,6 +1,6 @@
 // This file is used from various benches, and not all of them use all functionality from here. So,
 // some items have `#[allow(unused)]`.
-use camigo::prelude::*;
+use cami::prelude::*;
 use core::mem;
 use core::{hint, time::Duration};
 use core::{marker::PhantomData, ops::RangeBounds};

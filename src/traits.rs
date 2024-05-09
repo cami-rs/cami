@@ -93,7 +93,7 @@ pub trait CamiPartialOrd<Rhs: ?Sized = Self>: CamiPartialEq {
 
 /// Cache-friendly ordering. NOT extending [Ord] (or [PartialOrd]):
 /// 1. because [CamiOrd] MAY be INCOMPATIBLE with those two traits ([CamiOrd::cmp_full] MAY differ
-///    to [Ord::cmp].) And, it's exactly types where those two functions DO differ, where `Camigo`
+///    to [Ord::cmp].) And, it's exactly types where those two functions DO differ, where `Cami`
 ///    hopes to be useful. Also
 /// 2. because a type that implements [CamiOrd] may not implement [Ord] (or [PartialOrd]).
 ///

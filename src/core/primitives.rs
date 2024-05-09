@@ -1,8 +1,8 @@
 ///! Not strictly necessary. Mostly needed so that a blanket `impl` works for tuples containing any
 ///! types that implement [crate::CamiPartialEq] & [crate::CamiOrd].
-pub use crate as camigo; // for macros
+pub use crate as cami; // for macros
 use crate::prelude::*;
-use camigo_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
+use cami_helpers::{pure_local_c_ord, pure_local_c_partial_eq};
 use core::cmp::Ordering;
 #[cfg(feature = "transmute")]
 use core::mem;
@@ -15,7 +15,7 @@ impl CamiPartialEq for () {
     }
 
     fn eq_non_local(&self, _other: &Self) -> bool {
-        camigo_helpers::debug_fail_unreachable_for_non_local();
+        cami_helpers::debug_fail_unreachable_for_non_local();
         true
     }
 }
@@ -29,7 +29,7 @@ impl CamiPartialOrd for () {
     #[must_use]
     #[inline]
     fn partial_cmp_non_local(&self, _other: &Self) -> Option<Ordering> {
-        camigo_helpers::debug_fail_unreachable_for_non_local();
+        cami_helpers::debug_fail_unreachable_for_non_local();
         Some(Ordering::Equal)
     }
 }
@@ -40,7 +40,7 @@ impl CamiOrd for () {
     }
 
     fn cmp_non_local(&self, _other: &Self) -> Ordering {
-        camigo_helpers::debug_fail_unreachable_for_non_local();
+        cami_helpers::debug_fail_unreachable_for_non_local();
         Ordering::Equal
     }
 }
@@ -86,7 +86,7 @@ impl CamiPartialEq for F32Total {
     #[must_use]
     #[inline]
     fn eq_non_local(&self, _other: &Self) -> bool {
-        camigo_helpers::debug_fail_unreachable_for_non_local();
+        cami_helpers::debug_fail_unreachable_for_non_local();
         true
     }
 }
@@ -100,7 +100,7 @@ impl CamiPartialOrd for F32Total {
     #[must_use]
     #[inline]
     fn partial_cmp_non_local(&self, _other: &Self) -> Option<Ordering> {
-        camigo_helpers::debug_fail_unreachable_for_non_local();
+        cami_helpers::debug_fail_unreachable_for_non_local();
         Some(Ordering::Equal)
     }
     // NOT specializing the rest of the methods. We can't use f32 standard/classic comparison (with
@@ -117,7 +117,7 @@ impl CamiOrd for F32Total {
     #[must_use]
     #[inline]
     fn cmp_non_local(&self, _other: &Self) -> Ordering {
-        camigo_helpers::debug_fail_unreachable_for_non_local();
+        cami_helpers::debug_fail_unreachable_for_non_local();
         Ordering::Equal
     }
 }
