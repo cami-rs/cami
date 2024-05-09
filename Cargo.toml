@@ -16,21 +16,33 @@ repository = "https://github.com/peter-kehl/camigo"
 # Keep features here sorted alphabetically
 alloc = []
 
-# TODO See if this comment shows up at docs.rs.
-std = ["alloc"]
+# Whether to implement Copy (where item types implement it, too). Intentionally NOT a default
+# feature, as it's not a common expectation for larger types.
+copy = []
+
+# Whether to implement Debug (where item types implement it, too)
+debug = []
 
 deref_pure = ["unsafe", "nightly"]
+
+# Whether to implement Hash (where item types implement it, too)
+hash = []
+
 hint_assert_unchecked = ["unsafe"]
 nightly = []
+
+default = ["std", "transmute", "deref_pure", "debug", "hash"]
+#default = []
+
+# TODO See if this comment shows up at docs.rs.
+std = ["alloc"]
 
 transmute = ["unsafe"]
 unsafe = []
 
-default = ["std", "transmute", "deref_pure"]
-#default = []
-
 [dependencies]
 camigo-helpers = { path = "../camigo-helpers", version = "0.0.1" }
+serde = { version = "1.0", optional = true, features=['derive'] }
 
 [dev-dependencies]
 # @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?

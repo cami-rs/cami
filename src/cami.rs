@@ -1,11 +1,16 @@
 use crate::{CamiOrd, CamiPartialEq, CamiPartialOrd, Locality};
 use core::cmp::Ordering;
+#[cfg(feature = "debug")]
 use core::fmt::{self, Debug};
+#[cfg(feature = "hash")]
+use core::hash::{Hash, Hasher};
 #[cfg(feature = "transmute")]
 use core::mem;
 #[cfg(feature = "deref_pure")]
 use core::ops::DerefPure;
 use core::ops::{Deref, DerefMut};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 // @TODO once agreed & futureproofed, remove `#[deprecated...]` on field `pub T`.
 //
@@ -14,6 +19,7 @@ use core::ops::{Deref, DerefMut};
 //
 // pub struct Cami<T: CamiPartialEq<Rhs>, Rhs: ?Sized = Self>(pub T);
 #[repr(transparent)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Cami<T: CamiPartialEq + ?Sized>(#[deprecated = "unstable"] pub T);
 //----------
 
@@ -180,8 +186,10 @@ impl<T: Clone + CamiPartialEq> Clone for Cami<T> {
     }
 }
 
+#[cfg(feature = "copy")]
 impl<T: Copy + CamiPartialEq> Copy for Cami<T> {}
 
+#[cfg(feature = "debug")]
 impl<T: Debug + CamiPartialEq> Debug for Cami<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Cami")
@@ -191,6 +199,14 @@ impl<T: Debug + CamiPartialEq> Debug for Cami<T> {
                 &self.0,
             )
             .finish()
+    }
+}
+
+#[cfg(feature = "hash")]
+impl<T: Hash + CamiPartialEq> Hash for Cami<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        #[allow(deprecated)]
+        self.0.hash(state);
     }
 }
 //-----

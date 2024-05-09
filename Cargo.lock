@@ -43,6 +43,7 @@ dependencies = [
  "criterion",
  "fastrand",
  "ref-cast",
+ "serde",
 ]
 
 [[package]]
