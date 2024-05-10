@@ -506,7 +506,7 @@ pub trait TransRefHolder<InItem: Clone, OutItem: Clone> {
 pub trait OutItemIndicator {
     type OutItemLifetimedImpl<'own>: OutItemLifetimed<'own>;
 
-    fn generate_out_item<'own, OwnItem: Clone>(
+    fn generate_out_item<'own, OwnItem>(
         own_item: &'own OwnItem,
     ) -> Self::OutItemLifetimedImpl<'own>;
 }
@@ -515,7 +515,7 @@ pub struct OutItemIndicatorNonRef<T>(PhantomData<T>);
 impl<T> OutItemIndicator for OutItemIndicatorNonRef<T> {
     type OutItemLifetimedImpl<'own> = u8;
 
-    fn generate_out_item<'own, OwnItem: Clone>(
+    fn generate_out_item<'own, OwnItem>(
         _own_item: &'own OwnItem,
     ) -> Self::OutItemLifetimedImpl<'own> {
         todo!()
@@ -523,7 +523,7 @@ impl<T> OutItemIndicator for OutItemIndicatorNonRef<T> {
 }
 
 pub fn bench_vec_sort_bin_search<
-    OwnItem: Clone,
+    OwnItem,
     OutItemIndicatorImpl: OutItemIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
