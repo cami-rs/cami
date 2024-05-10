@@ -518,8 +518,11 @@ pub trait OutItemIndicator {
 }
 
 pub struct OutItemIndicatorNonRef<T>(PhantomData<T>);
-impl<T> OutItemIndicator for OutItemIndicatorNonRef<T> {
-    type OutItemLifetimedImpl<'own> = u8;
+impl<T> OutItemIndicator for OutItemIndicatorNonRef<T>
+where
+    T: OutItem,
+{
+    type OutItemLifetimedImpl<'own> = T;
 
     fn generate_out_item<'own, OwnItem>(
         _own_item: &'own OwnItem,
@@ -565,6 +568,13 @@ pub fn bench_vec_sort_bin_search<
     for _ in 0..num_items {
         let item = generate_own_item(rnd, id_state);
         in_items.push(item);
+    }
+    if !<OutCollRetriever<
+            '_,
+            OutCollectionIndicatorImpl,
+            OutItemIndicatorImpl,
+        >>::ALLOWS_MULTIPLE_EQUAL_ITEMS {
+            todo!("out -> .clone() -> check if already in an extra BTreeSet, if not, add there & to the result out collection.");
     }
 
     {
