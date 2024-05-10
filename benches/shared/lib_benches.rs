@@ -66,6 +66,10 @@ pub trait OutCollection<T>: Clone + Extend<T>
 where
     T: OutItem,
 {
+    // @TODO see if RustDoc/docs.rs/libs.rs generates a correct link for
+    // alloc::collections::BTreeSet. Otherwise change it to std::
+    /// For example, `true` for [Vec], `false` for [alloc::collections::BTreeSet].
+    const ALLOWS_MULTIPLE_EQUAL_ITEMS: bool;
     // @TODO RustDoc: InOut -> OutCollection
     /// NOT a part of public API. It may `panic`.
     /// Used by default implementations only.
@@ -137,6 +141,8 @@ impl<T> OutCollection<T> for OutCollectionVec<T>
 where
     T: OutItem,
 {
+    const ALLOWS_MULTIPLE_EQUAL_ITEMS: bool = true;
+
     fn new() -> Self {
         Self(Vec::new())
     }
