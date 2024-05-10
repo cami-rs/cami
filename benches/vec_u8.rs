@@ -1,3 +1,5 @@
+#![feature(is_sorted)]
+#![feature(extend_one)]
 //#![cfg_attr(all(feature = "unsafe", feature = "nightly"), feature(anonymous_lifetime_in_impl_trait))]
 // https://github.com/rust-lang/rust/issues/52662
 //
@@ -9,6 +11,8 @@ use cami::prelude::*;
 use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
+
+extern crate alloc;
 
 #[path = "shared/lib_benches.rs"]
 mod lib_benches;
@@ -38,7 +42,7 @@ pub fn bench_target(c: &mut Criterion) {
 
     let mut id_state: IdState = ();
 
-    bench_vec_sort_bin_search::<u8, u8, VecToVecMovedHolder, Rng, ()>(
+    bench_vec_sort_bin_search::<u8, OutItemIndicatorNonRef<u8>, OutCollectionVecIndicator, Rng, ()>(
         c,
         &mut rng,
         "u8",

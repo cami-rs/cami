@@ -37,7 +37,7 @@ default = ["std", "transmute", "deref_pure", "debug", "hash"]
 # TODO See if this comment shows up at docs.rs.
 std = ["alloc"]
 
-# TODO consider renaming to 
+# TODO consider renaming to "casts"
 transmute = ["unsafe"]
 unsafe = []
 

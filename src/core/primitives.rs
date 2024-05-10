@@ -193,3 +193,113 @@ pub type BoolCami = Cami<bool>;
 pure_local_c_partial_eq! { u8 }
 pure_local_c_ord! { u8 }
 pub type U8Cami = Cami<u8>;
+// TODO other types
+
+//--------
+
+// Blanket impl for references.
+impl<T> CamiPartialEq for &T
+where
+    T: PartialEq,
+{
+    const LOCALITY: Locality = Locality::PureLocal;
+
+    #[must_use]
+    #[inline]
+    fn eq_local(&self, other: &Self) -> bool {
+        self == other
+    }
+
+    #[must_use]
+    #[inline]
+    fn eq_non_local(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
+// @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd,
+// but we do NOT need (full) Ord
+
+impl<T> CamiPartialOrd for &T
+where
+    T: PartialOrd,
+{
+    #[must_use]
+    #[inline]
+    fn partial_cmp_local(&self, other: &Self) -> Option<Ordering> {
+        // @TODO benchmark if this is faster: Some(self.len().cmp(&other.len()))
+        self.partial_cmp(other)
+    }
+    #[must_use]
+    #[inline]
+    fn partial_cmp_non_local(&self, _other: &Self) -> Option<Ordering> {
+        // @TODO benchmark if this is faster: Some(self.cmp(other))
+        Some(Ordering::Equal)
+    }
+
+    #[must_use]
+    #[inline]
+    fn lt_local(&self, other: &Self) -> bool {
+        self < other
+    }
+    #[must_use]
+    #[inline]
+    fn lt_non_local(&self, _other: &Self) -> bool {
+        true
+    }
+
+    #[must_use]
+    #[inline]
+    fn le_local(&self, other: &Self) -> bool {
+        self <= other
+    }
+    #[must_use]
+    #[inline]
+    fn le_non_local(&self, _other: &Self) -> bool {
+        true
+    }
+
+    #[must_use]
+    #[inline]
+    fn gt_local(&self, other: &Self) -> bool {
+        self > other
+    }
+    #[must_use]
+    #[inline]
+    fn gt_non_local(&self, _other: &Self) -> bool {
+        true
+    }
+
+    #[must_use]
+    #[inline]
+    fn ge_local(&self, other: &Self) -> bool {
+        self >= other
+    }
+    #[must_use]
+    #[inline]
+    fn ge_non_local(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
+/// Used, for example, for multi-dimensional slices (or arrays/vectors). We also have a similar
+/// implementation for `&str`.
+impl<T> CamiOrd for &T
+where
+    T: Ord,
+{
+    #[must_use]
+    #[inline]
+    fn cmp_local(&self, other: &Self) -> Ordering {
+        self.cmp(&other)
+    }
+
+    #[must_use]
+    #[inline]
+    fn cmp_non_local(&self, _other: &Self) -> Ordering {
+        Ordering::Equal
+    }
+}
+
+// @TODO search for RefCami (traits containing this in their name), and update them to use `RefCami`
+pub type RefCami<'a, T> = Cami<&'a T>;

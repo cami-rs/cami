@@ -4,7 +4,7 @@
 
 You **must** specify any optional features used by the appropriate bench. Relevant features (ones that affect any benches; this list may change):
 
-- only `std` is required, and
+- `std` - this is the only feature that is required (for benches), and
 - `transmute` is optional.
 
 Invoke `cargo bench` or `cargo check --benches` like:

@@ -99,6 +99,13 @@ where
         self.len().cmp(&other.len())
     }
 
+    /// If T itself were [CamiOrd] (and we use min_specialization - on `nightly` only as of mid
+    /// 2024), here we COULD compare [CamiOrd::cmp_local] of all items first, and only then compare
+    /// them by [CamiOrd::cmp_non_local]. But, if all items don't git into CPU cache(s), then by the
+    /// end of the first run ([CamiOrd::cmp_local]) we'd invalidate the earlier items.
+    ///
+    /// But/And, if `T`'s impl of [Ord::cmp] is based on [CamiOrd], and if the items between `self`
+    /// and `other` vary, then that may short circuit early enough.
     #[must_use]
     #[inline]
     fn cmp_non_local(&self, other: &Self) -> Ordering {
@@ -106,4 +113,5 @@ where
     }
 }
 
+// @TODO search for SliceCami (traits containing this in their name), and update them to use `SliceCami`
 pub type SliceCami<'a, T> = Cami<&'a [T]>;

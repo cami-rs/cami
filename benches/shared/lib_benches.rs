@@ -1,9 +1,8 @@
 // This file is used from various benches, and not all of them use all functionality from here. So,
 // some items have `#[allow(unused)]`.
 use cami::prelude::*;
-use core::mem;
-use core::{hint, time::Duration};
-use core::{marker::PhantomData, ops::RangeBounds};
+use core::ops::RangeBounds;
+use core::{hint, marker::PhantomData, time::Duration};
 use criterion::{BenchmarkId, Criterion};
 use fastrand::Rng;
 //use ref_cast::RefCast;
@@ -47,102 +46,164 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
     hint::black_box(vec);
 }
 
-/// Collection for [TransRef::In] & [TransRef::Out].
-/// This trait doesn't inherit from [core::ops::Index] nor from [core::iter::Extend], because we
-/// couldn't implement them for Rust/3rd party types.
-pub trait InOut<T>: Sized + Clone {
+/// Shortcut trait, for "output" items based on owned items, but with no specified lifetime.
+pub trait OutItem: Clone + CamiOrd + Ord {}
+/// Shortcut trait, for "output" items based on owned items, with a lifetime.
+pub trait OutItemLifetimed<'own>: OutItem {}
+/// Blanket impl, so no need to write it for any specific type.
+impl<T> OutItem for T where T: Clone + CamiOrd + Ord {}
+/// Blanket impl, so no need to write it for any specific type.
+impl<'own, T> OutItemLifetimed<'own> for T where T: OutItem {}
+
+/// Collection for "output" items, based on/referencing "owned" items. Used for
+/// [OutCollectionIndicator::OutCollectionImpl].
+///
+/// When implementing [Extend] for this, do implement [Extend::extend_one] and
+/// [Extend::extend_reserve], too - even though they do have a default implementation.
+///
+/// Not extending [core::ops::Index], because [BTreeSet] doesn't extend it either.
+pub trait OutCollection<T>: Clone + Extend<T>
+where
+    T: OutItem,
+{
+    // @TODO RustDoc: InOut -> OutCollection
     /// NOT a part of public API. It may `panic`.
     /// Used by default implementations only.
-    fn as_vec(&self) -> &Vec<T>;
+    //fn as_vec(&self) -> &Vec<T>;
     /// NOT a part of public API. It may `panic`.
     /// Used by default implementations only.
-    fn as_mut_vec(&mut self) -> &mut Vec<T>;
+    //fn as_mut_vec(&mut self) -> &mut Vec<T>;
     /// NOT a part of public API. It may `panic`.
     /// Used by default implementations only.
-    fn into_vec(self) -> Vec<T>;
+    //fn into_vec(self) -> Vec<T>;
 
     /// Prefer [InOut::with_capacity] if possible.
     fn new() -> Self;
     fn with_capacity(capacity: usize) -> Self;
+    fn clear(&mut self);
 
-    fn len(&self) -> usize {
-        self.as_vec().len()
-    }
+    fn len(&self) -> usize;
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
-        T: 'a,
-    {
-        self.as_vec().iter()
-    }
+        T: 'a;
     /// Not required - it may `panic`. If available, use it only for [Transref::Out] so we can have
     /// multiple output instances based on the same input.
-    fn into_iter(self) -> impl Iterator<Item = T> {
-        self.into_vec().into_iter()
-    }
+    fn into_iter(self) -> impl Iterator<Item = T>;
 
-    fn reserve(&mut self, additional: usize) {
-        self.as_mut_vec().reserve(additional);
-    }
-    fn push(&mut self, item: T) {
-        self.as_mut_vec().push(item);
-    }
-    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
-        self.as_mut_vec().extend(iter)
-    }
-    fn extend_from_slice(&mut self, other: &[T])
+    /// Like [Iterator::is_sorted]. BUT: For types that maintain/guarantee a sorted order, like
+    /// [std::collections::BTreeSet], this must NOT (for example)
+    /// - simply return `true`, nor
+    /// - just call [std::collections::BTreeSet::iter] -> [Iterator::is_sorted], because that could
+    /// be optimized away .
+    ///
+    /// Instead, it verifies the sorted order. For example: [std::collections::BTreeSet::iter] ->
+    /// [core::hint::black_box] -> [Iterator::is_sorted].
+    fn is_sorted(&self) -> bool;
+    //fn is_sorted_by<F>(&self, compare: F) -> bool where F: FnMut(&T, &T) -> bool;
+    fn sort(&mut self);
+    // fn sort_by<F>(&mut self, compare: F) where F: FnMut(&T, &T) -> Ordering;
+    // @TODO sort_unstable_by + const SEPARATE_UNSTABLE_SORT: bool
+    /// Search; return `true` if found an equal item (or key, in case of [alloc::collections::BTreeMap] and friends.)
+    fn binary_search(&self, x: &T) -> bool;
+    //fn binary_search_by<'this, F>(&'this self, f: F) -> Result<usize, usize> where F: FnMut(&'this T) -> Ordering, T: 'this;
+}
+
+pub trait OutCollectionIndicator {
+    type OutCollectionImpl<T>: OutCollection<T>
     where
-        T: Clone,
-    {
-        self.as_mut_vec().extend_from_slice(other);
+        T: OutItem;
+}
+#[derive(Clone /*, RefCast*/)]
+#[repr(transparent)]
+pub struct OutCollectionVec<T>(pub Vec<T>)
+where
+    T: OutItem;
+
+impl<T> Extend<T> for OutCollectionVec<T>
+where
+    T: OutItem,
+{
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        self.0.extend(iter);
     }
-    fn clear(&mut self) {
-        self.as_mut_vec().clear();
+    fn extend_one(&mut self, item: T) {
+        self.0.extend_one(item);
+    }
+    fn extend_reserve(&mut self, additional: usize) {
+        self.0.extend_reserve(additional);
     }
 }
-pub trait In<T>: InOut<T> {}
-pub trait Out<T>: InOut<T> {}
-
-#[derive(Clone/*, RefCast*/)]
-#[repr(transparent)]
-pub struct InOutVec<T: Clone>(pub Vec<T>);
-
-impl<T: Clone> InOut<T> for InOutVec<T> {
-    fn as_vec(&self) -> &Vec<T> {
-        &self.0
-    }
-    fn as_mut_vec(&mut self) -> &mut Vec<T> {
-        &mut self.0
-    }
-    fn into_vec(self) -> Vec<T> {
-        self.0
-    }
-
+impl<T> OutCollection<T> for OutCollectionVec<T>
+where
+    T: OutItem,
+{
     fn new() -> Self {
         Self(Vec::new())
     }
     fn with_capacity(capacity: usize) -> Self {
         Self(Vec::with_capacity(capacity))
     }
+    fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+    fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
+    where
+        T: 'a,
+    {
+        self.0.iter()
+    }
+    /// Not required - it may `panic`. If available, use it only for [Transref::Out] so we can have
+    /// multiple output instances based on the same input.
+    fn into_iter(self) -> impl Iterator<Item = T> {
+        self.0.into_iter()
+    }
+    /// Like [Iterator::is_sorted_by]. BUT: For types that maintain/guarantee a sorted order, like
+    /// [std::collections::BTreeSet], this must NOT (for example)
+    /// - simply return `true`, nor
+    /// - just call [std::collections::BTreeSet::iter] -> [Iterator::is_sorted_by], because that could
+    /// be optimized away .
+    ///
+    /// Instead, it verifies the sorted orde. For example: [std::collections::BTreeSet::iter] ->
+    /// [core::hint::black_box] -> [Iterator::is_sorted_by].
+    fn is_sorted(&self) -> bool {
+        self.0.is_sorted()
+    }
+    fn sort(&mut self) {
+        self.0.sort();
+    }
+    fn binary_search(&self, x: &T) -> bool {
+        self.0.binary_search(x).is_ok()
+    }
 }
-impl<T: Clone> In<T> for InOutVec<T> {}
-impl<T: Clone> Out<T> for InOutVec<T> {}
 
+pub struct OutCollectionVecIndicator();
+impl OutCollectionIndicator for OutCollectionVecIndicator {
+    type OutCollectionImpl<T> = OutCollectionVec<T> where T: OutItem;
+}
+
+type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutItemIndicatorImpl> =
+    <OutCollectionIndicatorImpl as OutCollectionIndicator>::OutCollectionImpl<
+        <OutItemIndicatorImpl as OutItemIndicator>::OutItemLifetimedImpl<'own>,
+    >;
+
+/*pub type OutCollectionVecItemRef<'o, T> = OutCollectionVec<&'o T>;
+pub struct OutCollectionVecItemRefIndicator();
+impl <T>  OutCollectionIndicator for OutCollectionVecItemRef where T: Clone + CamiOrd + Ord{
+    type OutCollectionImpl<T> = OutCollectionVecItemRef<T>;
+}*/
+
+/*
 /// Intended for [TransRef::Out] referencing to [TransRef::In].
-#[derive(Clone/*, RefCast*/)]
+#[derive(Clone /*, RefCast*/)]
 #[repr(transparent)]
-pub struct OutVecItemRef<'o, T: Clone>(pub Vec<&'o T>);
+pub struct OutVecItemRef<'o, T>(pub Vec<&'o T>);
 
-impl<'o, T: 'o + Clone> InOut<&'o T> for OutVecItemRef<'o, T> {
-    fn as_vec(&self) -> &Vec<&'o T> {
-        &self.0
-    }
-    fn as_mut_vec(&mut self) -> &mut Vec<&'o T> {
-        &mut self.0
-    }
-    fn into_vec(self) -> Vec<&'o T> {
-        self.0
-    }
-
+impl<'o, T: 'o + Clone> OutCollection<&'o T> for OutVecItemRef<'o, T> where
+    T: Clone + CamiOrd + Ord {
     fn new() -> Self {
         Self(Vec::new())
     }
@@ -183,6 +244,8 @@ pub trait OutItemRef<'o, T: 'o + Clone>: Out<&'o T> {}
 
 impl<'o, T: 'o + Clone> OutItemRef<'o, T> for OutVecItemRef<'o, T> {}
 
+// Previous `TransRef` is at
+// https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/DropCk.20.26.20GAT.20.28Generic.20Associative.20Types.29
 pub trait TransRef<'slice, InItem: Clone, OutItem: 'slice + Clone> {
     type In: In<InItem>;
     // NOT needed: where T: 'own
@@ -226,7 +289,7 @@ pub trait TransRef<'slice, InItem: Clone, OutItem: 'slice + Clone> {
         Self::Out<'out>: 'out,
         'ownref: 'slice;
 }
-
+*/
 /*pub trait TransRefVecInnerHolder<'out, 'own: 'out, InItem, OutItem>
 where
     OutItem: 'out,
@@ -241,7 +304,7 @@ pub trait TransRefVecOuterHolder<InItem, OutItem> {
     where
         OutItem: 'out;
 }*/
-
+/*
 pub struct VecVecToVecSlice();
 //
 impl<'slice, Item: Clone> TransRef<'slice, Vec<Item>, &'slice [Item]> for VecVecToVecSlice
@@ -249,12 +312,12 @@ impl<'slice, Item: Clone> TransRef<'slice, Vec<Item>, &'slice [Item]> for VecVec
 // where Self: 't,
 {
     //impl<T> TransRef<T> for VecVecToVecSlice<T> {
-    type In = InOutVec<Vec<Item>>;
+    type In = OutCollectionVec<Vec<Item>>;
     type Own<'own> = Vec<Vec<Item>>;
     type OutSeed = usize;
     // Surprisingly, no lifetime here - no Vec<&'out
     //
-    type Out<'out> = InOutVec<&'slice [Item]> where Self::Out<'out>: 'out, 'slice: 'out, Item: 'out;
+    type Out<'out> = OutCollectionVec<&'slice [Item]> where Self::Out<'out>: 'out, 'slice: 'out, Item: 'out;
 
     type OutRef<'out> = OutVecItemRef<'slice, &'slice [Item]> where Self::Out<'out>: 'out, 'slice: 'out, Item: 'out;
 
@@ -268,7 +331,7 @@ impl<'slice, Item: Clone> TransRef<'slice, Vec<Item>, &'slice [Item]> for VecVec
         'slice: 'out,
         Item: 'out,
     {
-        InOutVec::new()
+        OutCollectionVec::new()
     }
 
     // @TODO Delay reservation?
@@ -309,10 +372,10 @@ pub struct VecToVecCloned();
 
 //impl<'t, T: 't + Clone /*'t, T: 't + Clone*/> TransRef<'t, T> for VecToVecCloned<T> where Self : 't{
 impl<'slice, Item: Clone + 'slice> TransRef<'slice, Item, Item> for VecToVecCloned {
-    type In = InOutVec<Item>;
+    type In = OutCollectionVec<Item>;
     type Own<'own> = Vec<Item>;
     type OutSeed = ();
-    type Out<'out> = InOutVec<Item> where Self::Out<'out>: 'out, Item: 'out;
+    type Out<'out> = OutCollectionVec<Item> where Self::Out<'out>: 'out, Item: 'out;
 
     type OutRef<'out> = OutVecItemRef<'slice, Item> where Self::Out<'out>: 'out, 'slice: 'out, Item: 'out;
 
@@ -324,7 +387,7 @@ impl<'slice, Item: Clone + 'slice> TransRef<'slice, Item, Item> for VecToVecClon
         Self::Out<'out>: 'out,
         Item: 'out,
     {
-        InOutVec::new()
+        OutCollectionVec::new()
     }
 
     /// Delay allocation a.s.a.p. - lazy.
@@ -335,8 +398,8 @@ impl<'slice, Item: Clone + 'slice> TransRef<'slice, Item, Item> for VecToVecClon
     {
     }
     fn ini_out_mut_seed<'out, 'outref>(
-        out: &'outref mut Self::Out<'out>,
-        out_seed: &'outref mut Self::OutSeed,
+        _out: &'outref mut Self::Out<'out>,
+        _out_seed: &'outref mut Self::OutSeed,
     ) where
         Self::Out<'out>: 'out,
         Item: 'out,
@@ -362,14 +425,14 @@ pub struct VecToVecMoved<'slice, Item>(PhantomData<(&'slice (), Item, Item)>);
 //impl<'t, T: 't> TransRef<'t, T> for VecToVecMoved<T> where Self: 't{
 //impl<'out, 'own: 'out, T> TransRef<T> for VecToVecMoved<'out, 'own> {
 impl<'slice, Item: 'slice + Clone> TransRef<'slice, Item, Item> for VecToVecMoved<'slice, Item> {
-    type In = InOutVec<Item>;
+    type In = OutCollectionVec<Item>;
     type Own<'own> = Vec<Item>;
     type OutSeed = Vec<Item>;
-    type Out<'out> = InOutVec<Item> where Self::Out<'out>: 'out, Item: 'out;
+    type Out<'out> = OutCollectionVec<Item> where Self::Out<'out>: 'out, Item: 'out;
 
     type OutRef<'out> = OutVecItemRef<'slice, Item> where Self::Out<'out>: 'out, 'slice: 'out, Item: 'out;
 
-    fn ini_own_and_seed<'own>(input: Self::In) -> (Self::Own<'own>, Self::OutSeed) {
+    fn ini_own_and_seed<'own>(_input: Self::In) -> (Self::Own<'own>, Self::OutSeed) {
         todo!("transmute")
         //(Vec::new(), input)
     }
@@ -378,7 +441,7 @@ impl<'slice, Item: 'slice + Clone> TransRef<'slice, Item, Item> for VecToVecMove
         Self::Out<'out>: 'out,
         Item: 'out,
     {
-        InOutVec(Vec::new())
+        OutCollectionVec(Vec::new())
     }
 
     fn ini_out_move_seed<'out>(out: &mut Self::Out<'out>, mut out_seed: Self::OutSeed)
@@ -438,12 +501,33 @@ pub trait TransRefHolder<InItem: Clone, OutItem: Clone> {
         OutItem: 'slice;
     //where OutItem: 'out;
 }
+*/
+
+pub trait OutItemIndicator {
+    type OutItemLifetimedImpl<'own>: OutItemLifetimed<'own>;
+
+    fn generate_out_item<'own, OwnItem: Clone>(
+        own_item: &'own OwnItem,
+    ) -> Self::OutItemLifetimedImpl<'own>;
+}
+
+pub struct OutItemIndicatorNonRef<T>(PhantomData<T>);
+impl<T> OutItemIndicator for OutItemIndicatorNonRef<T> {
+    type OutItemLifetimedImpl<'own> = u8;
+
+    fn generate_out_item<'own, OwnItem: Clone>(
+        _own_item: &'own OwnItem,
+    ) -> Self::OutItemLifetimedImpl<'own> {
+        todo!()
+    }
+}
 
 pub fn bench_vec_sort_bin_search<
-    InItem: Clone,
-    OutItem: Clone,
+    OwnItem: Clone,
+    OutItemIndicatorImpl: OutItemIndicator,
+    OutCollectionIndicatorImpl: OutCollectionIndicator,
     //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
-    #[allow(non_camel_case_types)] TRANS_REF_HOLDER,
+    //#[allow(non_camel_case_types)] TRANS_REF_HOLDER,
     RND,
     #[allow(non_camel_case_types)] ID_STATE,
 >(
@@ -451,11 +535,11 @@ pub fn bench_vec_sort_bin_search<
     rnd: &mut RND,
     group_name: impl Into<String>,
     id_state: &mut ID_STATE,
-    id_postfix: fn(&ID_STATE) -> String,
-    generate: fn(&mut RND, &mut ID_STATE) -> InItem,
+    generate_id_postfix: fn(&ID_STATE) -> String,
+    generate_own_item: fn(&mut RND, &mut ID_STATE) -> OwnItem,
+    //generate_out_item: for<'own> fn(&OwnItem) -> OutItemIndicatorImpl::OutItemImpl<'own>,
 ) where
-    OutItem: CamiOrd + Ord + Clone,
-    TRANS_REF_HOLDER: TransRefHolder<InItem, OutItem>,
+    //TRANS_REF_HOLDER: TransRefHolder<OwnItem, OutItem>,
     /*TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
         IN_ITEM,
         T,
@@ -470,70 +554,23 @@ pub fn bench_vec_sort_bin_search<
 
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
 
-    let mut in_items =
-        <<TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>>::TransRefImpl<'_> as TransRef<
-            '_,
-            InItem,
-            OutItem,
-        >>::In::with_capacity(1);
+    let mut in_items = Vec::with_capacity(1);
     //let mut in_items = TRANS_REF::TransRefImpl::In::with_capacity(num_items);
     for _ in 0..num_items {
-        let item = generate(rnd, id_state);
+        let item = generate_own_item(rnd, id_state);
         in_items.push(item);
     }
 
-    let (own_items, mut out_seed) =
-    /*<
-       <
-        <
-            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
-        >
-        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>
-       >::TransRefImpl as TransRef<T>
-    >*/
-     <
-        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
-        >::TransRefImpl<'_>
-           as TransRef<'_, InItem, OutItem>
-    >::ini_own_and_seed(in_items);
-
-    //#[cfg(off)]
-    let own_items = /*<<<TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<
-        '_, '_,
-    > as TransRefVecInnerHolder<'_, '_, IN_ITEM, T>>::TransRefImpl as TransRef<T>>*/ <
-        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
-        >::TransRefImpl<'_>
-           as TransRef<'_, InItem, OutItem>
-    >::reserve_own(
-    );
-
     {
-        let mut unsorted_items = /*<
-       <
-        <
-            TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
-        >
-        ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
-       >::TransRefImpl as TransRef<T>
-    >*/
-     <
-        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
-        >::TransRefImpl<'_>
-           as TransRef<'_, InItem, OutItem>
-    >::reserve_out();
-        /*<
-           <
-            <
-                TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
-            >
-            ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
-           >::TransRefImpl as TransRef<T>
-        >*/
-        <<TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>>::TransRefImpl<'_> as TransRef<
+        /*type OutColl = <OutCollectionIndicatorImpl as OutCollectionIndicator
+        >::OutCollectionImpl< <OutItemIndicatorImpl as OutItemIndicator>::OutItemImpl<'_>
+                            >;*/
+        //type O<'own> = OutColl<'own, OutCollectionIndicatorImpl, OutItemIndicatorImpl>;
+        let mut unsorted_items = <OutCollRetriever<
             '_,
-            InItem,
-            OutItem,
-        >>::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);
+            OutCollectionIndicatorImpl,
+            OutItemIndicatorImpl,
+        >>::with_capacity(1);
 
         /*<
            <
@@ -543,25 +580,40 @@ pub fn bench_vec_sort_bin_search<
             ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
            >::TransRefImpl as TransRef<T>
         >*/
-        <<TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>>::TransRefImpl<'_> as TransRef<
+        /*<<TRANS_REF_HOLDER as TransRefHolder<OwnItem, OutItem>>::TransRefImpl<'_> as TransRef<
             '_,
-            InItem,
+            OwnItem,
             OutItem,
-        >>::set_out(&mut unsorted_items, &own_items);
+        >>::ini_out_mut_seed(&mut unsorted_items, &mut out_seed);*/
+
+        /*<
+           <
+            <
+                TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>
+            >
+            ::TransRefInnerHolder<'_, '_> as TransRefVecInnerHolder<'_, '_,IN_ITEM, T>
+           >::TransRefImpl as TransRef<T>
+        >*/
+        /*<<TRANS_REF_HOLDER as TransRefHolder<OwnItem, OutItem>>::TransRefImpl<'_> as TransRef<
+            '_,
+            OwnItem,
+            OutItem,
+        >>::set_out(&mut unsorted_items, &own_items);*/
         // CANNOT: let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
         //for size in [K, 2 * K, 4 * K, 8 * K, 16 * K].iter() {
         let id_string = format!(
             "{num_items} items, each len max {MAX_ITEM_LEN}.{}",
-            id_postfix(id_state)
+            generate_id_postfix(id_state)
         );
         //#[cfg(do_later)]
         if false {
-            let mut sorted_lexi = <
-        <TRANS_REF_HOLDER as TransRefHolder<InItem, OutItem>
-        >::TransRefImpl<'_>
-           as TransRef<'_, InItem, OutItem>
-    >::reserve_out();
+            let mut sorted_lexi = <OutCollRetriever<
+                '_,
+                OutCollectionIndicatorImpl,
+                OutItemIndicatorImpl,
+            >>::with_capacity(1);
+            //let mut sorted_lexi = unsorted_items.clone();
             group.bench_with_input(
                 BenchmarkId::new("std sort lexi.          ", id_string.clone()),
                 hint::black_box(&unsorted_items),
@@ -573,7 +625,9 @@ pub fn bench_vec_sort_bin_search<
                         // .sorted_lexi.extend( it().map(|it_ref| it_ref.clone()))
                         sorted_lexi.clear();
                         sorted_lexi.extend(unsorted_items.iter().cloned());
-                        sorted_lexi.as_mut_vec().sort();
+
+                        //sorted_lexi.sort_by(<OutItemIndicatorImpl as OutItemIndicator>::OutItemLifetimedImpl::cmp);
+                        sorted_lexi.sort();
                     })
                 },
             );
@@ -585,7 +639,7 @@ pub fn bench_vec_sort_bin_search<
                     b.iter(|| {
                         let sorted = hint::black_box(&sorted_lexi);
                         for item in hint::black_box(unsorted_items.iter()) {
-                            hint::black_box(sorted.as_vec().binary_search(item)).unwrap();
+                            assert!(hint::black_box(sorted.binary_search(&item)));
                         }
                     })
                 },
@@ -612,8 +666,9 @@ pub fn bench_vec_sort_bin_search<
                         let _ = {
                             // @TODO replace .clone() by: Vec::with_capacity(), .iter() -> extend -> .into_vec_cami()
                             let unsorted_items = (*unsorted_items).clone();
-                            sorted_non_lexi =
-                                hint::black_box(unsorted_items).into_vec().into_vec_cami();
+
+                            // @TODO TODO
+                            //sorted_non_lexi = hint::black_box(unsorted_items).into_vec().into_vec_cami();
                         };
                         #[cfg(not(feature = "transmute"))]
                         let _ = {
