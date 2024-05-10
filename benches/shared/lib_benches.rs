@@ -191,11 +191,32 @@ impl OutCollectionIndicator for OutCollectionVecIndicator {
     type OutCollectionImpl<T> = OutCollectionVec<T> where T: OutItem;
 }
 
-type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutItemIndicatorImpl> =
-    <OutCollectionIndicatorImpl as OutCollectionIndicator>::OutCollectionImpl<
-        <OutItemIndicatorImpl as OutItemIndicator>::OutItemLifetimedImpl<'own>,
-    >;
+type OutCollRetrieverPerItem<OutCollectionIndicatorImpl, T> =
+    <OutCollectionIndicatorImpl as OutCollectionIndicator>::OutCollectionImpl<T>;
 
+type OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem> =
+    <<OutItemIndicatorIndicatorImpl as OutItemIndicatorIndicator>::OutItemIndicatorImpl<
+        'own,
+        OutSubItem,
+    > as OutItemIndicator<'own, OutSubItem>>::OutItemLifetimedImpl;
+
+type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutItemIndicatorIndicatorImpl, OutSubItem> =
+    OutCollRetrieverPerItem<
+        OutCollectionIndicatorImpl,
+        OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>,
+    >;
+/*type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutItemIndicatorIndicatorImpl, OutSubItem> =
+    <OutCollectionIndicatorImpl as OutCollectionIndicator>
+    ::OutCollectionImpl
+    <
+
+
+            <OutItemIndicatorIndicatorImpl as OutItemIndicatorIndicator>
+            ::OutItemIndicatorImpl<'own, OutSubItem>
+            as OutItemIndicator<'own, OutSubItem>
+        ::OutItemLifetimedImpl as OutItemLifetimed<'own>
+    >; // as OutCollection<_>;
+*/
 /*pub type OutCollectionVecItemRef<'o, T> = OutCollectionVec<&'o T>;
 pub struct OutCollectionVecItemRefIndicator();
 impl <T>  OutCollectionIndicator for OutCollectionVecItemRef where T: Clone + CamiOrd + Ord{
@@ -509,15 +530,12 @@ pub trait TransRefHolder<InItem: Clone, OutItem: Clone> {
 }
 */
 
-pub trait OutItemIndicator {
-    type OutItemLifetimedImpl<'own, T>: OutItemLifetimed<'own> + 'own
-    where
-        T: OutItem + 'own; //where Self::OutItemLifetimedImpl<'own> : 'own;//+ 'own;//where T: 'own;
-
-    /*fn generate_out_item<'own, OwnItem>(
-        own_item: &'own OwnItem,
-    ) -> Self::OutItemLifetimedImpl<'own>;*/
-}
+/*pub trait OutCollectionItemIndicator {
+    type OutItemLifetimedImpl<'own>: OutItemLifetimed<'own> + 'own; // @TODO Do we need + 'own ??
+                                                                    /*fn generate_out_item<'own, OwnItem>(
+                                                                        own_item: &'own OwnItem,
+                                                                    ) -> Self::OutItemLifetimedImpl<'own>;*/
+}*/
 /*
 pub trait OutItemIndicator2<'own> {
     type OutItemLifetimedImpl: OutItemLifetimed<'own> + 'own;
@@ -570,54 +588,67 @@ where
 }
 */
 //-----
-pub trait OutItemIndicator3<'own, T>
+pub trait OutItemIndicator<'own, T>
 where
     T: OutItem + 'own,
 {
     type OutItemLifetimedImpl: OutItemLifetimed<'own> + 'own;
 }
-pub trait OutItemIndicator3Indicator<T>
+/*pub trait OutItemIndicatorIndicator<T>
 where
     T: OutItem,
 {
-    type OutItemIndicatorImpl<'own /*, T*/>: OutItemIndicator3<'own, T>
+    type OutItemIndicatorImpl<'own>: OutItemIndicator<'own, T>
     where
         T: 'own;
+}*/
+pub trait OutItemIndicatorIndicator {
+    type OutItemIndicatorImpl<'own, T>: OutItemIndicator<'own, T>
+    where
+        T: 'own + OutItem;
 }
-pub struct OutItemIndicator3NonRef<T>(PhantomData<T>);
-impl<'own, T> OutItemIndicator3<'own, T> for OutItemIndicator3NonRef<T>
+pub struct OutItemIndicatorNonRef<T>(PhantomData<T>);
+impl<'own, T> OutItemIndicator<'own, T> for OutItemIndicatorNonRef<T>
 where
-    T: OutItem + 'own, // + 'own, // TODO OutItemLifetimed<'own> ???
+    T: OutItem + 'own, // TODO OutItemLifetimed<'own> ???
 {
     type OutItemLifetimedImpl = T;
 }
-pub struct OutItemIndicator3NonRefIndicator<T>(PhantomData<T>);
-impl<T> OutItemIndicator3Indicator<T> for OutItemIndicator3NonRefIndicator<T>
+/*pub struct OutItemIndicatorNonRefIndicator<T>(PhantomData<T>);
+impl<T> OutItemIndicatorIndicator<T> for OutItemIndicatorNonRefIndicator<T>
 where
     T: OutItem,
 {
-    type OutItemIndicatorImpl<'own> = OutItemIndicator3NonRef<T> where T: 'own;
+    type OutItemIndicatorImpl<'own> = OutItemIndicatorNonRef<T> where T: 'own;
+}*/
+pub struct OutItemIndicatorNonRefIndicator();
+impl OutItemIndicatorIndicator for OutItemIndicatorNonRefIndicator {
+    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorNonRef<T> where T: 'own + OutItem;
 }
-
-pub struct OutItemIndicator3Slice<T>(PhantomData<T>);
-impl<'own, T> OutItemIndicator3<'own, T> for OutItemIndicator3Slice<T>
+pub struct OutItemIndicatorSlice<T>(PhantomData<T>);
+impl<'own, T> OutItemIndicator<'own, T> for OutItemIndicatorSlice<T>
 where
-    T: OutItem + ?Sized + 'own, // + 'own, // TODO OutItemLifetimed<'own> ???
+    T: OutItem + ?Sized + 'own, // TODO OutItemLifetimed<'own> ???
 {
     type OutItemLifetimedImpl = &'own [T];
 }
-pub struct OutItemIndicator3SliceIndicator<T>(PhantomData<T>);
-impl<T> OutItemIndicator3Indicator<T> for OutItemIndicator3SliceIndicator<T>
+/*pub struct OutItemIndicatorSliceIndicator<T>(PhantomData<T>);
+impl<T> OutItemIndicatorIndicator<T> for OutItemIndicatorSliceIndicator<T>
 where
     T: OutItem,
 {
-    type OutItemIndicatorImpl<'own> = OutItemIndicator3Slice<T> where T: 'own; // where T: 'own;
+    type OutItemIndicatorImpl<'own> = OutItemIndicatorSlice<T> where T: 'own;
+}*/
+pub struct OutItemIndicatorSliceIndicator();
+impl OutItemIndicatorIndicator for OutItemIndicatorSliceIndicator {
+    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorSlice<T> where T: 'own + OutItem;
 }
 //------
 
 pub fn bench_vec_sort_bin_search<
     OwnItem,
-    OutItemIndicatorImpl: OutItemIndicator,
+    OutSubItem: OutItem,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
     //#[allow(non_camel_case_types)] TRANS_REF_HOLDER,
@@ -656,7 +687,8 @@ pub fn bench_vec_sort_bin_search<
     if !<OutCollRetriever<
             '_,
             OutCollectionIndicatorImpl,
-            OutItemIndicatorImpl,
+            OutItemIndicatorIndicatorImpl,
+            OutSubItem
         >>::ALLOWS_MULTIPLE_EQUAL_ITEMS {
             todo!("out -> .clone() -> check if already in an extra BTreeSet, if not, add there & to the result out collection.");
     }
@@ -669,7 +701,8 @@ pub fn bench_vec_sort_bin_search<
         let mut unsorted_items = <OutCollRetriever<
             '_,
             OutCollectionIndicatorImpl,
-            OutItemIndicatorImpl,
+            OutItemIndicatorIndicatorImpl,
+            OutSubItem,
         >>::with_capacity(1);
 
         /*<
@@ -711,7 +744,8 @@ pub fn bench_vec_sort_bin_search<
             let mut sorted_lexi = <OutCollRetriever<
                 '_,
                 OutCollectionIndicatorImpl,
-                OutItemIndicatorImpl,
+                OutItemIndicatorIndicatorImpl,
+                OutSubItem,
             >>::with_capacity(1);
             //let mut sorted_lexi = unsorted_items.clone();
             group.bench_with_input(

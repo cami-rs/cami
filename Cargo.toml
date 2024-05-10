@@ -75,4 +75,4 @@ name = "shared"
 harness = false
 
 [lints.rust]
-#warnings = "allow"
+# warnings = "allow"

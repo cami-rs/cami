@@ -1,3 +1,6 @@
+#![feature(is_sorted)]
+#![feature(extend_one)]
+
 //#![allow(warnings, unused)]
 use cami::prelude::*;
 use core::iter;
@@ -28,7 +31,14 @@ pub fn bench_target(c: &mut Criterion) {
 
     let mut total_length: IdState = 0;
 
-    bench_vec_sort_bin_search(
+    bench_vec_sort_bin_search::<
+        Vec<u8>,
+        u8,
+        OutItemIndicatorSliceIndicator,
+        OutCollectionVecIndicator,
+        Rng,
+        IdState,
+    >(
         c,
         &mut rng,
         "u8slice",
