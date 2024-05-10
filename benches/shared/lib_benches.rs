@@ -510,11 +510,20 @@ pub trait TransRefHolder<InItem: Clone, OutItem: Clone> {
 */
 
 pub trait OutItemIndicator {
-    type OutItemLifetimedImpl<'own>: OutItemLifetimed<'own>;
+    type OutItemLifetimedImpl<'own, T>: OutItemLifetimed<'own> + 'own
+    where
+        T: OutItem + 'own; //where Self::OutItemLifetimedImpl<'own> : 'own;//+ 'own;//where T: 'own;
 
-    fn generate_out_item<'own, OwnItem>(
+    /*fn generate_out_item<'own, OwnItem>(
         own_item: &'own OwnItem,
-    ) -> Self::OutItemLifetimedImpl<'own>;
+    ) -> Self::OutItemLifetimedImpl<'own>;*/
+}
+/*
+pub trait OutItemIndicator2<'own> {
+    type OutItemLifetimedImpl: OutItemLifetimed<'own> + 'own;
+}
+pub trait OutItemIndicator2Indicator {
+    type OutItemIndicatorImpl<'own>: OutItemIndicator2<'own>;
 }
 
 pub struct OutItemIndicatorNonRef<T>(PhantomData<T>);
@@ -522,14 +531,89 @@ impl<T> OutItemIndicator for OutItemIndicatorNonRef<T>
 where
     T: OutItem,
 {
-    type OutItemLifetimedImpl<'own> = T;
+    type OutItemLifetimedImpl<'own> = T where Self::OutItemLifetimedImpl<'own>: 'own; //T: 'own;
 
-    fn generate_out_item<'own, OwnItem>(
+    /*fn generate_out_item<'own, OwnItem>(
         _own_item: &'own OwnItem,
     ) -> Self::OutItemLifetimedImpl<'own> {
         todo!()
-    }
+    }*/
 }
+
+pub struct OutItemIndicator2NonRef<T>(PhantomData<T>);
+impl<'own, T> OutItemIndicator2<'own> for OutItemIndicator2NonRef<T>
+where
+    T: OutItem + 'own,
+{
+    type OutItemLifetimedImpl = T;
+}
+pub struct OutItemIndicator2IndicatorNonRef<T>(PhantomData<T>);
+impl<T> OutItemIndicator2Indicator for OutItemIndicator2IndicatorNonRef<T>
+where
+    T: OutItem,
+{
+    type OutItemIndicatorImpl<'own> = OutItemIndicator2NonRef<T> where Self::OutItemIndicatorImpl<'own>: 'own; //OutItemIndicator2NonRef<T> : 'own; //T: 'own;
+}
+
+pub struct OutItemIndicatorSlice<T: ?Sized>(PhantomData<T>);
+impl<T> OutItemIndicator for OutItemIndicatorSlice<T>
+where
+    T: OutItem + ?Sized,
+{
+    type OutItemLifetimedImpl<'own> = &'own [T] where T: 'own;
+
+    /*fn generate_out_item<'own, OwnItem>(
+        _own_item: &'own OwnItem,
+    ) -> Self::OutItemLifetimedImpl<'own> {
+        todo!()
+    }*/
+}
+*/
+//-----
+pub trait OutItemIndicator3<'own, T>
+where
+    T: OutItem + 'own,
+{
+    type OutItemLifetimedImpl: OutItemLifetimed<'own> + 'own;
+}
+pub trait OutItemIndicator3Indicator<T>
+where
+    T: OutItem,
+{
+    type OutItemIndicatorImpl<'own /*, T*/>: OutItemIndicator3<'own, T>
+    where
+        T: 'own;
+}
+pub struct OutItemIndicator3NonRef<T>(PhantomData<T>);
+impl<'own, T> OutItemIndicator3<'own, T> for OutItemIndicator3NonRef<T>
+where
+    T: OutItem + 'own, // + 'own, // TODO OutItemLifetimed<'own> ???
+{
+    type OutItemLifetimedImpl = T;
+}
+pub struct OutItemIndicator3NonRefIndicator<T>(PhantomData<T>);
+impl<T> OutItemIndicator3Indicator<T> for OutItemIndicator3NonRefIndicator<T>
+where
+    T: OutItem,
+{
+    type OutItemIndicatorImpl<'own> = OutItemIndicator3NonRef<T> where T: 'own;
+}
+
+pub struct OutItemIndicator3Slice<T>(PhantomData<T>);
+impl<'own, T> OutItemIndicator3<'own, T> for OutItemIndicator3Slice<T>
+where
+    T: OutItem + ?Sized + 'own, // + 'own, // TODO OutItemLifetimed<'own> ???
+{
+    type OutItemLifetimedImpl = &'own [T];
+}
+pub struct OutItemIndicator3SliceIndicator<T>(PhantomData<T>);
+impl<T> OutItemIndicator3Indicator<T> for OutItemIndicator3SliceIndicator<T>
+where
+    T: OutItem,
+{
+    type OutItemIndicatorImpl<'own> = OutItemIndicator3Slice<T> where T: 'own; // where T: 'own;
+}
+//------
 
 pub fn bench_vec_sort_bin_search<
     OwnItem,

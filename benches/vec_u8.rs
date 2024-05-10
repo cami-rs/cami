@@ -41,7 +41,7 @@ pub fn bench_target(c: &mut Criterion) {
     }
 
     let mut id_state: IdState = ();
-
+    #[cfg(off)]
     bench_vec_sort_bin_search::<u8, OutItemIndicatorNonRef<u8>, OutCollectionVecIndicator, Rng, ()>(
         c,
         &mut rng,
