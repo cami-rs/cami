@@ -1,3 +1,4 @@
+#![feature(trait_alias)]
 #![feature(is_sorted)]
 #![feature(extend_one)]
 
@@ -45,6 +46,7 @@ pub fn bench_target(c: &mut Criterion) {
         &mut total_length,
         id_postfix,
         generate_item,
+        //None
     );
 }
 

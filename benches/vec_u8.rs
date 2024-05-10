@@ -1,3 +1,4 @@
+#![feature(trait_alias)]
 #![feature(is_sorted)]
 #![feature(extend_one)]
 //#![cfg_attr(all(feature = "unsafe", feature = "nightly"), feature(anonymous_lifetime_in_impl_trait))]
@@ -49,7 +50,15 @@ pub fn bench_target(c: &mut Criterion) {
         OutCollectionVecIndicator,
         Rng,
         IdState,
-    >(c, &mut rng, "u8", &mut id_state, id_postfix, generate_item);
+    >(
+        c,
+        &mut rng,
+        "u8",
+        &mut id_state,
+        id_postfix,
+        generate_item,
+        //None
+    );
 }
 
 criterion_group! {

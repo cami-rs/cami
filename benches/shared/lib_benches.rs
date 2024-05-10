@@ -47,13 +47,9 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
 }
 
 /// Shortcut trait, for "output" items based on owned items, but with no specified lifetime.
-pub trait OutItem: Clone + CamiOrd + Ord {}
+pub trait OutItem = Clone + CamiOrd + Ord;
 /// Shortcut trait, for "output" items based on owned items, with a lifetime.
-pub trait OutItemLifetimed<'own>: OutItem {}
-/// Blanket impl, so no need to write it for any specific type.
-impl<T> OutItem for T where T: Clone + CamiOrd + Ord {}
-/// Blanket impl, so no need to write it for any specific type.
-impl<'own, T> OutItemLifetimed<'own> for T where T: OutItem {}
+pub trait OutItemLifetimed<'own> = OutItem + 'own;
 
 /// Collection for "output" items, based on/referencing "owned" items. Used for
 /// [OutCollectionIndicator::OutCollectionImpl].
@@ -250,41 +246,167 @@ impl OutItemIndicatorIndicator for OutItemIndicatorSliceIndicator {
 }
 //------
 
-pub fn bench_vec_sort_bin_search<
+/*pub trait GenerateOutItemIndicatorOLD<
     OwnItem,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OutSubItem: OutItem,
+>
+{
+    type GenerateOutItem<'own>: Fn(
+        &OwnItem,
+    ) -> OutItemRetriever<
+        'own,
+        OutItemIndicatorIndicatorImpl,
+        OutSubItem,
+    >
+    where
+        OutSubItem: 'own;
+}*/
+
+/*pub trait GenerateOutItemLifetimed<
+    'own,
+    OwnItem,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OutSubItem: OutItem,
+> where
+    OutSubItem: 'own,
+{
+    const GENERATE_OUT_ITEM: fn(
+        &OwnItem,
+    ) -> OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>;
+}
+
+pub struct GenerateOutItemSameNonRefItemType();
+
+pub trait GenerateOutItemIndicator<
+    OwnItem,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OutSubItem: OutItem,
+>
+{
+    type GenerateOutItemLifetimedImpl<'own>: GenerateOutItemLifetimed<
+        'own,
+        OwnItem,
+        OutItemIndicatorIndicatorImpl,
+        OutSubItem,
+    >
+    where
+        OutSubItem: 'own;
+}*/
+
+pub fn bench_vec_sort_bin_search<
+    OwnItemType,
     OutSubItem: OutItem,
     OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
-    //#[allow(non_camel_case_types)] TRANS_REF_OUTER_HOLDER,
-    //#[allow(non_camel_case_types)] TRANS_REF_HOLDER,
-    RND,
-    #[allow(non_camel_case_types)] ID_STATE,
+    Rnd: Random,
+    IdState,
+    /*GenerateOutItemIndicatorImpl: GenerateOutItemIndicator<OwnItem,
+    OutItemIndicatorIndicatorImpl,
+    OutSubItem>*/
 >(
     c: &mut Criterion,
-    rnd: &mut RND,
+    rnd: &mut Rnd,
     group_name: impl Into<String>,
-    id_state: &mut ID_STATE,
-    generate_id_postfix: fn(&ID_STATE) -> String,
-    generate_own_item: fn(&mut RND, &mut ID_STATE) -> OwnItem,
-    //generate_out_item: for<'own> fn(&OwnItem) -> OutItemIndicatorImpl::OutItemImpl<'own>,
-) where
-    //TRANS_REF_HOLDER: TransRefHolder<OwnItem, OutItem>,
-    /*TRANS_REF_OUTER_HOLDER: for<'out, 'own> TransRefVecOuterHolder<
-        IN_ITEM,
-        T,
-        TransRefInnerHolder<'out, 'own>: TransRefVecInnerHolder<'out, 'own, IN_ITEM, T>,
-    >,
+    id_state: &mut IdState,
+    generate_id_postfix: impl Fn(&IdState) -> String,
+    generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
+    //generate_out_item: Option<GenerateOutItemIndicatorImpl>,
+) {
+    let own = Vec::<OwnItemType>::new();
 
-    for<'out, 'own> <TRANS_REF_OUTER_HOLDER as TransRefVecOuterHolder<IN_ITEM, T>>::TransRefInnerHolder<'out, 'own>:
-        TransRef<T>,*/
-    RND: Random,
+    bench_vec_sort_bin_search_lifetimed::<
+        OwnItemType,
+        OutSubItem,
+        OutItemIndicatorIndicatorImpl,
+        OutCollectionIndicatorImpl,
+        Rnd,
+        IdState,
+    >(
+        &own,
+        c,
+        rnd,
+        group_name,
+        id_state,
+        generate_id_postfix,
+        generate_own_item,
+    );
+}
+
+pub fn bench_vec_sort_bin_search_lifetimed<
+    'own,
+    OwnItemType,
+    OutSubItem: OutItemLifetimed<'own>,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OutCollectionIndicatorImpl: OutCollectionIndicator,
+    Rnd: Random,
+    IdState,
+    /*GenerateOutItemIndicatorImpl: GenerateOutItemIndicator<OwnItem,
+    OutItemIndicatorIndicatorImpl,
+    OutSubItem>*/
+>(
+    own: &'own Vec<OwnItemType>,
+    c: &mut Criterion,
+    rnd: &mut Rnd,
+    group_name: impl Into<String>,
+    id_state: &mut IdState,
+    generate_id_postfix: impl Fn(&IdState) -> String,
+    generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
+    //generate_out_item: Option<GenerateOutItemIndicatorImpl>,
+) {
+    bench_vec_sort_bin_search_redundant_types::<
+        'own,
+        OwnItemType,
+        OutSubItem,
+        OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>,
+        OutCollRetriever<
+            'own,
+            OutCollectionIndicatorImpl,
+            OutItemIndicatorIndicatorImpl,
+            OutSubItem,
+        >,
+        OutItemIndicatorIndicatorImpl,
+        OutCollectionIndicatorImpl,
+        Rnd,
+        IdState,
+    >(
+        own,
+        c,
+        rnd,
+        group_name,
+        id_state,
+        generate_id_postfix,
+        generate_own_item,
+    );
+}
+
+pub fn bench_vec_sort_bin_search_redundant_types<
+    'own,
+    OwnItemType, //??? : 'own,
+    OutSubItem: OutItem,
+    OutItemType: OutItemLifetimed<'own>,
+    OutCollectionType: OutCollection<OutItemType>,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OutCollectionIndicatorImpl: OutCollectionIndicator,
+    Rnd: Random,
+    IdState,
+>(
+    own: &'own Vec<OwnItemType>,
+    c: &mut Criterion,
+    rnd: &mut Rnd,
+    group_name: impl Into<String>,
+    id_state: &mut IdState,
+    generate_id_postfix: impl Fn(&IdState) -> String,
+    generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
+    //generate_out_item: Option<GenerateOutItemIndicatorImpl>,
+)
+//where GenerateOutItem: GenerateOutItemIndicator<OwnItem, OutItemIndicatorIndicatorImpl, OutSubItem>
 {
     let mut group = c.benchmark_group(group_name);
 
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
 
-    let mut in_items = Vec::with_capacity(1);
-    //let mut in_items = TRANS_REF::TransRefImpl::In::with_capacity(num_items);
+    let mut in_items = Vec::with_capacity(num_items);
     for _ in 0..num_items {
         let item = generate_own_item(rnd, id_state);
         in_items.push(item);
@@ -299,10 +421,6 @@ pub fn bench_vec_sort_bin_search<
     }
 
     {
-        /*type OutColl = <OutCollectionIndicatorImpl as OutCollectionIndicator
-        >::OutCollectionImpl< <OutItemIndicatorImpl as OutItemIndicator>::OutItemImpl<'_>
-                            >;*/
-        //type O<'own> = OutColl<'own, OutCollectionIndicatorImpl, OutItemIndicatorImpl>;
         let mut unsorted_items = <OutCollRetriever<
             '_,
             OutCollectionIndicatorImpl,
