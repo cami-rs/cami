@@ -246,114 +246,6 @@ impl OutItemIndicatorIndicator for OutItemIndicatorSliceIndicator {
 }
 //------
 
-/*pub trait GenerateOutItemIndicatorOLD<
-    OwnItem,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutSubItem: OutItem,
->
-{
-    type GenerateOutItem<'own>: Fn(
-        &OwnItem,
-    ) -> OutItemRetriever<
-        'own,
-        OutItemIndicatorIndicatorImpl,
-        OutSubItem,
-    >
-    where
-        OutSubItem: 'own;
-}*/
-
-pub trait GenerateOutItemLifetimed<
-    'own,
-    OwnItem: 'own,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutSubItem: OutItem,
-> where
-    OutSubItem: 'own,
-{
-    const GENERATE_OUT_ITEM: fn(
-        &OwnItem,
-    ) -> OutItemRetriever<
-        'own,
-        OutItemIndicatorIndicatorImpl,
-        OutSubItem,
-    >;
-}
-
-fn out_item_clone_nonref<
-    'own,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutSubItem: OutItem + Clone,
->(
-    own: &OutSubItem,
-) -> OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>
-where
-    OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>: From<OutSubItem>,
-{
-    let clone = own.clone();
-    clone.into()
-}
-
-pub struct GenerateOutItemCloneNonRef<
-    'own,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutSubItem: OutItem,
->(PhantomData<(&'own (), OutItemIndicatorIndicatorImpl, OutSubItem)>);
-impl<'own, OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator, OutSubItem: OutItem>
-    GenerateOutItemLifetimed<'own, OutSubItem, OutItemIndicatorIndicatorImpl, OutSubItem>
-    for GenerateOutItemCloneNonRef<'own, OutItemIndicatorIndicatorImpl, OutSubItem>
-where
-    OutSubItem: 'own + Clone,
-    OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>: From<OutSubItem>,
-{
-    const GENERATE_OUT_ITEM: fn(
-        &OutSubItem,
-    ) -> OutItemRetriever<
-        'own,
-        OutItemIndicatorIndicatorImpl,
-        OutSubItem,
-    > = out_item_clone_nonref::<'own, OutItemIndicatorIndicatorImpl, OutSubItem>;
-}
-pub trait GenerateOutItemIndicator<
-    OwnItem,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutSubItem: OutItem,
->
-{
-    type GenerateOutItemLifetimedImpl<'own>: GenerateOutItemLifetimed<
-        'own,
-        OwnItem,
-        OutItemIndicatorIndicatorImpl,
-        OutSubItem,
-    >
-    where
-        OwnItem: 'own,
-        OutSubItem: 'own;
-}
-
-pub struct GenerateOutItemCloneNonRefIndicator<
-    OwnItem,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutSubItem: OutItem,
->(PhantomData<(OwnItem, OutItemIndicatorIndicatorImpl, OutSubItem)>);
-#[cfg(off)]
-impl<OwnItem, OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator, OutSubItem: OutItem>
-    GenerateOutItemIndicator<OwnItem, OutItemIndicatorIndicatorImpl, OutSubItem>
-    for GenerateOutItemCloneNonRefIndicator<OwnItem, OutItemIndicatorIndicatorImpl, OutSubItem>
-//where OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>: From<OutSubItem>
-where
-    OutSubItem: Clone,
-    for<'ownish> OutItemRetriever<'ownish, OutItemIndicatorIndicatorImpl, OutSubItem>:
-        From<OutSubItem>,
-{
-    type GenerateOutItemLifetimedImpl<'own> = GenerateOutItemCloneNonRef<'own,
-    OutItemIndicatorIndicatorImpl,
-    OutSubItem>
-    where
-        OwnItem: 'own,
-        OutSubItem: 'own;
-}
-
 pub fn bench_vec_sort_bin_search<
     OwnItemType,
     OutSubItem: OutItem,
@@ -361,9 +253,6 @@ pub fn bench_vec_sort_bin_search<
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
-    /*GenerateOutItemIndicatorImpl: GenerateOutItemIndicator<OwnItem,
-    OutItemIndicatorIndicatorImpl,
-    OutSubItem>*/
 >(
     c: &mut Criterion,
     rnd: &mut Rnd,
@@ -408,9 +297,6 @@ pub fn bench_vec_sort_bin_search_lifetimed<
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
-    /*GenerateOutItemIndicatorImpl: GenerateOutItemIndicator<OwnItem,
-    OutItemIndicatorIndicatorImpl,
-    OutSubItem>*/
 >(
     own: &'own Vec<OwnItemType>,
     c: &mut Criterion,
@@ -469,9 +355,7 @@ pub fn bench_vec_sort_bin_search_redundant_types<
     generate_id_postfix: impl Fn(&IdState) -> String,
     generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
     generate_out_item: impl Fn(&'own OwnItemType) -> OutItemType,
-)
-//where GenerateOutItem: GenerateOutItemIndicator<OwnItem, OutItemIndicatorIndicatorImpl, OutSubItem>
-{
+) {
     let mut group = c.benchmark_group(group_name);
 
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
