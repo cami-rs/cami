@@ -9,6 +9,8 @@ use criterion::{criterion_group, Criterion};
 use fastrand::Rng;
 use lib_benches::*;
 
+extern crate alloc;
+
 #[path = "shared/lib_benches.rs"]
 mod lib_benches;
 
@@ -46,7 +48,7 @@ pub fn bench_target(c: &mut Criterion) {
         &mut total_length,
         id_postfix,
         generate_item,
-        |_| loop {},
+        |own| &own[..],
     );
 }
 

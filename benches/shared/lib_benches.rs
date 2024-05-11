@@ -63,7 +63,8 @@ where
     T: OutItem,
 {
     // @TODO see if RustDoc/docs.rs/libs.rs generates a correct link for
-    // alloc::collections::BTreeSet. Otherwise change it to std::
+    // `alloc::collections::BTreeSet``. Otherwise change it to `std::``
+    //
     /// For example, `true` for [Vec], `false` for [alloc::collections::BTreeSet].
     const ALLOWS_MULTIPLE_EQUAL_ITEMS: bool;
     /// If `false`, [OutCollection::sort_unstable] may `panic!` (unsupported).

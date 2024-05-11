@@ -18,16 +18,6 @@ extern crate alloc;
 #[path = "shared/lib_benches.rs"]
 mod lib_benches;
 
-/*struct S<'a> {
-    i: u8,
-    rf: Option<&'a u8>,
-}
-fn f() -> S<'static> {
-    let mut s = S { i: 0, rf: None };
-    s.rf = Some(&s.i);
-    s
-}*/
-
 pub fn bench_target(c: &mut Criterion) {
     let mut rng = Rng::new();
 
@@ -56,8 +46,8 @@ pub fn bench_target(c: &mut Criterion) {
         "u8",
         &mut id_state,
         id_postfix,
-        generate_item,
-        |_| loop {},
+        |rng, _| rng.u8(..), //generate_item,
+        |own| *own,
     );
 }
 
