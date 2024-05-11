@@ -255,10 +255,10 @@ pub fn bench_vec_sort_bin_search<
     id_state: &mut IdState,
     generate_id_postfix: impl Fn(&IdState) -> String,
     generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
-    generate_out_item: impl for<'own> Fn(
-        &'own OwnItemType,
+    generate_out_item: impl Fn(
+        &OwnItemType,
     ) -> OutItemRetriever<
-        'own,
+        '_,
         OutItemIndicatorIndicatorImpl,
         OutSubItem,
     >,
@@ -290,15 +290,14 @@ pub fn bench_vec_sort_bin_search<
 }
 
 pub fn bench_vec_sort_bin_search_lifetimed<
-    'own,
     OwnItemType,
-    OutSubItem: OutItemLifetimed<'own>,
+    OutSubItem: OutItem,
     OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
 >(
-    own_items: &'own Vec<OwnItemType>,
+    own_items: &Vec<OwnItemType>,
     c: &mut Criterion,
     rnd: &mut Rnd,
     group_name: impl Into<String>,
@@ -313,12 +312,7 @@ pub fn bench_vec_sort_bin_search_lifetimed<
         OwnItemType,
         OutSubItem,
         OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
-        OutCollRetriever<
-            '_,
-            OutCollectionIndicatorImpl,
-            OutItemIndicatorIndicatorImpl,
-            OutSubItem,
-        >,
+        OutCollRetriever<'_, OutCollectionIndicatorImpl, OutItemIndicatorIndicatorImpl, OutSubItem>,
         OutItemIndicatorIndicatorImpl,
         OutCollectionIndicatorImpl,
         Rnd,
@@ -338,7 +332,7 @@ pub fn bench_vec_sort_bin_search_redundant_types<
     'own,
     OwnItemType, //??? : 'own,
     OutSubItem: OutItem,
-    OutItemType: OutItemLifetimed<'own>,
+    OutItemType: OutItem,
     OutCollectionType: OutCollection<OutItemType>,
     OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
