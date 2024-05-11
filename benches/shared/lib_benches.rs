@@ -207,54 +207,38 @@ type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutItemIndicatorIndicato
 /// `Sub` is elsewhere also known as `OutSubItem`
 pub trait OutItemIndicator<'own, Sub>
 where
-    Sub: OutItem + 'own,
+    Sub: OutItemLifetimed<'own>,
 {
     type OutItemLifetimedImpl: OutItemLifetimed<'own> + 'own;
 }
 pub trait OutItemIndicatorIndicator {
     type OutItemIndicatorImpl<'own, Sub>: OutItemIndicator<'own, Sub>
     where
-        Sub: 'own + OutItem;
+        Sub: OutItemLifetimed<'own>;
 }
 pub struct OutItemIndicatorNonRef<Sub>(PhantomData<Sub>);
 impl<'own, OutSubItem> OutItemIndicator<'own, OutSubItem> for OutItemIndicatorNonRef<OutSubItem>
 where
-    OutSubItem: OutItem + 'own, // TODO OutItemLifetimed<'own> ???
+    OutSubItem: OutItemLifetimed<'own>,
 {
     type OutItemLifetimedImpl = OutSubItem;
 }
 pub struct OutItemIndicatorNonRefIndicator();
 impl OutItemIndicatorIndicator for OutItemIndicatorNonRefIndicator {
-    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorNonRef<T> where T: 'own + OutItem;
+    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorNonRef<T> where T: OutItemLifetimed<'own>;
 }
 pub struct OutItemIndicatorSlice<Sub>(PhantomData<Sub>);
 impl<'own, Sub> OutItemIndicator<'own, Sub> for OutItemIndicatorSlice<Sub>
 where
-    Sub: OutItem + ?Sized + 'own, // TODO OutItemLifetimed<'own> ???
+    Sub: OutItemLifetimed<'own> + ?Sized,
 {
     type OutItemLifetimedImpl = &'own [Sub];
 }
-/*pub struct OutItemIndicatorSliceIndicator<T>(PhantomData<T>);
-impl<T> OutItemIndicatorIndicator<T> for OutItemIndicatorSliceIndicator<T>
-where
-    T: OutItem,
-{
-    type OutItemIndicatorImpl<'own> = OutItemIndicatorSlice<T> where T: 'own;
-}*/
 pub struct OutItemIndicatorSliceIndicator();
 impl OutItemIndicatorIndicator for OutItemIndicatorSliceIndicator {
-    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorSlice<T> where T: 'own + OutItem;
+    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorSlice<T> where T: OutItemLifetimed<'own>;
 }
 //------
-fn indicated_with_hrtb<OutSubItem, OutIndicator>()
-where
-    OutSubItem: OutItem,
-    OutIndicator: for<'own> OutItemIndicator<'own, OutSubItem>,
-{
-    let o: OutIndicator = loop {};
-    let lifetimed: OutIndicator::OutItemLifetimedImpl = loop {};
-    let lifetimed: <OutIndicator as OutItemIndicator<OutSubItem>>::OutItemLifetimedImpl = lifetimed;
-}
 
 pub fn bench_vec_sort_bin_search<
     OwnItemType,
