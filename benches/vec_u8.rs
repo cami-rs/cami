@@ -23,10 +23,6 @@ pub fn bench_target(c: &mut Criterion) {
 
     type IdState = ();
 
-    fn generate_item(rng: &mut Rng, _: &mut IdState) -> u8 {
-        rng.u8(..)
-    }
-
     fn id_postfix(_: &IdState) -> String {
         String::new()
     }
@@ -46,7 +42,7 @@ pub fn bench_target(c: &mut Criterion) {
         "u8",
         &mut id_state,
         id_postfix,
-        |rng, _| rng.u8(..), //generate_item,
+        |rng, _| rng.u8(..),
         |own| *own,
     );
 }
