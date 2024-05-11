@@ -305,16 +305,16 @@ pub fn bench_vec_sort_bin_search_lifetimed<
     id_state: &IdState,
     generate_id_postfix: impl Fn(&IdState) -> String,
     generate_out_item: impl Fn(
-        &'own OwnItemType,
-    ) -> OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>,
+        &OwnItemType,
+    ) -> OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
 ) {
     bench_vec_sort_bin_search_redundant_types::<
-        'own,
+        '_,
         OwnItemType,
         OutSubItem,
-        OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>,
+        OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
         OutCollRetriever<
-            'own,
+            '_,
             OutCollectionIndicatorImpl,
             OutItemIndicatorIndicatorImpl,
             OutSubItem,
