@@ -257,11 +257,7 @@ pub fn bench_vec_sort_bin_search<
     generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
     generate_out_item: impl Fn(
         &OwnItemType,
-    ) -> OutItemRetriever<
-        '_,
-        OutItemIndicatorIndicatorImpl,
-        OutSubItem,
-    >,
+    ) -> OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
 ) {
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
 
@@ -472,4 +468,40 @@ pub fn bench_vec_sort_bin_search_redundant_types<
         }
     }
     group.finish();
+}
+
+struct OwnAndDependents_WITH_CLOSURE_IMPOSSIBLE_TO_MATCH_THE_CLOSURE_TYPE<
+    'own,
+    OwnItemType,
+    OutItemType,
+    F,
+>(&'own Vec<OwnItemType>, F)
+where
+    OutItemType: OutItem,
+    F: Fn(&'own OwnItemType) -> OutItemType;
+
+pub struct OwnAndDependents<'own, OwnItemType, OutItemType>(
+    pub &'own Vec<OwnItemType>,
+    pub fn(&'own OwnItemType) -> OutItemType,
+)
+where
+    OutItemType: OutItem;
+
+pub fn bench_vec_sort_bin_search_redundant_types_HRTB<
+    OwnItemType,
+    OutSubItem: OutItem,
+    OutItemType: OutItem,
+    OutCollectionType: OutCollection<OutItemType>,
+    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OutCollectionIndicatorImpl: OutCollectionIndicator,
+    Rnd: Random,
+    IdState,
+>(
+    c: &mut Criterion,
+    rnd: &mut Rnd,
+    group_name: impl Into<String>,
+    id_state: &IdState,
+    generate_id_postfix: impl Fn(&IdState) -> String,
+    OwnAndDependents(own_items, generate_out_item): OwnAndDependents<OwnItemType, OutItemType>,
+) {
 }
