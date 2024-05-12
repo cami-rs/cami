@@ -109,7 +109,7 @@ pub trait OutCollectionIndicator {
     where
         T: OutItem;
 }
-#[derive(Clone /*, RefCast*/)]
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct OutCollectionVec<T>(pub Vec<T>)
 where
@@ -166,7 +166,7 @@ where
     /// - just call [std::collections::BTreeSet::iter] -> [Iterator::is_sorted_by], because that could
     /// be optimized away .
     ///
-    /// Instead, it verifies the sorted orde. For example: [std::collections::BTreeSet::iter] ->
+    /// Instead, it verifies the sorted order. For example: [std::collections::BTreeSet::iter] ->
     /// [core::hint::black_box] -> [Iterator::is_sorted_by].
     fn is_sorted(&self) -> bool {
         self.0.is_sorted()
@@ -231,7 +231,7 @@ impl OutItemIndicatorIndicator for OutItemIndicatorNonRefIndicator {
 pub struct OutItemIndicatorSlice<Sub>(PhantomData<Sub>);
 impl<'own, Sub> OutItemIndicator<'own, Sub> for OutItemIndicatorSlice<Sub>
 where
-    Sub: OutItemLifetimed<'own> + ?Sized,
+    Sub: OutItemLifetimed<'own>,
 {
     type OutItemLifetimedImpl = &'own [Sub];
 }
