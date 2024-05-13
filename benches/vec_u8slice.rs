@@ -37,7 +37,7 @@ pub fn bench_target(c: &mut Criterion) {
     bench_vec_sort_bin_search::<
         Vec<u8>,
         u8,
-        OutItemIndicatorSliceIndicator,
+        OutIndicatorSliceIndicator,
         OutCollectionVecIndicator,
         Rng,
         IdState,

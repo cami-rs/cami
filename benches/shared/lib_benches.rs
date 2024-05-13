@@ -47,9 +47,9 @@ pub fn purge_cache<RND: Random>(rng: &mut RND) {
 }
 
 /// Shortcut trait, for "output" items based on owned items, but with no specified lifetime.
-pub trait OutItem = Clone + CamiOrd + Ord;
+pub trait Out = Clone + CamiOrd + Ord;
 /// Shortcut trait, for "output" items based on owned items, with a lifetime.
-pub trait OutItemLifetimed<'own> = OutItem + 'own;
+pub trait OutLifetimed<'own> = Out + 'own;
 
 /// Collection for "output" items, based on/referencing "owned" items. Used for
 /// [OutCollectionIndicator::OutCollectionImpl].
@@ -60,7 +60,7 @@ pub trait OutItemLifetimed<'own> = OutItem + 'own;
 /// Not extending [core::ops::Index], because [BTreeSet] doesn't extend it either.
 pub trait OutCollection<T>: Clone + Extend<T>
 where
-    T: OutItem,
+    T: Out,
 {
     // @TODO see if RustDoc/docs.rs/libs.rs generates a correct link for
     // `alloc::collections::BTreeSet``. Otherwise change it to `std::``
@@ -106,17 +106,17 @@ where
 pub trait OutCollectionIndicator {
     type OutCollectionImpl<T>: OutCollection<T>
     where
-        T: OutItem;
+        T: Out;
 }
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct OutCollectionVec<T>(pub Vec<T>)
 where
-    T: OutItem;
+    T: Out;
 
 impl<T> Extend<T> for OutCollectionVec<T>
 where
-    T: OutItem,
+    T: Out,
 {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         self.0.extend(iter);
@@ -130,7 +130,7 @@ where
 }
 impl<T> OutCollection<T> for OutCollectionVec<T>
 where
-    T: OutItem,
+    T: Out,
 {
     const ALLOWS_MULTIPLE_EQUAL_ITEMS: bool = true;
     const HAS_SORT_UNSTABLE: bool = true;
@@ -173,67 +173,67 @@ where
 
 pub struct OutCollectionVecIndicator();
 impl OutCollectionIndicator for OutCollectionVecIndicator {
-    type OutCollectionImpl<T> = OutCollectionVec<T> where T: OutItem;
+    type OutCollectionImpl<T> = OutCollectionVec<T> where T: Out;
 }
 
 type OutCollRetrieverPerItem<OutCollectionIndicatorImpl, T> =
     <OutCollectionIndicatorImpl as OutCollectionIndicator>::OutCollectionImpl<T>;
 
-type OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem> =
-    <<OutItemIndicatorIndicatorImpl as OutItemIndicatorIndicator>::OutItemIndicatorImpl<
+type OutRetriever<'own, OutIndicatorIndicatorImpl, Sub> =
+    <<OutIndicatorIndicatorImpl as OutIndicatorIndicator>::OutIndicatorImpl<
         'own,
-        OutSubItem,
-    > as OutItemIndicator<'own, OutSubItem>>::OutItemLifetimedImpl;
+        Sub,
+    > as OutIndicator<'own, Sub>>::OutLifetimedImpl;
 
-type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutItemIndicatorIndicatorImpl, OutSubItem> =
+type OutCollRetriever<'own, OutCollectionIndicatorImpl, OutIndicatorIndicatorImpl, Sub> =
     OutCollRetrieverPerItem<
         OutCollectionIndicatorImpl,
-        OutItemRetriever<'own, OutItemIndicatorIndicatorImpl, OutSubItem>,
+        OutRetriever<'own, OutIndicatorIndicatorImpl, Sub>,
     >;
 // Previous `TransRef` is at
 // https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/DropCk.20.26.20GAT.20.28Generic.20Associative.20Types.29
 
 //-----
-/// `Sub` is elsewhere also known as `OutSubItem`
-pub trait OutItemIndicator<'own, Sub>
+/// `Sub` means sub-item/component of [Out].
+pub trait OutIndicator<'own, Sub>
 where
-    Sub: OutItemLifetimed<'own>,
+    Sub: OutLifetimed<'own>,
 {
-    type OutItemLifetimedImpl: OutItemLifetimed<'own> + 'own;
+    type OutLifetimedImpl: OutLifetimed<'own> + 'own;
 }
-pub trait OutItemIndicatorIndicator {
-    type OutItemIndicatorImpl<'own, Sub>: OutItemIndicator<'own, Sub>
+pub trait OutIndicatorIndicator {
+    type OutIndicatorImpl<'own, Sub>: OutIndicator<'own, Sub>
     where
-        Sub: OutItemLifetimed<'own>;
+        Sub: OutLifetimed<'own>;
 }
-pub struct OutItemIndicatorNonRef<Sub>(PhantomData<Sub>);
-impl<'own, OutSubItem> OutItemIndicator<'own, OutSubItem> for OutItemIndicatorNonRef<OutSubItem>
+pub struct OutIndicatorNonRef<Sub>(PhantomData<Sub>);
+impl<'own, OutItem> OutIndicator<'own, OutItem> for OutIndicatorNonRef<OutItem>
 where
-    OutSubItem: OutItemLifetimed<'own>,
+    OutItem: OutLifetimed<'own>,
 {
-    type OutItemLifetimedImpl = OutSubItem;
+    type OutLifetimedImpl = OutItem;
 }
-pub struct OutItemIndicatorNonRefIndicator();
-impl OutItemIndicatorIndicator for OutItemIndicatorNonRefIndicator {
-    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorNonRef<T> where T: OutItemLifetimed<'own>;
+pub struct OutIndicatorNonRefIndicator();
+impl OutIndicatorIndicator for OutIndicatorNonRefIndicator {
+    type OutIndicatorImpl<'own, T> = OutIndicatorNonRef<T> where T: OutLifetimed<'own>;
 }
-pub struct OutItemIndicatorSlice<Sub>(PhantomData<Sub>);
-impl<'own, Sub> OutItemIndicator<'own, Sub> for OutItemIndicatorSlice<Sub>
+pub struct OutIndicatorSlice<Sub>(PhantomData<Sub>);
+impl<'own, Sub> OutIndicator<'own, Sub> for OutIndicatorSlice<Sub>
 where
-    Sub: OutItemLifetimed<'own>,
+    Sub: OutLifetimed<'own>,
 {
-    type OutItemLifetimedImpl = &'own [Sub];
+    type OutLifetimedImpl = &'own [Sub];
 }
-pub struct OutItemIndicatorSliceIndicator();
-impl OutItemIndicatorIndicator for OutItemIndicatorSliceIndicator {
-    type OutItemIndicatorImpl<'own, T> = OutItemIndicatorSlice<T> where T: OutItemLifetimed<'own>;
+pub struct OutIndicatorSliceIndicator();
+impl OutIndicatorIndicator for OutIndicatorSliceIndicator {
+    type OutIndicatorImpl<'own, T> = OutIndicatorSlice<T> where T: OutLifetimed<'own>;
 }
 //------
 
 pub fn bench_vec_sort_bin_search<
-    OwnItemType,
-    OutSubItem: OutItem,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OwnType,
+    SubType: Out,
+    OutIndicatorIndicatorImpl: OutIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
@@ -243,10 +243,8 @@ pub fn bench_vec_sort_bin_search<
     group_name: impl Into<String>,
     id_state: &mut IdState,
     generate_id_postfix: impl Fn(&IdState) -> String,
-    generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnItemType,
-    generate_out_item: impl Fn(
-        &OwnItemType,
-    ) -> OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
+    generate_own_item: impl Fn(&mut Rnd, &mut IdState) -> OwnType,
+    generate_out_item: impl Fn(&OwnType) -> OutRetriever<'_, OutIndicatorIndicatorImpl, SubType>,
 ) {
     let num_items = rnd.usize(MIN_ITEMS..MAX_ITEMS);
 
@@ -257,9 +255,9 @@ pub fn bench_vec_sort_bin_search<
     }
 
     bench_vec_sort_bin_search_own_items::<
-        OwnItemType,
-        OutSubItem,
-        OutItemIndicatorIndicatorImpl,
+        OwnType,
+        SubType,
+        OutIndicatorIndicatorImpl,
         OutCollectionIndicatorImpl,
         Rnd,
         IdState,
@@ -275,29 +273,27 @@ pub fn bench_vec_sort_bin_search<
 }
 
 pub fn bench_vec_sort_bin_search_own_items<
-    OwnItemType,
-    OutSubItem: OutItem,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OwnType,
+    SubType: Out,
+    OutIndicatorIndicatorImpl: OutIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
 >(
-    own_items: &Vec<OwnItemType>,
+    own_items: &Vec<OwnType>,
     c: &mut Criterion,
     rnd: &mut Rnd,
     group_name: impl Into<String>,
     id_state: &IdState,
     generate_id_postfix: impl Fn(&IdState) -> String,
-    generate_out_item: impl Fn(
-        &OwnItemType,
-    ) -> OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
+    generate_out_item: impl Fn(&OwnType) -> OutRetriever<'_, OutIndicatorIndicatorImpl, SubType>,
 ) {
     bench_vec_sort_bin_search_lifetimed::<
         '_,
-        OwnItemType,
-        OutSubItem,
-        OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
-        OutCollRetriever<'_, OutCollectionIndicatorImpl, OutItemIndicatorIndicatorImpl, OutSubItem>,
+        OwnType,
+        SubType,
+        OutRetriever<'_, OutIndicatorIndicatorImpl, SubType>,
+        OutCollRetriever<'_, OutCollectionIndicatorImpl, OutIndicatorIndicatorImpl, SubType>,
         Rnd,
         IdState,
     >(
@@ -313,20 +309,20 @@ pub fn bench_vec_sort_bin_search_own_items<
 
 pub fn bench_vec_sort_bin_search_lifetimed<
     'own,
-    OwnItemType,
-    OutSubItem: OutItem,
-    OutItemType: OutItem,
-    OutCollectionType: OutCollection<OutItemType>,
+    OwnType,
+    SubType: Out,
+    OutType: Out,
+    OutCollectionType: OutCollection<OutType>,
     Rnd: Random,
     IdState,
 >(
-    own_items: &'own Vec<OwnItemType>,
+    own_items: &'own Vec<OwnType>,
     c: &mut Criterion,
     rnd: &mut Rnd,
     group_name: impl Into<String>,
     id_state: &IdState,
     generate_id_postfix: impl Fn(&IdState) -> String,
-    generate_out_item: impl Fn(&'own OwnItemType) -> OutItemType,
+    generate_out_item: impl Fn(&'own OwnType) -> OutType,
 ) {
     let mut group = c.benchmark_group(group_name);
 
@@ -440,29 +436,27 @@ pub fn bench_vec_sort_bin_search_lifetimed<
     group.finish();
 }
 
-struct OwnAndDependents_WITH_CLOSURE_IMPOSSIBLE_TO_MATCH_THE_CLOSURE_TYPE<
-    'own,
-    OwnItemType,
-    OutItemType,
+struct OwnAndDependents_WITH_CLOSURE_IMPOSSIBLE_TO_MATCH_THE_CLOSURE_TYPE<'own, OwnType, OutType, F>(
+    &'own Vec<OwnType>,
     F,
->(&'own Vec<OwnItemType>, F)
-where
-    OutItemType: OutItem,
-    F: Fn(&'own OwnItemType) -> OutItemType;
-
-pub struct OwnAndDependents<'own, OwnItemType, OutItemType>(
-    pub &'own Vec<OwnItemType>,
-    pub fn(&'own OwnItemType) -> OutItemType,
 )
 where
-    OutItemType: OutItem;
+    OutType: Out,
+    F: Fn(&'own OwnType) -> OutType;
+
+pub struct OwnAndDependents<'own, OwnType, OutType>(
+    pub &'own Vec<OwnType>,
+    pub fn(&'own OwnType) -> OutType,
+)
+where
+    OutType: Out;
 
 pub fn bench_vec_sort_bin_search_redundant_types_HRTB<
-    OwnItemType,
-    OutSubItem: OutItem,
-    OutItemType: OutItem,
-    OutCollectionType: OutCollection<OutItemType>,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
+    OwnType,
+    SubType: Out,
+    OutType: Out,
+    OutCollectionType: OutCollection<OutType>,
+    OutIndicatorIndicatorImpl: OutIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
@@ -472,6 +466,6 @@ pub fn bench_vec_sort_bin_search_redundant_types_HRTB<
     group_name: impl Into<String>,
     id_state: &IdState,
     generate_id_postfix: impl Fn(&IdState) -> String,
-    OwnAndDependents(own_items, generate_out_item): OwnAndDependents<OwnItemType, OutItemType>,
+    OwnAndDependents(own_items, generate_out_item): OwnAndDependents<OwnType, OutType>,
 ) {
 }
