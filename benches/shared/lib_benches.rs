@@ -509,37 +509,3 @@ pub fn bench_vec_sort_bin_search_lifetimed<
     }
     group.finish();
 }
-
-struct OwnAndDependents_WITH_CLOSURE_IMPOSSIBLE_TO_MATCH_THE_CLOSURE_TYPE<'own, OwnType, OutType, F>(
-    &'own Vec<OwnType>,
-    F,
-)
-where
-    OutType: Out,
-    F: Fn(&'own OwnType) -> OutType;
-
-pub struct OwnAndDependents<'own, OwnType, OutType>(
-    pub &'own Vec<OwnType>,
-    pub fn(&'own OwnType) -> OutType,
-)
-where
-    OutType: Out;
-
-pub fn bench_vec_sort_bin_search_redundant_types_HRTB<
-    OwnType,
-    SubType: Out,
-    OutType: Out,
-    OutCollectionType: OutCollection<OutType>,
-    OutIndicatorIndicatorImpl: OutIndicatorIndicator,
-    OutCollectionIndicatorImpl: OutCollectionIndicator,
-    Rnd: Random,
-    IdState,
->(
-    c: &mut Criterion,
-    rnd: &mut Rnd,
-    group_name: impl Into<String>,
-    id_state: &IdState,
-    generate_id_postfix: impl Fn(&IdState) -> String,
-    OwnAndDependents(own_items, generate_out_item): OwnAndDependents<OwnType, OutType>,
-) {
-}
