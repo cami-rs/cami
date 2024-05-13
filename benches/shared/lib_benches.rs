@@ -7,6 +7,8 @@ use criterion::{BenchmarkId, Criterion};
 use fastrand::Rng;
 //use ref_cast::RefCast;
 
+use alloc::collections::BTreeSet;
+
 pub fn criterion_config() -> Criterion {
     Criterion::default().warm_up_time(Duration::from_millis(200))
 }
@@ -108,6 +110,8 @@ pub trait OutCollectionIndicator {
     where
         T: Out;
 }
+
+// Vec-based collection
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct OutCollectionVec<T>(pub Vec<T>)
@@ -175,6 +179,76 @@ pub struct OutCollectionVecIndicator();
 impl OutCollectionIndicator for OutCollectionVecIndicator {
     type OutCollectionImpl<T> = OutCollectionVec<T> where T: Out;
 }
+// End of: Vec-based collection
+
+// BTreeSet-based collection:
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct OutCollectionBTreeSet<T>(pub BTreeSet<T>)
+where
+    T: Out;
+
+impl<T> Extend<T> for OutCollectionBTreeSet<T>
+where
+    T: Out,
+{
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        self.0.extend(iter);
+    }
+    fn extend_one(&mut self, item: T) {
+        self.0.extend_one(item);
+    }
+    fn extend_reserve(&mut self, additional: usize) {
+        self.0.extend_reserve(additional);
+    }
+}
+impl<T> OutCollection<T> for OutCollectionBTreeSet<T>
+where
+    T: Out,
+{
+    const ALLOWS_MULTIPLE_EQUAL_ITEMS: bool = false;
+    const HAS_SORT_UNSTABLE: bool = false;
+
+    fn new() -> Self {
+        Self(BTreeSet::new())
+    }
+    fn with_capacity(capacity: usize) -> Self {
+        Self(BTreeSet::new())
+    }
+    fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+    fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
+    where
+        T: 'a,
+    {
+        self.0.iter()
+    }
+    fn into_iter(self) -> impl Iterator<Item = T> {
+        self.0.into_iter()
+    }
+    fn is_sorted(&self) -> bool {
+        let iter = self.0.iter();
+        hint::black_box(iter).is_sorted()
+    }
+    fn sort(&mut self) {}
+    fn sort_unstable(&mut self) {
+        unreachable!();
+    }
+    fn binary_search(&self, x: &T) -> bool {
+        self.0.get(x).is_some()
+    }
+}
+
+pub struct OutCollectionBTreeSetIndicator();
+impl OutCollectionIndicator for OutCollectionBTreeSetIndicator {
+    type OutCollectionImpl<T> = OutCollectionBTreeSet<T> where T: Out;
+}
+// End of: BTreeSet-based collection
 
 type OutCollRetrieverPerItem<OutCollectionIndicatorImpl, T> =
     <OutCollectionIndicatorImpl as OutCollectionIndicator>::OutCollectionImpl<T>;
