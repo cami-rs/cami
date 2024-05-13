@@ -18,7 +18,7 @@ pub const MAX_ITEMS: usize = 10; //100_000;
 #[allow(unused)]
 /// On heap. For example, for String, this is the maximum number of `char` - so the actual UTF-8
 /// size may be a few times higher.
-pub const MAX_ITEM_LEN: usize = 4; //1_000;
+pub const MAX_ITEM_LEN: usize = 1_000;
 
 // For purging the L1, L2..., in bytes.
 const MAX_CACHE_SIZE: usize = 2_080_000;
@@ -79,8 +79,7 @@ where
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a;
-    /// Not required - it may `panic`. If available, use it only for [Transref::Out] so we can have
-    /// multiple output instances based on the same input.
+    /// Not required - it may `panic`. @TODO revisit that
     fn into_iter(self) -> impl Iterator<Item = T>;
 
     /// Like [Iterator::is_sorted]. BUT: For types that maintain/guarantee a sorted order, like
@@ -155,19 +154,9 @@ where
     {
         self.0.iter()
     }
-    /// Not required - it may `panic`. If available, use it only for [Transref::Out] so we can have
-    /// multiple output instances based on the same input.
     fn into_iter(self) -> impl Iterator<Item = T> {
         self.0.into_iter()
     }
-    /// Like [Iterator::is_sorted_by]. BUT: For types that maintain/guarantee a sorted order, like
-    /// [std::collections::BTreeSet], this must NOT (for example)
-    /// - simply return `true`, nor
-    /// - just call [std::collections::BTreeSet::iter] -> [Iterator::is_sorted_by], because that could
-    /// be optimized away .
-    ///
-    /// Instead, it verifies the sorted order. For example: [std::collections::BTreeSet::iter] ->
-    /// [core::hint::black_box] -> [Iterator::is_sorted_by].
     fn is_sorted(&self) -> bool {
         self.0.is_sorted()
     }
@@ -267,7 +256,7 @@ pub fn bench_vec_sort_bin_search<
         own_items.push(item);
     }
 
-    bench_vec_sort_bin_search_lifetimed::<
+    bench_vec_sort_bin_search_own_items::<
         OwnItemType,
         OutSubItem,
         OutItemIndicatorIndicatorImpl,
@@ -285,7 +274,7 @@ pub fn bench_vec_sort_bin_search<
     );
 }
 
-pub fn bench_vec_sort_bin_search_lifetimed<
+pub fn bench_vec_sort_bin_search_own_items<
     OwnItemType,
     OutSubItem: OutItem,
     OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
@@ -303,14 +292,12 @@ pub fn bench_vec_sort_bin_search_lifetimed<
         &OwnItemType,
     ) -> OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
 ) {
-    bench_vec_sort_bin_search_redundant_types::<
+    bench_vec_sort_bin_search_lifetimed::<
         '_,
         OwnItemType,
         OutSubItem,
         OutItemRetriever<'_, OutItemIndicatorIndicatorImpl, OutSubItem>,
         OutCollRetriever<'_, OutCollectionIndicatorImpl, OutItemIndicatorIndicatorImpl, OutSubItem>,
-        OutItemIndicatorIndicatorImpl,
-        OutCollectionIndicatorImpl,
         Rnd,
         IdState,
     >(
@@ -324,14 +311,12 @@ pub fn bench_vec_sort_bin_search_lifetimed<
     );
 }
 
-pub fn bench_vec_sort_bin_search_redundant_types<
+pub fn bench_vec_sort_bin_search_lifetimed<
     'own,
-    OwnItemType, //??? : 'own,
+    OwnItemType,
     OutSubItem: OutItem,
     OutItemType: OutItem,
     OutCollectionType: OutCollection<OutItemType>,
-    OutItemIndicatorIndicatorImpl: OutItemIndicatorIndicator,
-    OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
 >(
@@ -345,22 +330,12 @@ pub fn bench_vec_sort_bin_search_redundant_types<
 ) {
     let mut group = c.benchmark_group(group_name);
 
-    if !<OutCollRetriever<
-            '_,
-            OutCollectionIndicatorImpl,
-            OutItemIndicatorIndicatorImpl,
-            OutSubItem
-        >>::ALLOWS_MULTIPLE_EQUAL_ITEMS {
-            todo!("out -> .clone() -> check if already in an extra BTreeSet, if not, add there & to the result out collection.");
+    if !OutCollectionType::ALLOWS_MULTIPLE_EQUAL_ITEMS {
+        todo!("out -> .clone() -> check if already in an extra BTreeSet, if not, add there & to the result out collection.");
     }
 
     {
-        let mut unsorted_items = <OutCollRetriever<
-            '_,
-            OutCollectionIndicatorImpl,
-            OutItemIndicatorIndicatorImpl,
-            OutSubItem,
-        >>::with_capacity(1);
+        let mut unsorted_items = OutCollectionType::with_capacity(1);
 
         // let unsorted_items = unsorted_items; // Prevent mutation by mistake.
 
@@ -371,12 +346,7 @@ pub fn bench_vec_sort_bin_search_redundant_types<
         );
         //#[cfg(do_later)]
         if false {
-            let mut sorted_lexi = <OutCollRetriever<
-                '_,
-                OutCollectionIndicatorImpl,
-                OutItemIndicatorIndicatorImpl,
-                OutSubItem,
-            >>::with_capacity(1);
+            let mut sorted_lexi = OutCollectionType::with_capacity(1);
             //let mut sorted_lexi = unsorted_items.clone();
             group.bench_with_input(
                 BenchmarkId::new("std sort lexi.          ", id_string.clone()),
