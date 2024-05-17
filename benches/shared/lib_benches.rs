@@ -2,7 +2,7 @@
 // some items have `#[allow(unused)]`.
 use cami::prelude::*;
 use core::ops::RangeBounds;
-use core::{hint, marker::PhantomData, time::Duration};
+use core::{hint, marker::PhantomData, mem, time::Duration};
 use criterion::{BenchmarkId, Criterion};
 use fastrand::Rng;
 //use ref_cast::RefCast;
@@ -304,8 +304,10 @@ impl OutIndicatorIndicator for OutIndicatorSliceIndicator {
 }
 //------
 
+/// `OwnType` needs to be [Ord] only if `generate_own_item` can generate (some) equal items AND if
+/// the indicated [OutCollection] has [OutCollection::ALLOWS_MULTIPLE_EQUAL_ITEMS] being `false`.
 pub fn bench_vec_sort_bin_search<
-    OwnType,
+    OwnType: Ord,
     SubType: Out,
     OutIndicatorIndicatorImpl: OutIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
@@ -336,7 +338,7 @@ pub fn bench_vec_sort_bin_search<
         Rnd,
         IdState,
     >(
-        &own_items,
+        own_items,
         c,
         rnd,
         group_name,
@@ -346,15 +348,18 @@ pub fn bench_vec_sort_bin_search<
     );
 }
 
+/// This removes any extra equal items from `own_items` if the indicated [OutCollection] has
+/// [OutCollection::ALLOWS_MULTIPLE_EQUAL_ITEMS] being `false`. No guarantee as to which one of any
+/// two or more equal items will stay.
 pub fn bench_vec_sort_bin_search_own_items<
-    OwnType,
+    OwnType: Ord,
     SubType: Out,
     OutIndicatorIndicatorImpl: OutIndicatorIndicator,
     OutCollectionIndicatorImpl: OutCollectionIndicator,
     Rnd: Random,
     IdState,
 >(
-    own_items: &Vec<OwnType>,
+    own_items: Vec<OwnType>,
     c: &mut Criterion,
     rnd: &mut Rnd,
     group_name: impl Into<String>,
@@ -383,14 +388,16 @@ pub fn bench_vec_sort_bin_search_own_items<
 
 pub fn bench_vec_sort_bin_search_lifetimed<
     'own,
-    OwnType,
+    OwnType: Ord + 'own,
     SubType: Out,
+    // Two "retrieved" types:
     OutType: Out,
     OutCollectionType: OutCollection<OutType>,
+    // No need for type indicators here.
     Rnd: Random,
     IdState,
 >(
-    own_items: &'own Vec<OwnType>,
+    mut own_items: Vec<OwnType>,
     c: &mut Criterion,
     rnd: &mut Rnd,
     group_name: impl Into<String>,
@@ -401,7 +408,10 @@ pub fn bench_vec_sort_bin_search_lifetimed<
     let mut group = c.benchmark_group(group_name);
 
     if !OutCollectionType::ALLOWS_MULTIPLE_EQUAL_ITEMS {
-        todo!("out -> .clone() -> check if already in an extra BTreeSet, if not, add there & to the result out collection.");
+        let mut set = BTreeSet::<OwnType>::new();
+        set.extend(own_items.into_iter());
+        own_items = Vec::<OwnType>::with_capacity(set.len());
+        own_items.extend(set.into_iter());
     }
 
     {
