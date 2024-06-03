@@ -29,3 +29,6 @@ pub mod std;
 
 #[cfg(feature = "alloc")]
 extern crate alloc as rust_alloc;
+
+// @TODO pub?
+mod adapt;

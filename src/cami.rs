@@ -214,7 +214,7 @@ impl<T: Hash + CamiPartialEq> Hash for Cami<T> {
 }
 //-----
 
-/// Simple forwarding
+/// Simple forwarding.
 ///
 /// NO "Rhs" (right hand side) generic parameter, because then [Cami] would have to contain phantom
 /// data, which would make pattern matching etc. difficult.

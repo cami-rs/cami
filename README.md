@@ -79,3 +79,43 @@ access/differentiate/interpret/"know" types being used.
 This design is (arguably) "coupled", because it puts these features together. Guess what: Life is
 too short for uncoupled designs here. They would be both difficult to implement, unergonomic to use,
 and complicated to maintain.
+
+## Permanently below 1.0.0
+
+### Unstable: below 0.1.0
+
+### Stable: From 0.1.0, but below 1.0.0
+
+For controlled development, use
+- `"0.*"` of `cami`, and
+- an exact, `=`-specified version of Cami "adaptor" crate specific for the 3rd party crate. For
+  example, `"0.1.0"` of `cami-smartstring`: `cami-smartstring = "=0.1.0"`, and
+- a specified minor version of the 3rd party crate. For example, `"1.0.*"` of
+  [`smartstring`](https://crates.io/crates/smartstring): `smartstring = "1.0.*"`.
+
+For fluid/adaptable development, use
+- `"0.*"` of `cami`, and
+- a **major** wildcard version of Cami "adaptor" crate specific for the 3rd party crate. For
+  example, `"0.*"` of `cami-smartstring`: `cami-smartstring = "0.*"`, and
+- a specified **major** version of the 3rd party crate. For example, `"1.*"` of
+  [`smartstring`](https://crates.io/crates/smartstring): `smartstring = "1.*"`.
+
+See also
+- [The Cargo Book > Dependency Resolution > SemVer
+compatibility](https://doc.rust-lang.org/nightly/cargo/reference/resolver.html#semver-compatibility)
+&gt; "Equals" and "Compound"
+- [The Cargo Book > Dependency Resolution >
+  Features](https://doc.rust-lang.org/nightly/cargo/reference/resolver.html#features)
+  - "The resolver will skip over versions of packages that are missing required features", which
+    determines  the oldest version it can select.
+  - "Similarly, if a feature is removed from a new release, then packages that require that feature
+    will be stuck on the older releases that contain that feature."
+  - "It is discouraged to remove features in a SemVer-compatible release." - in our case, this is
+    what we need to do.
+- [The Cargo Book > Specifying
+  Dependencies](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html)
+  - [> Wildcard
+    requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#wildcard-requirements)
+  - [Comparison
+  requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#comparison-requirements)
+  &gt; `= 1.2.3`.

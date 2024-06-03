@@ -11,14 +11,11 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/cami-rs/cami"
 
 # TODO MSRV
+# ---------------
 
 [features]
 # Keep features here sorted alphabetically
 alloc = []
-
-# Whether to implement Copy (where item types implement it, too). Intentionally NOT a default
-# feature, as it's not a common expectation for larger types.
-copy = []
 
 # Whether to implement Debug (where item types implement it, too)
 debug = []
@@ -31,8 +28,14 @@ hash = []
 hint_assert_unchecked = ["unsafe"]
 nightly = []
 
-default = ["std", "transmute", "deref_pure", "debug", "hash"]
-#default = []
+# Empty: no default features.
+#
+# Because of https://doc.rust-lang.org/nightly/cargo/reference/features.html#dependency-features >
+# "If another dependency includes flate2 without specifying default-features = false, then the
+# default features will be enabled."
+#
+#default = ["std", "transmute", "deref_pure", "debug", "hash"]
+default = []
 
 # TODO See if this comment shows up at docs.rs.
 std = ["alloc"]
@@ -41,12 +44,21 @@ std = ["alloc"]
 transmute = ["unsafe"]
 unsafe = []
 
+adapt-smartstring = ["dep:smartstring"]
+# -------------
+
 [dependencies]
 cami-helpers = { path = "../cami-helpers", version = "0.0.1" }
 serde = { version = "1.0", optional = true, features=['derive'] }
 
+# adapt-* optional dependencies:
+#
+smartstring = { version = "1.0.*", optional = true, default-features = false }
+
+# ------------
+
 [dev-dependencies]
-# @TODO real_blackbox is on NIGHTLY only - do this depending on rustc channel?
+# @TODO real_blackbox is on NIGHTLY only - is this depending on rustc channel?
 # criterion = { version = "0.5.1", features=['real_blackbox'] }
 criterion = { version = "0.5.1" }
 
@@ -75,4 +87,4 @@ name = "shared"
 harness = false
 
 [lints.rust]
-# warnings = "allow"
+warnings = "allow"
