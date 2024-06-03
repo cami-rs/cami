@@ -34,7 +34,6 @@ nightly = []
 # "If another dependency includes flate2 without specifying default-features = false, then the
 # default features will be enabled."
 #
-#default = ["std", "transmute", "deref_pure", "debug", "hash"]
 default = []
 
 # TODO See if this comment shows up at docs.rs.
@@ -56,35 +55,6 @@ serde = { version = "1.0", optional = true, features=['derive'] }
 smartstring = { version = "1.0.*", optional = true, default-features = false }
 
 # ------------
-
-[dev-dependencies]
-# @TODO real_blackbox is on NIGHTLY only - is this depending on rustc channel?
-# criterion = { version = "0.5.1", features=['real_blackbox'] }
-criterion = { version = "0.5.1" }
-
-fastrand = { version = "2.0.2"}
-
-# For benches:
-# ref-cast = "1.0"
-
-[[bench]]
-name = "vec_string"
-harness = false
-required-features = ["std"]
-
-[[bench]]
-name = "vec_u8"
-harness = false
-required-features = ["std"]
-
-[[bench]]
-name = "vec_u8slice"
-harness = false
-required-features = ["std"]
-
-[[bench]]
-name = "shared"
-harness = false
 
 [lints.rust]
 warnings = "allow"
