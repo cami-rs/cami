@@ -58,7 +58,6 @@ impl<T: CamiPartialEq + ?Sized> Cami<T> {
 }
 
 impl<T: CamiPartialEq + Copy> Cami<T> {
-    #[cfg(feature = "copy")]
     /// Take [self] by reference, return a copy of the wrapped data. We COULD just use `self.0` (or
     /// `variable_holding_the_instance.0`) - but, then it can't be easily searched for in source
     /// code.
@@ -97,13 +96,11 @@ impl<T: CamiPartialEq> IntoCami for T {
     }
 }
 
-#[cfg(feature = "copy")]
 pub trait IntoCamiCopy {
     type Wrapped: CamiPartialEq;
     #[must_use]
     fn into_cami_copy(&self) -> Cami<Self::Wrapped>;
 }
-#[cfg(feature = "copy")]
 impl<T: CamiPartialEq + Copy> IntoCamiCopy for T {
     type Wrapped = Self;
     #[must_use]
@@ -189,8 +186,11 @@ impl<T: Clone + CamiPartialEq> Clone for Cami<T> {
     }
 }
 
-#[cfg(feature = "copy")]
-impl<T: Copy + CamiPartialEq> Copy for Cami<T> {}
+/// Marker trait, indicating whether to implement [Copy] for `Cami<T>`, too. [Copy]  is
+/// intentionally NOT implemented otherwise (even if `T` does implement [Copy]), as it's not a
+/// common expectation for larger types.
+pub trait CamiCopy: Copy {}
+impl<T: CamiPartialEq + CamiCopy> Copy for Cami<T> {}
 
 #[cfg(feature = "debug")]
 impl<T: Debug + CamiPartialEq> Debug for Cami<T> {
