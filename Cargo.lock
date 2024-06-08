@@ -10,7 +10,7 @@ checksum = "f1fdabc7756949593fe60f30ec81974b613357de856987752631dea1e3394c80"
 
 [[package]]
 name = "cami"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "cami-helpers",
  "serde",
