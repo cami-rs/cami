@@ -2,25 +2,20 @@
 
 Zero cost wrappers & related implementation of cache-friendly comparison. `no_std`-friendly.
 
-## Non-vector-like items
+## Non-array, or variable-length slices/Vec...
 
-This is about comparing values/objects other than slices/arrays/Vec/String/&str. Of course, these
-values/objects can be stored in a slice/array/Vec/String/&str, and that's most likely where this
-cache-friendly comparison brings benefits.
+This is primarily about ordering and comparing equality of values/objects that are
+- primitives or custom types, that is, other than slices/arrays/`&str`/`String`/`Vec`, or
+- slices/`&str`/`String`/`Vec` - however, not of fixed/pre-determined/batch size, but of variable
+  length. This is where the slices/`Vec`... themselves are being compared. These can contain either
+  "classic" items (not `Cami` zero cost wrappers), or `Cami` wrappers around "classic" items.
 
-This comparison may DIFFER to the `#[derive(...)]`'s default order: [the top-to-bottom declaration
-order of the struct’s members](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#derivable).
-
-## Vec/slice/array as containers
-
-- sequential search for primitive/local-only item types (no references) has no speed benefit
-- sequential search for item types that have both local fields and references can have speed benefit
-- binary search - speed benefit, for both
-  - primitive/local-only item types (no references), and (even more so) - only for small types (with
-    size less than half a cache line, so less than 64B on mainstream CPU's) - work in progress, it
-    may turn out not to be beneficial (because of extra code branching)
-  - item types that have both local fields and references (potentially much more beneficial than for
-    local-only)
+This comparison
+- **may** differ to the `#[derive(...)]`'s default order: [the top-to-bottom declaration order of
+the struct’s members](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#derivable) (for
+primitives or custom types). And,
+- it **will** differ (in general) to the default order of comparing two
+  arrays/slices/`&str`/`String`/`Vec`.
 
 ## Vec/slice/array/String/&str as items
 
@@ -35,15 +30,17 @@ fixed-length usernames, condensed dates/timestamps...
 
 This comparison doesn't give as much benefit for `HashMap` & `HashSet` (because those use `Hash` for
 determining the buckets). But it can speed up comparison of keys in the same bucket (with the same
-hash). And, since `HashMap` & `HashSet` don't keep/guarantee any order, using `cami` makes
+hash). And, since `HashMap` & `HashSet` don't keep/don't guarantee any order, using `cami` makes
 transition/backwards compatibility easier.
 
 ## BTreeMap/BTreeSet items
 
-Transmuting those would be AGAINST their correctness, because they maintain the ordered state, and
-they depend on it. TODO explain more.
+Transmuting those collections themselves would be AGAINST their correctness, because they maintain
+the ordered state, and they depend on it.
 
-Indeed, the actual items stored in a `BTreeMap/BTreeSet` can use this crate.
+Indeed, the actual items stored in a `BTreeMap/BTreeSet` can use this `cami`. So, instead of storing
+values `V` in `BTreeSet`, or instead of mapping keys `K` in `BTreeMap`, you store values `Cami<V>`
+in `BTreeSet`, or `Cami<K>` as keys in `BTreeMap`>. Here `cami` brings benefit, and is easy to use.
 
 ## Actual traits & applicability
 
@@ -56,17 +53,6 @@ TODO
 You could transmute (zero cost) a wrapper back to the original Vec/slice/array/String/&str, as far
 as no existing code depends on `derive`'s default ordering and Vec/slice/array/String/&str's
 lexicographic ordering.
-
-### Fallback to PartialEq & Ord
-
-TODO
-
-Suitable if you can't change some existing (3rd party) code to use `cami`'s binary search methods.
-Possible only if no existing code depends on `derive`'s default ordering and
-Vec/slice/array/String/&str's lexicographic ordering.
-
-Compared to using `CPartialEq` and `COrd`, this doesn't give any binary search benefit for
-primitive/local-only types. But it can speed up binary search for types with references.
 
 ## Scope
 
@@ -87,9 +73,10 @@ that can be outside of `cami`, is so - for example,
 
 There will never be version `1.0.0` (or any higher). This allows dependant crates to refer to `cami`
 with wildcard `0.*` AND such a wildcard **is** accepted by [crates.io](https://crates.io) (since
-it's **only** bare `"*"` wildcard that is not accepted by [crates.io](https://crates.io)).
+it's **only** bare `"*"` wildcard that is not accepted by [crates.io](https://crates.io) - see
+next).
 
-However, if we went to `1.0.0` (and over), dependencies couldn't wildcard-match Cami anymore -
+However, if we went to `1.0.0` (and over), dependencies couldn't wildcard-match `cami` anymore -
 because as per [The Cargo Book > Specifying Dependencies > Wildcard
 requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html):
 "crates.io does not allow bare `*` versions."
@@ -108,26 +95,36 @@ This
 
 - is initial (for a given 3rd party crate),
 - is deemed temporary/unstable, especially if the (3rd party) crate is actively maintained, because
-  then we hope to move the implementation to the 3rd party crate. Such a move would be a major
+  then we hope to move the implementation to the 3rd party crate. Such a move would be a **major**
   change (more below),
 - will stay longterm only if the (3rd party) crate is unmaintained, or its maintainers are
-  overloaded,
+  overloaded, but:
 - counts towards [crates.io](https://crates.io)'s limit of 300 features (see below). Why? We make
-  such 3rd part crates optional dependencies, hence each crate counts as one feature. And,
-- if migrated out (to the 3rd party crate) later, this temporarily needs two features (defined in
-  `cami`), in addition to any extra feature(s) mentioned next, hence limiting the number of crates
-  being migrated at the same time to be under 150,
-- if the related behavior varies depending on that crate's feature(s), then we'd need to add related
-  features to `cami`, too - and those extra `cami` features would also count against the limit of 300,
-- increases `cami`'s **minor** version, but if migrated to the 3rd party later, it increases
-  `cami`'s **major** version.
+  such (3rd party) crates optional dependencies in `cami`, hence each crate counts as one feature.
+- adds a new feature `adopt-***` for the given crate, like `adopt-abcc` for crate `abcc`.
+- if migrated out (to the involved 3rd party crate, let's say, `abcc`) later, this temporarily needs
+  two features each (defined in `cami`):
+  - `adopt-abcc` (during the first migration period only) and
+  - `migrated-abcc` (during both the first and the second migration period)
+  
+  (in addition to any extra features mentioned below). That limits the number of crates being
+  supported in `cami` itself, or being migrated out, at any time, to be under 150.
+  
+  And, if a crate doesn't get migrated completely (for example, if it becomes unmaintained), it
+  keeps depending on `migrated-abcc` feature of `cami`. Such "occupied" features count against the
+  limit of 300 features - possibly longterm.
+- if the related behavior (ordering and equality) varies depending on that crate's feature(s), then
+  we'd need to add related features to `cami`, too - and those extra `cami` features would also
+  count against the limit of 300,
+- increases `cami`'s **minor** version, but if later migrated out (to that crate itself), it then
+  increases `cami`'s **major** version.
 
 ### Implemented by 3rd party (preferred)
 
 We prefer (3rd party) crates to implement `cami` traits (for their types, indeed), because
 
-- they can assure correctness more, as know their types, they can adapt the Cami traits'
-  implementation if they change their type's implementation,
+- they can assure correctness more, as they know their types
+- they can update `cami` traits' implementation if they change their type's implementation,
 - they can optimize based on their knowledge of the type's behavior and its consistency,
 - they can optimize by using private/`pub(crate)` fields/functions,
 - implementing the traits on their side doesn't need any new features added to `cami` (so it doesn't
@@ -135,54 +132,71 @@ We prefer (3rd party) crates to implement `cami` traits (for their types, indeed
 
 ### Smooth upgrades: Zero incompatibility period
 
-<!--This assumes that
-- all Cami dependents specify `cami` version as wildcard `0.*`, and
-- `cami` implementations (whether as part of `cami` - "NOT preferred", or in the 3rd party crate itself - "preferred")-->
-
 If the (3rd party) crate's maintainer(s) agree to absorb the implementation of Cami traits (for
 their types) into their crate, then the previous implementation has to be moved out of `cami`
-(because of coherence/"orphan" rule). You could expect an interim incompatibility/upgrade period
-(for users who depend on `cami` traits for that crate) until both the 3rd party crate and `cami` are
-updated.
+(because of coherence/"orphan" rule). You could expect an interim incompatibility/freeze period (for
+users who depend on `cami` traits being implemented for that crate) until both the 3rd party crate
+and `cami` are updated.
 
 Fortunately, that is not necessary. How come?
 
-When `cami` adds an implementation of its traits for a (3rd party) crate (`abcc`), it defines only
-one `adapt-***` feature related to this crate (`adapt-abcc`). (Unless implementation of `cami`
-traits varies depending on feature(s) defined by that crate.)
+This assumes that all `cami`-enabled crates (which implement `cami` traits), and all their
+consumers, follow simple rules (see later). Then the following migration is possible.
 
-But, once the (3rd party) crate (`abcc`) adapts the implementation of `cami` traits, it
+### 3rd party crates: Migrations
+
+If `cami` adds an implementation of its traits for a (3rd party) crate (`abcc`), it defines only one
+feature related to this crate: `adapt-***` (`adapt-abcc`). (Unless implementation of `cami` traits
+varies depending on feature(s) defined by that crate.) Any consumer depends on `cami` with feature
+`adapt-abcc`.
+
+When the (3rd party) crate (`abcc`) adapts the implementation of `cami` traits, that (3rd party)
+crate
 - publishes a new **minor** version, which
 - adds `cami` (with flexible version `0.*`) as an **optional** dependency, under an
-  (automatically-generated) feature named `cami`, and
-- it requires the "migrated" feature (`migrated-abcc`) of `cami`. That makes `cargo` and `cargo
-  update` **NOT** fetch this new (**minor**) version of the crate (`abcc`), until `cami` publishes a
-  new version with `migrated-abcc`, and
-- it does not, can can not, require `adopt-abcc` feature (because that would make the dependency
+  (automatically-generated) feature named `cami`. This change (of adding) of dependency feature is a
+  minor change (as per [The Cargo Book > SemVer Compatibility > Minor: adding dependencies
+  features](https://doc.rust-lang.org/nightly/cargo/reference/semver.html#cargo-dep-add)). And
+- requires a new "migrated" feature (`migrated-abcc`) of `cami`. That makes `cargo update` **NOT**
+  fetch this new (**minor**) version of the crate (`abcc`), until `cami` publishes a new version
+  with a new `migrated-abcc` feature (below). And
+- it does not, and cannot, require `adopt-abcc` feature (because that would make the dependency
   graph cyclic).
 
-In parallel (even before, or soon after), `cami` publishes a new (**minor**) `0.x.y` that
-- contains a new feature `migrated-abcc` (with no extra functionality at all), and
-- contains the old feature `adapt-abcc`, which still implements `cami` traits for that crate, and
-- this starts the first migration period.
+Soon after, `cami` publishes a new (**minor**) `0.x.y` that
+- adds a new feature `migrated-abcc` (with no extra functionality at all - it's a "marking feature"
+  only), and
+- deprecates the existing feature `adapt-abcc`, which still implements `cami` traits for that crate,
+  and
+- consumers remove feature `adapt-abcc` from their dependency on `cami`, and they add `cami` feature
+  for their dependency on the (3rd party) crate (`abcc`). And
+- this starts the **first migration period**.
 
 After the first migration period is over,
 1. `cami` publishes a new **major** version `0.w.0` that
   - removes feature `adapt-abcc`, and
-  - it deprecates feature `migrated-abcc`, and
-  - starts the second migration period.
-2. Only then the (3rd party) crate (`abcc`) publishes a new **patch** version, which
-  - depends on `cami` with no features specified, so removing `migrated-abcc` feature for this
-    dependency.
+  - deprecates feature `migrated-abcc`.
+2. Only then, the (3rd party) crate (`abcc`) publishes a new **patch** version, which
+  - depends on `cami`, but with no features specified, so removing `migrated-abcc` feature for this
+    dependency. This change (removal) of dependency feature is a **minor** change (as per [The Cargo
+    Book > SemVer Compatibility > Minor: changing dependency
+    features](https://doc.rust-lang.org/nightly/cargo/reference/semver.html#cargo-change-dep-feature)).
+    And
+  - consumers don't change `Cargo.toml`, but they run `cargo update`.
+  - starts the **second migration period**.
 
-After the second migration period is over, `cami` publishes a new **major** version `0.z.0` that
-removes feature `migrated-abcc`.
+After the **second migration period** is **over**,
+- `cami` publishes a new **major** version `0.z.0` that removes feature `migrated-abcc`.
+- consumers don't change `Cargo.toml`, but they run `cargo update`.
 
 ## Depending on Cami
 
 Rule #1: Always use a flexible (major) version `"0.*"` of `cami`.
 
-Rule #2: Follow the rule #1.
+Rule #2: If you use any `adapt-***` feature of `cami`,
+- subscribe to the respective tracking issue (with `adapt-` in the title). All such issue are
+  **quiet** (collaborators-only). And/or
+- check the tracking issue's status regularly.
 
 ## Depending on Cami and 3rd party crates
 
