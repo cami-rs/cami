@@ -48,7 +48,7 @@ adapt-smartstring = ["dep:smartstring"]
 
 [dependencies]
 cami-helpers = { path = "../cami-helpers", version = "0.0.1" }
-serde = { version = "1.0", optional = true, features=['derive'] }
+serde = { version = "1.0", optional = true, default-features = false, features=['derive'] }
 
 # adapt-* optional dependencies:
 #
