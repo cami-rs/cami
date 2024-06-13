@@ -114,4 +114,98 @@ where
 }
 
 // @TODO search for SliceCami (traits containing this in their name), and update them to use `SliceCami`
+//
+// @TODO rename to CamiSlice? Or: remove?
 pub type SliceCami<'a, T> = Cami<&'a [T]>;
+
+/// We need this for `&str`, even though we have a generic impl for slices.
+impl CamiPartialEq for &str {
+    const LOCALITY: Locality = Locality::Both;
+
+    #[must_use]
+    #[inline]
+    fn eq_local(&self, other: &Self) -> bool {
+        self.len() == other.len()
+    }
+
+    #[must_use]
+    #[inline]
+    fn eq_non_local(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl CamiPartialOrd for &str {
+    #[must_use]
+    #[inline]
+    fn partial_cmp_local(&self, other: &Self) -> Option<Ordering> {
+        // @TODO benchmark if this is faster: Some(self.len().cmp(&other.len()))
+        self.len().partial_cmp(&other.len())
+    }
+    #[must_use]
+    #[inline]
+    fn partial_cmp_non_local(&self, other: &Self) -> Option<Ordering> {
+        // @TODO benchmark if this is faster: Some(self.cmp(other))
+        self.partial_cmp(other)
+    }
+
+    #[must_use]
+    #[inline]
+    fn lt_local(&self, other: &Self) -> bool {
+        self.len() < other.len()
+    }
+    #[must_use]
+    #[inline]
+    fn lt_non_local(&self, other: &Self) -> bool {
+        self < other
+    }
+
+    #[must_use]
+    #[inline]
+    fn le_local(&self, other: &Self) -> bool {
+        self.len() <= other.len()
+    }
+    #[must_use]
+    #[inline]
+    fn le_non_local(&self, other: &Self) -> bool {
+        self <= other
+    }
+
+    #[must_use]
+    #[inline]
+    fn gt_local(&self, other: &Self) -> bool {
+        self.len() > other.len()
+    }
+    #[must_use]
+    #[inline]
+    fn gt_non_local(&self, other: &Self) -> bool {
+        self > other
+    }
+
+    #[must_use]
+    #[inline]
+    fn ge_local(&self, other: &Self) -> bool {
+        self.len() >= other.len()
+    }
+    #[must_use]
+    #[inline]
+    fn ge_non_local(&self, other: &Self) -> bool {
+        self >= other
+    }
+}
+
+/// We need this, even though we have a generic impl for slices in [crate::slices_impls].
+impl CamiOrd for &str {
+    #[must_use]
+    #[inline]
+    fn cmp_local(&self, other: &Self) -> Ordering {
+        self.len().cmp(&other.len())
+    }
+
+    #[must_use]
+    #[inline]
+    fn cmp_non_local(&self, other: &Self) -> Ordering {
+        self.cmp(&other)
+    }
+}
+// @TODO special wrapper for &[char]?

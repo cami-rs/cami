@@ -3,10 +3,16 @@
 Zero cost wrappers & related implementation of cache-friendly comparison & ordering.
 `no_std`-friendly.
 
-## Architectures
+## Use cases & Architectures
 
-"Yes" to architectures/executions with (transparent) CPU/RAM cache(s). "No" to
-architectures/executions with no cache.
+- "yes" to common-and-bigger data thoughputs, where most parts of data are handled/visited multiple
+  times.
+- "no" to datasets so tiny that most of the data (or, the hot part of it) fits into CPU/RAM
+  cache(s).
+- "no" to single-run processing, especially if the data is not (re)sorted and not looked up based on
+  its comparison/order.
+- "yes" to architectures/executions with (transparent) CPU/RAM cache(s).
+- "no" to architectures/executions with no cache.
 
 ## Consumer types
 
@@ -360,3 +366,14 @@ post](https://blog.rust-lang.org/2023/10/26/broken-badges-and-23k-keywords.html)
 
 Hopefully there will never be anywhere close to 300 implementations for (3rd party) crates at the
 same time (including a grace period before a relevant `adapt-***` feature name is removed).
+
+## Benchmarking
+
+Benchmarks are separate, in [cami-rs/cami-benches](https://github.com/cami-rs/cami-benches), because
+- they are many and complex, with their own scaffolding,
+- they require `nightly` Rust version (regardless of whether using `Criterion` or the standard
+  harness) - even if the benchmarked feature(s) of `cami` don't need `nightly`.
+- Having benchmarks separate allows us to switch `nightly` "on" for them (with
+  `rust-toolchain.toml`). However, that would not be possible if benches were part of `cami` itself.
+- they have their own dependencies, which could cause assumptions/confusion when maintaining `cami`
+  itself (since dev dependencies are not separated between benchmarks and tests).
