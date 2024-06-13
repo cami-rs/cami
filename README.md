@@ -1,39 +1,57 @@
 # Cami = Cache Friendly
 
-Zero cost wrappers & related implementation of cache-friendly comparison. `no_std`-friendly.
+Zero cost wrappers & related implementation of cache-friendly comparison & ordering.
+`no_std`-friendly.
 
-## Non-array, or variable-length slices/Vec...
+## Architectures
 
-This is primarily about ordering and comparing equality of values/objects that are
-- primitives or custom types, that is, other than slices/arrays/`&str`/`String`/`Vec`, or
-- slices/`&str`/`String`/`Vec` - however, not of fixed/pre-determined/batch size, but of variable
-  length. This is where the slices/`Vec`... themselves are being compared. These can contain either
-  "classic" items (not `Cami` zero cost wrappers), or `Cami` wrappers around "classic" items.
+"Yes" to architectures/executions with (transparent) CPU/RAM cache(s). "No" to
+architectures/executions with no cache.
 
-This comparison
-- **may** differ to the `#[derive(...)]`'s default order: [the top-to-bottom declaration order of
-the struct’s members](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#derivable) (for
-primitives or custom types). And,
-- it **will** differ (in general) to the default order of comparing two
-  arrays/slices/`&str`/`String`/`Vec`.
+## Consumer types
 
-## Vec/slice/array/String/&str as items
+### Compounds, or variable-length slices/&str/String/Vec...
 
-This DIFFERS to their [`Ord` > Lexicographical
+`cami` is primarily for comparing, equality, ordering & binary search of
+- custom compound types, that is, other than primitives or slices/arrays/`&str`/`String`/`Vec`. Or
+- slices/`&str`/`String`/`Vec` themselves (where items are of any type) - however, **not** of
+  fixed/pre-determined/batch size, but of **variable** length. This is where the slices/`Vec`...
+  themselves are being compared/ordered/searched for.
+
+Then, instead of storing/using the consumer ("classic") item type, transmute it into `Cami` (zero
+  cost) wrapper around that "classic" item type.
+
+If the consumer ("classic") item type itself is a slice/`&str`/`String`/`Vec`, it can contain either
+"classic" deeper items (not `Cami` zero cost wrappers), or `Cami` (zero cost) wrappers around
+"classic" deeper items. It brings benefit either way.
+
+Comparison and ordering of `Cami` (wrapper) over
+- a compound type **may** DIFFER to the `#[derive(...)]`'s default order (for that compound type):
+[the top-to-bottom declaration order of the struct’s
+members](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#derivable) (for primitives or
+custom types).
+- a slice/`&str`/`String`/`Vec` **does** differ to their [`Ord` > Lexicographical
 comparison](https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html#lexicographical-comparison).
 
-Beneficial only if the items being compared/stored in the same container are not of the same size.
-Hence NOT suitable for items, or their fields, of fixed size, like `sha256/other` hashes, UUID's,
-fixed-length usernames, condensed dates/timestamps...
+#### slice/&str/String/Vec as items
 
-## HashMap/HashSet items
+If the items being compared/ordered/searched for (themselves) are slices/`&str`/`String`/`Vec`),
+`cami` is beneficial only if they are **not** of the same size.
 
-This comparison doesn't give as much benefit for `HashMap` & `HashSet` (because those use `Hash` for
-determining the buckets). But it can speed up comparison of keys in the same bucket (with the same
-hash). And, since `HashMap` & `HashSet` don't keep/don't guarantee any order, using `cami` makes
-transition/backwards compatibility easier.
+Hence **not** suitable/beneficial for items, or their fields, that (themselves) are
+- arrays or
+- slices/`&str`/`String`/`Vec` of fixed size, or of
 
-## BTreeMap/BTreeSet items
+like `sha256/other` hashes, UUID's, fixed-length usernames, condensed dates/timestamp, matrices...
+
+### Items in HashSet, keys in HashMap
+
+This comparison doesn't give as much benefit for keys/items in `HashMap` & `HashSet` (because those
+use `Hash` for determining the buckets). But it can speed up comparison of keys in the same bucket
+(with the same hash). And, since `HashMap` & `HashSet` don't keep/don't guarantee any order, using
+`cami` makes transition/backwards compatibility easier.
+
+### Items in BTreeSet, keys in BTreeMap
 
 Transmuting those collections themselves would be AGAINST their correctness, because they maintain
 the ordered state, and they depend on it.
@@ -104,18 +122,21 @@ This
 - adds a new feature `adopt-***` for the given crate, like `adopt-abcc` for crate `abcc`.
 - if migrated out (to the involved 3rd party crate, let's say, `abcc`) later, this temporarily needs
   two features each (defined in `cami`):
-  - `adopt-abcc` (during the first migration period only) and
-  - `migrated-abcc` (during both the first and the second migration period)
+  - `adapt-abcc` (during the first migration period only) and
+  - `migrate-abcc` (during both the first and the second migration period)
   
   (in addition to any extra features mentioned below). That limits the number of crates being
   supported in `cami` itself, or being migrated out, at any time, to be under 150.
   
   And, if a crate doesn't get migrated completely (for example, if it becomes unmaintained), it
-  keeps depending on `migrated-abcc` feature of `cami`. Such "occupied" features count against the
-  limit of 300 features - possibly longterm.
+  keeps depending on
+  - both `adapt-abcc` and `migrate-abcc` features of `cami` (if it becomes unmaintained during the
+    first migration period), or
+  - "just" `migrate-abcc` feature (if it becomes unmaintained during the second migration period).
+  Such "occupied" features count against the limit of 300 features - possibly longterm.
 - if the related behavior (ordering and equality) varies depending on that crate's feature(s), then
-  we'd need to add related features to `cami`, too - and those extra `cami` features would also
-  count against the limit of 300,
+  we'd need to add related features to `cami`, too, with names like `a And those extra `cami`
+  features would also count against the limit of 300,
 - increases `cami`'s **minor** version, but if later migrated out (to that crate itself), it then
   increases `cami`'s **major** version.
 
@@ -157,14 +178,14 @@ crate
   (automatically-generated) feature named `cami`. This change (of adding) of dependency feature is a
   minor change (as per [The Cargo Book > SemVer Compatibility > Minor: adding dependencies
   features](https://doc.rust-lang.org/nightly/cargo/reference/semver.html#cargo-dep-add)). And
-- requires a new "migrated" feature (`migrated-abcc`) of `cami`. That makes `cargo update` **NOT**
+- requires a new "migrated" feature (`migrate-abcc`) of `cami`. That makes `cargo update` **NOT**
   fetch this new (**minor**) version of the crate (`abcc`), until `cami` publishes a new version
-  with a new `migrated-abcc` feature (below). And
+  with a new `migrate-abcc` feature (below). And
 - it does not, and cannot, require `adopt-abcc` feature (because that would make the dependency
   graph cyclic).
 
 Soon after, `cami` publishes a new (**minor**) `0.x.y` that
-- adds a new feature `migrated-abcc` (with no extra functionality at all - it's a "marking feature"
+- adds a new feature `migrate-abcc` (with no extra functionality at all - it's a "marking feature"
   only), and
 - deprecates the existing feature `adapt-abcc`, which still implements `cami` traits for that crate,
   and
@@ -175,9 +196,9 @@ Soon after, `cami` publishes a new (**minor**) `0.x.y` that
 After the first migration period is over,
 1. `cami` publishes a new **major** version `0.w.0` that
   - removes feature `adapt-abcc`, and
-  - deprecates feature `migrated-abcc`.
+  - deprecates feature `migrate-abcc`.
 2. Only then, the (3rd party) crate (`abcc`) publishes a new **patch** version, which
-  - depends on `cami`, but with no features specified, so removing `migrated-abcc` feature for this
+  - depends on `cami`, but with no features specified, so removing `migrate-abcc` feature for this
     dependency. This change (removal) of dependency feature is a **minor** change (as per [The Cargo
     Book > SemVer Compatibility > Minor: changing dependency
     features](https://doc.rust-lang.org/nightly/cargo/reference/semver.html#cargo-change-dep-feature)).
@@ -186,7 +207,7 @@ After the first migration period is over,
   - starts the **second migration period**.
 
 After the **second migration period** is **over**,
-- `cami` publishes a new **major** version `0.z.0` that removes feature `migrated-abcc`.
+- `cami` publishes a new **major** version `0.z.0` that removes feature `migrate-abcc`.
 - consumers don't change `Cargo.toml`, but they run `cargo update`.
 
 ## Depending on Cami
@@ -293,13 +314,13 @@ SemVer trick can't help here, in general, (for example) if
 
 Specifically, if there are two (or more) dependency paths on `cami` support for the same crate
 (`abcc`), both
-- under `cami`'s feature `adapt-abcc` (regardless of whether together with `migrated-abcc`, that is,
+- under `cami`'s feature `adapt-abcc` (regardless of whether together with `migrate-abcc`, that is,
   already in the first migration, or not), and
 - and (the other dependency path is) **past** the second migration period (for that same crate
  `abcc`).
  
  That newer dependency path would require the updated version of that crate (`abcc`) which depends
- on `cami` with no features (it doesn't depend on `migrated-abcc` feature of `cami` anymore). But,
+ on `cami` with no features (it doesn't depend on `migrate-abcc` feature of `cami` anymore). But,
  this updated version is only a **patch** (unless there was an unrelated minor release during the
  migration - but even then, the updated version would have **major** the same). So Cargo resolver
  can't load both the pre-patch and post-patch versions (or two **minor** versions under the same
