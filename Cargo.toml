@@ -1,7 +1,8 @@
 [package]
 name = "cami"
 version = "0.0.2"
-edition = "2018"
+edition = "2021"
+rust-version = "1.62.1"
 
 description = "Cache-friendly comparison, binary & sequential search."
 categories = ["algorithms", "caching", "data-structures", "no-std", "text-processing"]

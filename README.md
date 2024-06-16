@@ -172,6 +172,10 @@ consumers, follow simple rules (see later). Then the following migration is poss
 
 ### 3rd party crates: Migrations
 
+This is not a one-off "global" migration of `cami` itself. Instead, it's a one-on-one migration of
+`cami` support out of `cami` to the 3rd party crate (which defines the type). There may be many such
+migration in progress at the same time, in various stages.
+
 If `cami` adds an implementation of its traits for a (3rd party) crate (`abcc`), it defines only one
 feature related to this crate: `adapt-***` (`adapt-abcc`). (Unless implementation of `cami` traits
 varies depending on feature(s) defined by that crate.) Any consumer depends on `cami` with feature
@@ -198,6 +202,12 @@ Soon after, `cami` publishes a new (**minor**) `0.x.y` that
 - consumers remove feature `adapt-abcc` from their dependency on `cami`, and they add `cami` feature
   for their dependency on the (3rd party) crate (`abcc`). And
 - this starts the **first migration period**.
+
+Consumers don't need to use feature `migrate-abcc` (of `cami`). If they do, that fails to build (as
+early detection). Yes, that makes features `adapt-abcc` and `migrate-abcc` mutually exclusive. As
+per [The Cargo Book > Features > Mutually exclusive
+features](https://doc.rust-lang.org/nightly/cargo/reference/features.html#mutually-exclusive-features),
+that is "rare" - and it's needed in this case.
 
 After the first migration period is over,
 1. `cami` publishes a new **major** version `0.w.0` that
@@ -366,6 +376,10 @@ post](https://blog.rust-lang.org/2023/10/26/broken-badges-and-23k-keywords.html)
 
 Hopefully there will never be anywhere close to 300 implementations for (3rd party) crates at the
 same time (including a grace period before a relevant `adapt-***` feature name is removed).
+
+## MSRV
+
+Currently, the minimum supported Rust version is `1.62.1`.
 
 ## Benchmarking
 
