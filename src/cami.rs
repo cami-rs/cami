@@ -235,11 +235,14 @@ impl<T: CamiPartialEq> PartialEq for Cami<T> {
         if Self::LOCALITY.has_local() {
             let local = this.eq_local(other);
             if local {
-                Self::LOCALITY.has_non_local() || this.eq_non_local(other)
+                !Self::LOCALITY.has_non_local() || this.eq_non_local(other)
             } else {
                 false
             }
         } else {
+            // Any Locality instance has at least one of `has_local` & `has_non_local` return
+            // `true`.
+            debug_assert!(Self::LOCALITY.has_non_local());
             this.eq_non_local(other)
         }
     }
@@ -263,6 +266,7 @@ impl<T: CamiPartialOrd> PartialOrd for Cami<T> {
             }
             if local == Some(Ordering::Equal) {
                 if Self::LOCALITY.has_non_local() {
+                    debug_assert!(Self::LOCALITY.has_non_local());
                     this.partial_cmp_non_local(other)
                 } else {
                     Some(Ordering::Equal)
@@ -271,6 +275,7 @@ impl<T: CamiPartialOrd> PartialOrd for Cami<T> {
                 local
             }
         } else {
+            debug_assert!(Self::LOCALITY.has_non_local());
             this.partial_cmp_non_local(other)
         }
     }
@@ -284,6 +289,7 @@ impl<T: CamiPartialOrd> PartialOrd for Cami<T> {
         if Self::LOCALITY.has_local() {
             this.lt_local(other) || Self::LOCALITY.has_non_local() && this.lt_non_local(other)
         } else {
+            debug_assert!(Self::LOCALITY.has_non_local());
             this.lt_non_local(other)
         }
     }
@@ -295,6 +301,7 @@ impl<T: CamiPartialOrd> PartialOrd for Cami<T> {
         if Self::LOCALITY.has_local() {
             this.le_local(other) || Self::LOCALITY.has_non_local() && this.le_non_local(other)
         } else {
+            debug_assert!(Self::LOCALITY.has_non_local());
             this.le_non_local(other)
         }
     }
@@ -332,6 +339,7 @@ impl<T: CamiOrd> Ord for Cami<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         let this = self.in_cami();
         let other = other.in_cami();
+
         if Self::LOCALITY.has_local() {
             let local = this.cmp_local(other);
             if local == Ordering::Equal {
@@ -344,6 +352,7 @@ impl<T: CamiOrd> Ord for Cami<T> {
                 local
             }
         } else {
+            debug_assert!(Self::LOCALITY.has_non_local());
             this.cmp_non_local(other)
         }
     }

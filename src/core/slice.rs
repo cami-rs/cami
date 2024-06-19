@@ -208,4 +208,3 @@ impl CamiOrd for &str {
         self.cmp(&other)
     }
 }
-// @TODO special wrapper for &[char]?
