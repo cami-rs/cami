@@ -22,7 +22,7 @@ where
     }
 }
 
-// @TODO (not just here, but in the whole crate): Find use cases when we benefit from PartialOrd,
+// @TODO (not just here, but in the whole crate): Find use cases where we benefit from PartialOrd,
 // but we do NOT need (full) Ord
 
 impl<T> CamiPartialOrd for &[T]
